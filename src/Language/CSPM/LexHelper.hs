@@ -1,6 +1,7 @@
 module Language.CSPM.LexHelper
 (
-   runScanner
+   runScannerInclude
+  ,runScannerPlain
 )
 where
 
@@ -8,16 +9,19 @@ import Language.CSPM.Lexer as Lexer (Lexeme(..),LexemeClass(..),LexError(..),sca
 
 {- todo : use an error monad -}
 
-runScanner :: FilePath -> IO (Either LexError [Lexeme])
-runScanner inFile = do
-  input <- readFile inFile
-  case scanner input of
+runScannerInclude :: String -> IO (Either LexError [Lexeme])
+runScannerInclude src = do
+  case scanner src of
     Left err -> return $ Left err
     Right toks -> do
       tokenIncl <- processIncludeAndReverse toks
       case tokenIncl of
         Left err -> return $ Left err
         Right tokenIncl -> return $ Right$ filter ( not . tokIsIgnored ) tokenIncl
+
+-- returns a reversed list of the tokens
+runScannerPlain :: String -> Either LexError [Lexeme]
+runScannerPlain src = scanner src
 
 processIncludeAndReverse :: [Lexeme] -> IO (Either LexError [Lexeme] )
 processIncludeAndReverse tokens = picl_acc tokens []

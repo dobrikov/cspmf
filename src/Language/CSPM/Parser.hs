@@ -2,7 +2,8 @@
 {-# LANGUAGE ImplicitParams #-}
 module Language.CSPM.Parser
 (
-  runScanner
+  runScannerInclude
+ ,runScannerPlain
  ,runCspParser
 )
 where
@@ -11,7 +12,7 @@ import Language.CSPM.AST
 import qualified Language.CSPM.Lexer as Lexer (Lexeme(..), LexemeClass(..),showToken,tokenSentinel)
 import Language.CSPM.Lexer as Lexer (Lexeme,LexemeClass(..))
 
-import Language.CSPM.LexHelper (runScanner)
+import Language.CSPM.LexHelper (runScannerInclude,runScannerPlain)
 
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec hiding (eof,notFollowedBy,anyToken,label)
