@@ -382,17 +382,6 @@ showPosn (AlexPn _ line col) = show line ++ ':': show col
 --  print (scanner s)
 --  print (scannerb s)
 
-tokIsIgnored (L _ _ _ LLComment _) = True
-tokIsIgnored (L _ _ _ LCSPFDR _) = True
-tokIsIgnored (L _ _ _ LBComment _) = True
-tokIsIgnored _ = False
-
-tokIsComment (L _ _ _ LLComment _) = True
-tokIsComment (L _ _ _ LBComment _) = True
-tokIsComment _ = False
-
-tokIsFDR (L _ _ _ LCSPFDR _) = True
-tokIsFDR _ = False
 
 showToken (L id (AlexPn o l c) len LCspId str) = "built-in '"++str++"'"
 showToken (L id (AlexPn o l c) len LCspBI str) = "built-in '"++str++"'"

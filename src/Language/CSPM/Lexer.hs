@@ -197,7 +197,8 @@ begin code input len = do alexSetStartCode code; alexMonadScan
 token t input len = return (t input len)
 
 
-data Lexeme = L { id :: Int,
+id = tokenId
+data Lexeme = L { tokenId :: Int,
                   startpos ::AlexPosn,
                   len :: Int,
                   lexClass :: LexemeClass,
@@ -268,7 +269,7 @@ lexError s = do
        else "charcode " ++ (show $ ord c)
 
 tokenSentinel= 
- L { Language.CSPM.Lexer.id = -1
+ L { tokenId = -1
    , startpos = AlexPn 0 0 0
    , len =0
    ,lexClass =error "CSPLexer.x illegal access tokenSentinel"
@@ -301,17 +302,6 @@ showPosn (AlexPn _ line col) = show line ++ ':': show col
 --  print (scanner s)
 --  print (scannerb s)
 
-tokIsIgnored (L _ _ _ LLComment _) = True
-tokIsIgnored (L _ _ _ LCSPFDR _) = True
-tokIsIgnored (L _ _ _ LBComment _) = True
-tokIsIgnored _ = False
-
-tokIsComment (L _ _ _ LLComment _) = True
-tokIsComment (L _ _ _ LBComment _) = True
-tokIsComment _ = False
-
-tokIsFDR (L _ _ _ LCSPFDR _) = True
-tokIsFDR _ = False
 
 showToken (L id (AlexPn o l c) len LCspId str) = "built-in '"++str++"'"
 showToken (L id (AlexPn o l c) len LCspBI str) = "built-in '"++str++"'"

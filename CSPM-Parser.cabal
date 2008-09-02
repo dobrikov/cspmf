@@ -28,7 +28,7 @@ library
     Language.CSPM.AST
     Language.CSPM.Parser
   Other-modules:       
-  Extensions: CPP
-  GHC-Options: -funbox-strict-fields -O2 -fasm -Wall -optl-Wl,-s -fno-warn-missing-signatures
+  GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s
   Other-modules:
     Language.CSPM.Lexer
+    Language.CSPM.LexHelper

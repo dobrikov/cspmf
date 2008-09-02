@@ -1,10 +1,17 @@
 {-# OPTIONS_GHC -fglasgow-exts #-}
 {-# LANGUAGE ImplicitParams #-}
-module Language.CSPM.Parser where
+module Language.CSPM.Parser
+(
+  runScanner
+ ,runCspParser
+)
+where
 import Language.CSPM.AST
 
 import qualified Language.CSPM.Lexer as Lexer (Lexeme(..), LexemeClass(..),showToken,tokenSentinel)
 import Language.CSPM.Lexer as Lexer (Lexeme,LexemeClass(..))
+
+import Language.CSPM.LexHelper (runScanner)
 
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec hiding (eof,notFollowedBy,anyToken,label)
@@ -15,6 +22,10 @@ import Prelude hiding (exp)
 
 type PT a= GenParser Lexeme PState a
 
+runCspParser :: SourceName -> [Lexeme] -> Either ParseError (Labeled Module)
+runCspParser filename tokenList
+  = runParser parseModule initialPState filename tokenList
+
 data PState
  = PState {
   lastTok:: Lexeme
@@ -22,6 +33,14 @@ data PState
  ,gtCounter::Int
  ,gtMode::GtMode
  } deriving Show
+
+initialPState :: PState
+initialPState = PState {
+   lastTok = Lexer.tokenSentinel 
+  ,lastChannelDir = WasOut
+  ,gtCounter = 0
+  ,gtMode = GtNoLimit
+  }
 
 setLastChannelDir :: LastChannelDir -> PState -> PState 
 setLastChannelDir dir env = env {lastChannelDir=dir}
