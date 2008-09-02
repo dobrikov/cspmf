@@ -1,4 +1,7 @@
 {
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
+{-# OPTIONS_GHC -fno-warn-unused-matches #-}
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 module Language.CSPM.Lexer 
 (
 scanner
@@ -274,7 +277,8 @@ begin code input len = do alexSetStartCode code; alexMonadScan
 token t input len = return (t input len)
 
 
-data Lexeme = L { id :: Int,
+id = tokenId
+data Lexeme = L { tokenId :: Int,
                   startpos ::AlexPosn,
                   len :: Int,
                   lexClass :: LexemeClass,
@@ -345,7 +349,7 @@ lexError s = do
        else "charcode " ++ (show $ ord c)
 
 tokenSentinel= 
- L { Language.CSPM.Lexer.id = -1
+ L { tokenId = -1
    , startpos = AlexPn 0 0 0
    , len =0
    ,lexClass =error "CSPLexer.x illegal access tokenSentinel"

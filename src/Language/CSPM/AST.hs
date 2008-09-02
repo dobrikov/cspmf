@@ -6,8 +6,9 @@ where
 
 type TokenId = Int
 data SrcLoc
-  = SrcPos TokenId
-  | SrcSpan TokenId TokenId
+  = TokPos TokenId
+  | TokSpan TokenId TokenId
+  | NoLocation
   deriving (Show,Eq,Ord)
 
 type Label = SrcLoc

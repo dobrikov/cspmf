@@ -2,7 +2,9 @@
 {-# LANGUAGE ImplicitParams #-}
 module Language.CSPM.Parser where
 import Language.CSPM.AST
-import Language.CSPM.Lexer (Lexeme(..), LexemeClass(..),showToken)
+
+import qualified Language.CSPM.Lexer as Lexer (Lexeme(..), LexemeClass(..),showToken,tokenSentinel)
+import Language.CSPM.Lexer as Lexer (Lexeme,LexemeClass(..))
 
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec hiding (eof,notFollowedBy,anyToken,label)
@@ -33,24 +35,26 @@ countGt env = env {gtCounter = gtCounter env +1 }
 data LastChannelDir = WasIn | WasOut deriving Show
 data GtMode=GtNoLimit | GtLimit Int deriving Show
 
+getNextPos :: PT Lexeme
+getNextPos = do
+  tokenList <-getInput
+  case tokenList of
+    (hd:_) -> return hd
+    [] -> return Lexer.tokenSentinel
 
---Modify :: (PState -> PState ) -> PT ()
---modify = Text.Parsec.Prim.updateState
-
-getNextPos :: PT SrcLoc
-getNextPos = error "getNextpos"
-
-getLastPos :: PT SrcLoc
-getLastPos = error "getLastPos"
+getLastPos :: PT Lexeme
+getLastPos = getStates lastTok
 
 getPos :: PT SrcLoc
-getPos = error "getPos"
+getPos = do
+  t<-getNextPos 
+  return $ mkSrcPos t
 
-mkSrcSpan :: SrcLoc -> SrcLoc -> SrcLoc
-mkSrcSpan = error "mkSrcSpan"
+mkSrcSpan :: Lexeme -> Lexeme -> SrcLoc
+mkSrcSpan b e= TokSpan (Lexer.tokenId b) (Lexer.tokenId e)
 
-mkSrcPos :: SrcLoc -> SrcLoc
-mkSrcPos = error "mkSrcPos"
+mkSrcPos :: Lexeme -> SrcLoc
+mkSrcPos = TokPos . Lexer.tokenId
 
 withLoc :: PT a -> PT (Labeled a)
 withLoc a = do
@@ -360,7 +364,7 @@ opTable =
      ,Infix (do
         gtSym
         pos <- getPos
-        return $ (\a b-> Labeled (mkSrcPos pos) $ Fun2 ">" a b)
+        return $ (\a b-> Labeled pos $ Fun2 ">" a b)
       ) AssocLeft
     ]
    ,[ Prefix ( cspKey "not" >> unOp NotExp )]
@@ -394,13 +398,13 @@ opTable =
   nfun1 op = do
     pos<-getPos
     cspSym op
-    return $ (\a -> Labeled (mkSrcPos pos) $ Fun1 op a)
+    return $ (\a -> Labeled pos $ Fun1 op a)
 
   nfun2 :: String -> PT (LExp -> LExp -> LExp)
   nfun2 op = do
     pos<-getPos
     cspSym op
-    return $ (\a b -> Labeled (mkSrcPos pos) $ Fun2 op a b)
+    return $ (\a b -> Labeled pos $ Fun2 op a b)
 
   binOp :: (LExp -> LExp -> Exp) -> PT (LExp -> LExp -> LExp)
   binOp op = do
@@ -446,8 +450,8 @@ this may interact with normal function -application !
 funApplyImplicit :: PT (LExp -> LExp)
 funApplyImplicit = do
   args <- parseFunArgs
-  env<-getPos
-  return $ (\fkt -> Labeled (mkSrcPos env) $ CallFunction fkt args )
+  pos <-getPos
+  return $ (\fkt -> Labeled pos $ CallFunction fkt args )
 
 
 -- this is complicated and meight as well be buggy !
@@ -517,7 +521,7 @@ proc_op_lparallel :: PT (LExp -> LExp -> LExp)
 proc_op_lparallel = try $ do
   ren <- parseLinkList
   p <- getPos
-  return $ (\p1 p2 -> Labeled (mkSrcPos p) $ ProcLinkParallel ren p1 p2)
+  return $ (\p1 p2 -> Labeled p $ ProcLinkParallel ren p1 p2)
 
 procRenaming :: PT (LExp -> LExp)
 procRenaming = do
@@ -532,8 +536,8 @@ procOneRenaming = try $ do
   cspSym "]]"
   p<-getPos
   case gens of
-    Nothing -> return $ (\p1 -> Labeled (mkSrcPos p) $ ProcRenaming ren p1)
-    Just g -> return $ (\p1 -> Labeled (mkSrcPos p) $ ProcRenamingComprehension ren g p1 )
+    Nothing -> return $ (\p1 -> Labeled p $ ProcRenaming ren p1)
+    Just g -> return $ (\p1 -> Labeled p $ ProcRenamingComprehension ren g p1 )
 
 parseLinkList :: PT LLinkList
 parseLinkList = withLoc $ do
@@ -960,7 +964,7 @@ getStates sel = do
   st <- getState
   return $ sel st
 
-primExUpdatePos pos (L i _ _ _ _) _ 
+primExUpdatePos pos (Lexer.L i _ _ _ _) _ 
   = newPos (sourceName pos) (-1) i
 
 --primExUpdateState _ (L id (AlexPn o l c) _ _ _) _ st = st { lastTok =id}
@@ -972,10 +976,10 @@ improve this
 -}
 
 anyToken :: PT Lexeme
-anyToken = tokenPrimEx showToken primExUpdatePos (Just primExUpdateState) Just
+anyToken = tokenPrimEx Lexer.showToken primExUpdatePos (Just primExUpdateState) Just
 
 notFollowedBy :: PT Lexeme -> PT ()
-notFollowedBy p  = try (do{ c <- p; unexpected $ showToken c }
+notFollowedBy p  = try (do{ c <- p; unexpected $ Lexer.showToken c }
                        <|> return ()
                        )
 
@@ -988,5 +992,5 @@ eof :: PT ()
 eof  = notFollowedBy anyToken <?> "end of input"
 
 
-mytoken test = tokenPrimEx showToken primExUpdatePos (Just primExUpdateState) testToken
-  where testToken (L _ _ _ c s)   = test (c,s)
+mytoken test = tokenPrimEx Lexer.showToken primExUpdatePos (Just primExUpdateState) testToken
+  where testToken (Lexer.L _ _ _ c s)   = test (c,s)
