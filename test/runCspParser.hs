@@ -12,7 +12,6 @@ import System.Exit
 import Control.Monad
 
 main = do
-  putStrLn "runCspParser.hs"
   args <- getArgs
   when (null args) $ do
     putStrLn "Start with a filename argument"
@@ -30,4 +29,21 @@ main = do
         exitFailure
       Right ast -> do
         putStrLn $ show ast
-        exitWith ExitSuccess
+--        exitWith ExitSuccess
+{-
+haskell bug : do not call exitWith ExitSuccess
+otherwise:
+../runCspParser "s.csp" > s.csp.ast
+will leaf s.csp.ast empty for small files "s.csp"
+(Without redirection, output looks fine with exitWith
+-}
+
+
+
+{-
+to build all AST for the testcases do
+
+cd cspm
+for i in $(ls *) ; do echo $i ; ../runCspParser.hs $i >../ast/$i.ast ; done
+
+-}

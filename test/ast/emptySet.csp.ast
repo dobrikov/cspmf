@@ -1,0 +1,1 @@
+Labeled {label = TokSpan 0 6, unLabel = Module [Labeled {label = TokSpan 0 0, unLabel = FunBind (Labeled {label = TokSpan 0 0, unLabel = Ident {unIdent = "Q"}}) [FunCase [[Labeled {label = TokSpan 2 3, unLabel = EmptySetPat}]] (Labeled {label = TokSpan 6 6, unLabel = Stop})]}]}
