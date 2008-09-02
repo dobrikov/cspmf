@@ -1,0 +1,34 @@
+Name:                CSPM-Parser
+Version:             0.22
+
+Description:         Lexer and Parser for CSPM
+License:             OtherLicense
+category:            Language
+License-File:        License
+Author:              2006-2008 Marc Fontaine
+Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>
+cabal-Version:       >= 1.2
+build-type: Simple
+Extra-source-files:
+
+flag testing {
+  description : Testing mode
+  default:     False
+}
+
+
+library
+  if flag(testing) {
+    buildable: False
+  }
+
+  Build-Depends:       base,containers,array,parsec >=2.1.0.0 && < 3.0 ,pretty,mtl,haskell-src,haskell98
+  Hs-Source-Dirs:       src
+  Exposed-modules:
+    Language.CSPM.AST
+    Language.CSPM.Parser
+  Other-modules:       
+  Extensions: CPP
+  GHC-Options: -funbox-strict-fields -O2 -fasm -Wall -optl-Wl,-s -fno-warn-missing-signatures
+  Other-modules:
+    Language.CSPM.Lexer
