@@ -9,6 +9,7 @@ import Language.CSPM.Parser
 import System.Environment
 import System.Cmd
 import System.Exit
+import System.IO
 import Control.Monad
 
 main = do
@@ -18,32 +19,26 @@ main = do
     exitFailure
   let fileName = head args
   src <- readFile fileName
-  t <- runScannerInclude src
+  t <- lexInclude src
   case t of
     Left e -> do
       putStrLn $ "LexError : " ++ show e
       exitFailure
-    Right tl -> case runCspParser fileName tl of
+    Right tl -> case parseCSP fileName tl of
       Left e -> do
         putStrLn $ "ParseError : " ++ show e
         exitFailure
       Right ast -> do
         putStrLn $ show ast
---        exitWith ExitSuccess
-{-
-haskell bug : do not call exitWith ExitSuccess
-otherwise:
-../runCspParser "s.csp" > s.csp.ast
-will leaf s.csp.ast empty for small files "s.csp"
-(Without redirection, output looks fine with exitWith
--}
+        hFlush stderr
+        hFlush stdout
+        exitWith ExitSuccess
 
-
+ 
 
 {-
-to build all AST for the testcases do
+to build all ASTs for the testcases do
 
 cd cspm
 for i in $(ls *) ; do echo $i ; ../runCspParser.hs $i >../ast/$i.ast ; done
-
 -}

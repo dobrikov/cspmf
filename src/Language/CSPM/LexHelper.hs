@@ -1,7 +1,7 @@
 module Language.CSPM.LexHelper
 (
-   runScannerInclude
-  ,runScannerPlain
+   lexInclude
+  ,lexPlain
 )
 where
 
@@ -9,19 +9,18 @@ import Language.CSPM.Lexer as Lexer (Lexeme(..),LexemeClass(..),LexError(..),sca
 
 {- todo : use an error monad -}
 
-runScannerInclude :: String -> IO (Either LexError [Lexeme])
-runScannerInclude src = do
+lexInclude :: String -> IO (Either LexError [Lexeme])
+lexInclude src = do
   case scanner src of
     Left err -> return $ Left err
     Right toks -> do
       tokenIncl <- processIncludeAndReverse toks
       case tokenIncl of
         Left err -> return $ Left err
-        Right tokenIncl -> return $ Right$ filter ( not . tokIsIgnored ) tokenIncl
+        Right tokenIncl -> return $ Right tokenIncl
 
--- returns a reversed list of the tokens
-runScannerPlain :: String -> Either LexError [Lexeme]
-runScannerPlain src = scanner src
+lexPlain :: String -> Either LexError [Lexeme]
+lexPlain src = fmap reverse $ scanner src
 
 processIncludeAndReverse :: [Lexeme] -> IO (Either LexError [Lexeme] )
 processIncludeAndReverse tokens = picl_acc tokens []
@@ -45,18 +44,3 @@ processIncludeAndReverse tokens = picl_acc tokens []
       ,lexEMsg = "Include without filename" 
       }
   picl_acc (h:rest) acc = picl_acc rest $ h:acc
-
-tokIsIgnored :: Lexeme -> Bool
-tokIsIgnored (L _ _ _ LLComment _) = True
-tokIsIgnored (L _ _ _ LCSPFDR _) = True
-tokIsIgnored (L _ _ _ LBComment _) = True
-tokIsIgnored _ = False
-
-tokIsComment :: Lexeme -> Bool
-tokIsComment (L _ _ _ LLComment _) = True
-tokIsComment (L _ _ _ LBComment _) = True
-tokIsComment _ = False
-
-tokIsFDR :: Lexeme -> Bool
-tokIsFDR (L _ _ _ LCSPFDR _) = True
-tokIsFDR _ = False

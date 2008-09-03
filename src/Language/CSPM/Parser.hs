@@ -2,9 +2,9 @@
 {-# LANGUAGE ImplicitParams #-}
 module Language.CSPM.Parser
 (
-  runScannerInclude
- ,runScannerPlain
- ,runCspParser
+  lexInclude
+ ,lexPlain
+ ,parseCSP
 )
 where
 import Language.CSPM.AST
@@ -12,7 +12,7 @@ import Language.CSPM.AST
 import qualified Language.CSPM.Lexer as Lexer (Lexeme(..), LexemeClass(..),showToken,tokenSentinel)
 import Language.CSPM.Lexer as Lexer (Lexeme,LexemeClass(..))
 
-import Language.CSPM.LexHelper (runScannerInclude,runScannerPlain)
+import Language.CSPM.LexHelper (lexInclude,lexPlain)
 
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec hiding (eof,notFollowedBy,anyToken,label)
@@ -23,9 +23,9 @@ import Prelude hiding (exp)
 
 type PT a= GenParser Lexeme PState a
 
-runCspParser :: SourceName -> [Lexeme] -> Either ParseError (Labeled Module)
-runCspParser filename tokenList
-  = runParser parseModule initialPState filename tokenList
+parseCSP :: SourceName -> [Lexeme] -> Either ParseError (Labeled Module)
+parseCSP filename tokenList
+  = runParser parseModule initialPState filename $ filterIgnoredToken tokenList
 
 data PState
  = PState {
@@ -1014,3 +1014,22 @@ eof  = notFollowedBy anyToken <?> "end of input"
 
 mytoken test = tokenPrimEx Lexer.showToken primExUpdatePos (Just primExUpdateState) testToken
   where testToken (Lexer.L _ _ _ c s)   = test (c,s)
+
+
+filterIgnoredToken :: [Lexeme] -> [Lexeme]
+filterIgnoredToken = filter ( not . tokenIsIgnored)
+
+tokenIsIgnored :: Lexeme -> Bool
+tokenIsIgnored (Lexer.L _ _ _ LLComment _) = True
+tokenIsIgnored (Lexer.L _ _ _ LCSPFDR _) = True
+tokenIsIgnored (Lexer.L _ _ _ LBComment _) = True
+tokenIsIgnored _ = False
+
+tokenIsComment :: Lexeme -> Bool
+tokenIsComment (Lexer.L _ _ _ LLComment _) = True
+tokenIsComment (Lexer.L _ _ _ LBComment _) = True
+tokenIsComment _ = False
+
+tokenIsFDR :: Lexeme -> Bool
+tokenIsFDR (Lexer.L _ _ _ LCSPFDR _) = True
+tokenIsFDR _ = False
