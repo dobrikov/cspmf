@@ -6,6 +6,9 @@ module Language.CSPM.AST
 where
 
 import Data.Typeable
+import Data.IntMap (IntMap)
+
+type AstAnnotation x = IntMap x
 
 newtype TokenId = TokenId {unTokenId :: Int}
   deriving (Show,Eq,Ord,Enum,Typeable)

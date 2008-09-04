@@ -30,6 +30,7 @@ library
   Exposed-modules:
     Language.CSPM.AST
     Language.CSPM.Parser
+    Language.CSPM.Rename
   Other-modules:
     Language.CSPM.Lexer
     Language.CSPM.LexHelper
