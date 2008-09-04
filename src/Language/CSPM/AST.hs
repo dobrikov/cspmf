@@ -1,39 +1,36 @@
 -- todo : use a datatype for build-ins / operators
 -- remove all "unparsed" strings
 
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 module Language.CSPM.AST
 where
 
 import Data.Typeable
 
-type TokenId = Int
+newtype TokenId = TokenId {unTokenId :: Int}
+  deriving (Show,Eq,Ord,Enum,Typeable)
+
+mkTokenId :: Int -> TokenId
+mkTokenId = TokenId
+
+newtype NodeId = NodeId {unNodeId :: Int}
+  deriving (Show,Eq,Ord,Enum,Typeable)
+
+mkNodeId :: Int -> NodeId
+mkNodeId = NodeId
+
 data SrcLoc
   = TokPos TokenId
   | TokSpan TokenId TokenId
   | NoLocation
   deriving (Show,Eq,Ord,Typeable)
 
-type Label = SrcLoc
+data Labeled t = Labeled {
+    nodeId :: NodeId
+   ,unLabel :: t
+   ,srcLoc  :: SrcLoc
+   } deriving (Show,Eq,Ord,Typeable)
 
-data Labeled t = Labeled {label :: Label, unLabel :: t}
-  deriving (Show,Eq,Ord,Typeable)
-
-instance Functor Labeled where
-  fmap f x = Labeled (label x) (f $ unLabel x)
- 
-withLabel :: ( Label -> a -> b ) -> Labeled a -> Labeled b
-withLabel f x = Labeled (label x) (f (label x) (unLabel x))
-
-withLabelM :: 
-  Monad m => ( Label -> a -> m b ) -> Labeled a -> m (Labeled b)
-withLabelM f x = do
-  let l = label x
-  r <- f l $ unLabel x
-  return $ Labeled l r 
-
-labeled :: Label -> t -> Labeled t
-labeled = Labeled
 
 data Module = Module [LDecl]
   deriving (Show,Eq,Ord,Typeable)
@@ -48,7 +45,8 @@ data Ident
 data UniqueIdent = UniqueIdent
   {
    uniqueIdentId :: Int
-  ,bindingSide :: Label
+  ,bindingSide :: NodeId
+  ,bindingLoc  :: SrcLoc
   ,idType      :: IDType
   ,realName    :: String
   } deriving (Show,Eq,Ord,Typeable)
@@ -189,3 +187,35 @@ type LConstructor = Labeled Constructor
 data Constructor
   = Constructor LIdent (Maybe LTypeDef) 
   deriving (Show,Eq,Ord,Typeable)
+
+
+
+{-
+some helper functions
+-}
+{- does not make sense if nodId should be unique -}
+instance Functor Labeled where
+  fmap f x = x {unLabel = f $ unLabel x }
+
+withLabel :: ( NodeId -> a -> b ) -> Labeled a -> Labeled b
+withLabel f x = x {unLabel = f (nodeId x) (unLabel x) }
+
+mkLabeledNode :: (NodeIdSupply m) => SrcLoc -> t -> m (Labeled t)
+mkLabeledNode loc node = do
+  i <- getNewNodeId
+  return $ Labeled {
+    nodeId = i
+   ,srcLoc = loc
+   ,unLabel = node }
+
+
+-- user must supply a unique NodeId
+unsafeMkLabeledNode :: NodeId -> SrcLoc -> t -> Labeled t
+unsafeMkLabeledNode i loc node
+  = Labeled {
+    nodeId = i
+   ,srcLoc = loc
+   ,unLabel = node }
+
+class (Monad m) => NodeIdSupply m where
+  getNewNodeId :: m NodeId

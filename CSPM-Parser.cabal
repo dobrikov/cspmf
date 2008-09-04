@@ -25,12 +25,11 @@ library
   Build-Depends:       base,containers,array,parsec >=2.1.0.0 && < 3.0 ,pretty,mtl,haskell-src,haskell98
 
   GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s
-  Extensions: DeriveDataTypeable 
+  Extensions: DeriveDataTypeable, GeneralizedNewtypeDeriving
   Hs-Source-Dirs:       src
   Exposed-modules:
     Language.CSPM.AST
     Language.CSPM.Parser
-    Language.CSPM.Rename
   Other-modules:
     Language.CSPM.Lexer
     Language.CSPM.LexHelper

@@ -17,6 +17,7 @@ import Language.CSPM.LexHelper (lexInclude,lexPlain)
 import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec hiding (eof,notFollowedBy,anyToken,label)
 import Text.ParserCombinators.Parsec.Pos (newPos)
+import Control.Monad.State
 
 import Data.List
 import Prelude hiding (exp)
@@ -29,10 +30,11 @@ parseCSP filename tokenList
 
 data PState
  = PState {
-  lastTok:: Lexeme
- ,lastChannelDir:: LastChannelDir
- ,gtCounter::Int
- ,gtMode::GtMode
+  lastTok        :: Lexeme
+ ,lastChannelDir :: LastChannelDir
+ ,gtCounter      :: Int
+ ,gtMode         :: GtMode
+ ,nodeIdSupply   :: NodeId
  } deriving Show
 
 initialPState :: PState
@@ -41,6 +43,7 @@ initialPState = PState {
   ,lastChannelDir = WasOut
   ,gtCounter = 0
   ,gtMode = GtNoLimit
+  ,nodeIdSupply = mkNodeId 0
   }
 
 setLastChannelDir :: LastChannelDir -> PState -> PState 
@@ -54,6 +57,16 @@ countGt env = env {gtCounter = gtCounter env +1 }
 
 data LastChannelDir = WasIn | WasOut deriving Show
 data GtMode=GtNoLimit | GtLimit Int deriving Show
+
+instance NodeIdSupply (GenParser Lexeme PState) where
+  getNewNodeId = do
+    i <- gets nodeIdSupply
+    modify $ \s -> s { nodeIdSupply = succ $ nodeIdSupply s}
+    return i  
+
+instance MonadState PState (GenParser Lexeme PState) where
+  get = getState
+  put = setState
 
 getNextPos :: PT Lexeme
 getNextPos = do
@@ -71,31 +84,24 @@ getPos = do
   return $ mkSrcPos t
 
 mkSrcSpan :: Lexeme -> Lexeme -> SrcLoc
-mkSrcSpan b e= TokSpan (Lexer.tokenId b) (Lexer.tokenId e)
+mkSrcSpan b e= TokSpan (mkTokenId $ Lexer.tokenId b) (mkTokenId $ Lexer.tokenId e)
 
 mkSrcPos :: Lexeme -> SrcLoc
-mkSrcPos = TokPos . Lexer.tokenId
+mkSrcPos l = TokPos $ mkTokenId $ Lexer.tokenId l
 
 withLoc :: PT a -> PT (Labeled a)
 withLoc a = do
   s <- getNextPos
   av <- a
   e <- getLastPos
-  return $ Labeled {
-      label = mkSrcSpan s e
-     ,unLabel = av
-    }
-
+  mkLabeledNode (mkSrcSpan s e) av
 
 inSpan :: (a -> b ) -> PT a -> PT (Labeled b) 
 inSpan constr exp = do
   s <- getNextPos
   l <- exp
   e <- getLastPos
-  return $ Labeled {
-     label = mkSrcSpan s e
-    ,unLabel = constr l
-    }
+  mkLabeledNode (mkSrcSpan s e) $ constr l
 
 parseModule :: PT (Labeled Module)
 parseModule = withLoc $ do
@@ -384,7 +390,8 @@ opTable =
      ,Infix (do
         gtSym
         pos <- getPos
-        return $ (\a b-> Labeled pos $ Fun2 ">" a b)
+        i <- getNewNodeId
+        return $ (\a b-> unsafeMkLabeledNode i pos $ Fun2 ">" a b)
       ) AssocLeft
     ]
    ,[ Prefix ( cspKey "not" >> unOp NotExp )]
@@ -417,24 +424,28 @@ opTable =
   nfun1 :: String -> PT (LExp -> LExp)
   nfun1 op = do
     pos<-getPos
+    i <- getNewNodeId
     cspSym op
-    return $ (\a -> Labeled pos $ Fun1 op a)
+    return $ (\a -> unsafeMkLabeledNode i pos $ Fun1 op a)
 
   nfun2 :: String -> PT (LExp -> LExp -> LExp)
   nfun2 op = do
     pos<-getPos
+    i <- getNewNodeId
     cspSym op
-    return $ (\a b -> Labeled pos $ Fun2 op a b)
+    return $ (\a b -> unsafeMkLabeledNode i pos $ Fun2 op a b)
 
   binOp :: (LExp -> LExp -> Exp) -> PT (LExp -> LExp -> LExp)
   binOp op = do
     pos<-getLastPos
-    return $ (\a b-> Labeled (mkSrcPos pos) $ op a b)
+    i <- getNewNodeId
+    return $ (\a b-> unsafeMkLabeledNode i (mkSrcPos pos) $ op a b)
 
   unOp :: (LExp -> Exp) -> PT (LExp -> LExp )
   unOp op = do
     pos<-getLastPos
-    return $ (\a -> Labeled (mkSrcPos pos) $ op a)
+    i <- getNewNodeId
+    return $ (\a -> unsafeMkLabeledNode i (mkSrcPos pos) $ op a)
 
 
 parseExp :: PT LExp
@@ -457,7 +468,7 @@ parseDotExpOf baseExp = do
   ePos <-getLastPos
   case dotExp of 
      [x] -> return x
-     l -> return $ Labeled (mkSrcSpan sPos ePos) $ DotTuple l
+     l -> mkLabeledNode (mkSrcSpan sPos ePos) $ DotTuple l
 
 {-
 place (term) as a suffix behind any term to
@@ -471,7 +482,8 @@ funApplyImplicit :: PT (LExp -> LExp)
 funApplyImplicit = do
   args <- parseFunArgs
   pos <-getPos
-  return $ (\fkt -> Labeled pos $ CallFunction fkt args )
+  i <- getNewNodeId
+  return $ (\fkt -> unsafeMkLabeledNode i pos $ CallFunction fkt args )
 
 
 -- this is complicated and meight as well be buggy !
@@ -535,13 +547,15 @@ proc_op_aparallel = try $ do
   a2<-parseExp_noPrefix
   cspSym "]"
   e<-getLastPos
-  return $ (\p1 p2 -> Labeled (mkSrcSpan s e ) $ ProcAParallel a1 a2 p1 p2 )
+  i <- getNewNodeId
+  return $ (\p1 p2 -> unsafeMkLabeledNode i (mkSrcSpan s e ) $ ProcAParallel a1 a2 p1 p2 )
 
 proc_op_lparallel :: PT (LExp -> LExp -> LExp)
 proc_op_lparallel = try $ do
   ren <- parseLinkList
   p <- getPos
-  return $ (\p1 p2 -> Labeled p $ ProcLinkParallel ren p1 p2)
+  i <- getNewNodeId
+  return $ (\p1 p2 -> unsafeMkLabeledNode i p $ ProcLinkParallel ren p1 p2)
 
 procRenaming :: PT (LExp -> LExp)
 procRenaming = do
@@ -555,9 +569,10 @@ procOneRenaming = try $ do
   gens <- optionMaybe parseComprehension
   cspSym "]]"
   p<-getPos
+  i <- getNewNodeId
   case gens of
-    Nothing -> return $ (\p1 -> Labeled p $ ProcRenaming ren p1)
-    Just g -> return $ (\p1 -> Labeled p $ ProcRenamingComprehension ren g p1 )
+    Nothing -> return $ (\p1 -> unsafeMkLabeledNode i p $ ProcRenaming ren p1)
+    Just g -> return $ (\p1 -> unsafeMkLabeledNode i p $ ProcRenamingComprehension ren g p1 )
 
 parseLinkList :: PT LLinkList
 parseLinkList = withLoc $ do
@@ -598,7 +613,7 @@ parsePatternAlso = ( do
   ePos <- getLastPos
   case concList of 
     [x] -> return x
-    l -> return $ Labeled  (mkSrcSpan sPos ePos) $ Also l
+    l -> mkLabeledNode  (mkSrcSpan sPos ePos) $ Also l
   ) 
   <?> "pattern"
 
@@ -609,7 +624,7 @@ parsePatternAppend = do
   ePos <- getLastPos
   case concList of 
     [x] -> return x
-    l -> return $ Labeled (mkSrcSpan sPos ePos) $ Append l
+    l -> mkLabeledNode (mkSrcSpan sPos ePos) $ Append l
 
 parsePatternDot :: (?innerDot::Bool) => PT LPattern
 parsePatternDot = case ?innerDot of
@@ -620,7 +635,7 @@ parsePatternDot = case ?innerDot of
     e <- getLastPos
     case dList of
       [p] -> return p
-      l -> return $ Labeled (mkSrcSpan s e) $ DotPat l
+      l -> mkLabeledNode (mkSrcSpan s e) $ DotPat l
 
 parsePatternCore :: (?innerDot::Bool) => PT LPattern
 parsePatternCore =
@@ -672,15 +687,15 @@ funBind = do
   let flgr = groupBy
               (\a b -> (unIdent $ unLabel $ fst $ a) == (unIdent $ unLabel $ fst b))
               flist
-  return $ map mkFun flgr
+  mapM mkFun flgr
   where 
-     mkFun :: [(LIdent,(FunArgs,LExp))] -> LDecl
-     mkFun l = 
+     mkFun :: [(LIdent,(FunArgs,LExp))] -> PT LDecl
+     mkFun l = do
         let
           fname = fst $ head l
-          pos = label fname
+          pos = srcLoc fname
           cases = map ((uncurry FunCase) . snd  ) l
-        in Labeled pos $ FunBind fname cases
+        mkLabeledNode pos $ FunBind fname cases
 
 -- parse a single function-case
 sfun :: PT (LIdent,(FunArgs,LExp))
@@ -847,7 +862,8 @@ procOpSharing = do
   spos <- getNextPos
   al <- between ( cspSym "[|" ) (cspSym "|]") parseExp
   epos <- getLastPos
-  return $ (\a b  -> Labeled (mkSrcSpan spos epos) $ Fun3 "sharing" al a b)
+  i <- getNewNodeId
+  return $ (\a b  -> unsafeMkLabeledNode i (mkSrcSpan spos epos) $ Fun3 "sharing" al a b)
 
 closureExp :: PT LExp
 closureExp = inSpan Closure $
