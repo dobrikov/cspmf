@@ -35,9 +35,6 @@ data Labeled t = Labeled {
    } deriving (Show,Eq,Ord,Typeable)
 
 
-data Module = Module [LDecl]
-  deriving (Show,Eq,Ord,Typeable)
-
 type LIdent = Labeled Ident
 
 data Ident 
@@ -58,6 +55,10 @@ data IDType
   = VarID | ChannelID | NameTypeID | FunID Int | IdentID
   | ConstrID String | DataTypeID | TransparentID
   deriving (Show,Eq,Ord,Typeable)
+
+data Module = Module [LDecl]
+  deriving (Show,Eq,Ord,Typeable)
+
 
 {-
 LProc is just a typealias for better readablility
