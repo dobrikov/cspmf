@@ -1,23 +1,24 @@
 -- todo : use a datatype for build-ins / operators
 -- remove all "unparsed" strings
-
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 module Language.CSPM.AST
 where
 
-import Data.Typeable
+import Data.Typeable (Typeable)
+import Data.Generics.Basics (Data)
+
 import Data.IntMap (IntMap)
 
 type AstAnnotation x = IntMap x
 
 newtype TokenId = TokenId {unTokenId :: Int}
-  deriving (Show,Eq,Ord,Enum,Typeable)
+  deriving (Show,Eq,Ord,Enum,Typeable, Data)
 
 mkTokenId :: Int -> TokenId
 mkTokenId = TokenId
 
 newtype NodeId = NodeId {unNodeId :: Int}
-  deriving (Show,Eq,Ord,Enum,Typeable)
+  deriving (Show,Eq,Ord,Enum,Typeable, Data)
 
 mkNodeId :: Int -> NodeId
 mkNodeId = NodeId
@@ -26,13 +27,13 @@ data SrcLoc
   = TokPos TokenId
   | TokSpan TokenId TokenId
   | NoLocation
-  deriving (Show,Eq,Ord,Typeable)
+  deriving (Show,Eq,Ord,Typeable, Data)
 
 data Labeled t = Labeled {
     nodeId :: NodeId
    ,unLabel :: t
    ,srcLoc  :: SrcLoc
-   } deriving (Show,Eq,Ord,Typeable)
+   } deriving (Show,Eq,Ord,Typeable, Data)
 
 
 type LIdent = Labeled Ident
@@ -40,7 +41,7 @@ type LIdent = Labeled Ident
 data Ident 
   = Ident  {unIdent :: String}
   | UIdent UniqueIdent
-  deriving (Show,Eq,Ord,Typeable)
+  deriving (Show,Eq,Ord,Typeable, Data)
 
 data UniqueIdent = UniqueIdent
   {
@@ -49,15 +50,16 @@ data UniqueIdent = UniqueIdent
   ,bindingLoc  :: SrcLoc
   ,idType      :: IDType
   ,realName    :: String
-  } deriving (Show,Eq,Ord,Typeable)
+  } deriving (Show,Eq,Ord,Typeable, Data)
 
 data IDType 
   = VarID | ChannelID | NameTypeID | FunID Int | IdentID
   | ConstrID String | DataTypeID | TransparentID
-  deriving (Show,Eq,Ord,Typeable)
+  deriving (Show,Eq,Ord,Typeable, Data)
 
+type LModule = Labeled Module
 data Module = Module [LDecl]
-  deriving (Show,Eq,Ord,Typeable)
+  deriving (Show,Eq,Ord,Typeable, Data)
 
 
 {-
@@ -115,7 +117,7 @@ data Exp
   | ProcRepLinkParallel [LCompGen] LLinkList LProc
   | ProcRepSharing [LCompGen] LExp LProc
   | PrefixExp LExp [LCommField] LProc
-  deriving (Show,Eq,Ord,Typeable)
+  deriving (Show,Eq,Ord,Typeable, Data)
 
 
 type LCommField = Labeled CommField
@@ -123,29 +125,29 @@ data CommField
   =  InComm LPattern
   | InCommGuarded LPattern LExp
   | OutComm LExp
-  deriving (Show,Eq,Ord,Typeable)
+  deriving (Show,Eq,Ord,Typeable, Data)
 
 type LLinkList = Labeled LinkList
 data LinkList
   = LinkList [LLink]
   | LinkListComprehension [LCompGen] [LLink]
-  deriving (Show,Eq,Ord,Typeable)
+  deriving (Show,Eq,Ord,Typeable, Data)
 
 type LLink = Labeled Link
-data Link = Link LExp LExp deriving (Show,Eq,Ord,Typeable)
+data Link = Link LExp LExp deriving (Show,Eq,Ord,Typeable, Data)
 
 type LRename = Labeled Rename
-data Rename = Rename LExp LExp deriving (Show,Eq,Ord,Typeable)
+data Rename = Rename LExp LExp deriving (Show,Eq,Ord,Typeable, Data)
 
 type LBuiltIn = Labeled BuiltIn
-data BuiltIn = BuiltIn String deriving (Show,Eq,Ord,Typeable)
+data BuiltIn = BuiltIn String deriving (Show,Eq,Ord,Typeable, Data)
 
  --generators inside a comprehension-expression
 type LCompGen = Labeled CompGen
 data CompGen
   = Generator LPattern LExp
   | Guard LExp
-  deriving (Show,Eq,Ord,Typeable)
+  deriving (Show,Eq,Ord,Typeable, Data)
 
 
 type LPattern = Labeled Pattern
@@ -162,12 +164,12 @@ data Pattern
   | EmptySetPat
   | ListEnumPat [LPattern]
   | TuplePat [LPattern]
-  deriving (Show,Eq,Ord,Typeable)
+  deriving (Show,Eq,Ord,Typeable, Data)
 
 type LDecl = Labeled Decl
 data Decl
   = PatBind LPattern LExp
-  | FunBind LIdent [FunCase]
+  | FunBind LIdent [FunCase] -- todo : uses Labeled
   | AssertRef LExp String LExp
   | AssertBool LExp
   | Transparent [LIdent]
@@ -176,21 +178,21 @@ data Decl
   | NameType LIdent LTypeDef
   | Channel [LIdent] (Maybe LTypeDef)
   | Print LExp
-  deriving (Show,Eq,Ord,Typeable)
+  deriving (Show,Eq,Ord,Typeable, Data)
 
 type FunArgs = [[LPattern]] -- CSPM confusion of currying/tuples
-data FunCase = FunCase FunArgs LExp   deriving (Show,Eq,Ord,Typeable)
+data FunCase = FunCase FunArgs LExp   deriving (Show,Eq,Ord,Typeable, Data)
 
 type LTypeDef = Labeled TypeDef
 data TypeDef
   = TypeTuple [LExp]
   | TypeDot [LExp]
-  deriving (Show,Eq,Ord,Typeable)
+  deriving (Show,Eq,Ord,Typeable, Data)
 
 type LConstructor = Labeled Constructor
 data Constructor
   = Constructor LIdent (Maybe LTypeDef) 
-  deriving (Show,Eq,Ord,Typeable)
+  deriving (Show,Eq,Ord,Typeable, Data)
 
 
 

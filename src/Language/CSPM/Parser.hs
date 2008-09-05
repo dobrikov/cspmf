@@ -24,7 +24,7 @@ import Prelude hiding (exp)
 
 type PT a= GenParser Lexeme PState a
 
-parseCSP :: SourceName -> [Lexeme] -> Either ParseError (Labeled Module)
+parseCSP :: SourceName -> [Lexeme] -> Either ParseError LModule
 parseCSP filename tokenList
   = runParser parseModule initialPState filename $ filterIgnoredToken tokenList
 
