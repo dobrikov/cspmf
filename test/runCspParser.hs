@@ -20,7 +20,7 @@ main = do
     exitFailure
   let fileName = head args
   src <- readFile fileName
-  putStrLn $ "Reading File " ++ src
+  putStrLn $ "Reading File " ++ fileName
   t <- lexInclude src
   case t of
     Left e -> do
@@ -51,5 +51,5 @@ main = do
 to build all ASTs for the testcases do
 
 cd cspm
-for i in $(ls *) ; do echo $i ; ../runCspParser.hs $i ; done
+for i in $(ls *.csp *.fdr2) ; do ../runCspParser.hs $i ; done
 -}
