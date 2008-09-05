@@ -24,7 +24,7 @@ library
 
   Build-Depends:       base,containers,array,parsec >=2.1.0.0 && < 3.0 ,pretty,mtl,haskell-src,haskell98
 
-  GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s
+  GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s -Wall
   Extensions: DeriveDataTypeable, GeneralizedNewtypeDeriving
   Hs-Source-Dirs:       src
   Exposed-modules:
