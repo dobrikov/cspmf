@@ -14,7 +14,7 @@ import Language.CSPM.Lexer as Lexer (Lexeme,LexemeClass(..))
 
 import Language.CSPM.LexHelper (lexInclude,lexPlain)
 
-import Text.ParserCombinators.Parsec.ExprM
+import Text.ParserCombinators.Parsec.Expr
 import Text.ParserCombinators.Parsec hiding (eof,notFollowedBy,anyToken,label)
 import Text.ParserCombinators.Parsec.Pos (newPos)
 import Control.Monad.State
@@ -362,42 +362,43 @@ parenExpOrTupleEnum = withLoc $ do
     _ -> return  $ TupleExp body
 
 
--- Warning : postfixM and Prefix may not be nested
+-- Warning : Postfix and Prefix may not be nested
 -- "not not true" does not parse !!
 opTable =
    [
---   [ infixM ( cspSym "." >> binOp mkDotPair) AssocRight ]
+--   [ Infix ( cspSym "." >> binOp mkDotPair) AssocRight ]
 --   ,
 -- dot.expression moved to a seperate Step
 -- ToDo : fix funApply and procRenaming
-    [ postfixM funApplyImplicit ]
-   ,[ postfixM procRenaming ]
-   ,[ infixM (nfun2 "^" ) AssocLeft,
-      prefixM (nfun1 "#" ) -- different from Roscoe Book
+    [ Postfix funApplyImplicit ]
+   ,[ Postfix procRenaming ]
+   ,[ Infix (nfun2 "^" ) AssocLeft,
+      Prefix (nfun1 "#" ) -- different from Roscoe Book
     ]
-   ,[ infixM (nfun2 "*" ) AssocLeft
-     ,infixM (nfun2 "/" ) AssocLeft
-     ,infixM (nfun2 "%"  ) AssocLeft
+   ,[ Infix (nfun2 "*" ) AssocLeft
+     ,Infix (nfun2 "/" ) AssocLeft
+     ,Infix (nfun2 "%"  ) AssocLeft
     ]
-   ,[ infixM (nfun2 "+" ) AssocLeft,
-      infixM (nfun2 "-" ) AssocLeft
+   ,[ Infix (nfun2 "+" ) AssocLeft,
+      Infix (nfun2 "-" ) AssocLeft
     ]
-   ,[ infixM (nfun2 "==" ) AssocLeft
-     ,infixM (nfun2 "!=" ) AssocLeft
-     ,infixM (nfun2 ">=" ) AssocLeft
-     ,infixM (nfun2 "<=" ) AssocLeft
-     ,infixM (nfun2 "<" ) AssocLeft
-     ,infixM (do
+   ,[ Infix (nfun2 "==" ) AssocLeft
+     ,Infix (nfun2 "!=" ) AssocLeft
+     ,Infix (nfun2 ">=" ) AssocLeft
+     ,Infix (nfun2 "<=" ) AssocLeft
+     ,Infix (nfun2 "<" ) AssocLeft
+     ,Infix (do
         gtSym
         pos <- getPos
-        return $ (\a b-> mkLabeledNode pos $ Fun2 ">" a b)
+        i <- getNewNodeId
+        return $ (\a b-> unsafeMkLabeledNode i pos $ Fun2 ">" a b)
       ) AssocLeft
     ]
-   ,[ prefixM ( cspKey "not" >> unOp NotExp )]
-   ,[ infixM ( cspKey "and" >> binOp AndExp) AssocLeft ]
-   ,[ infixM ( cspKey "or" >> binOp OrExp) AssocLeft ]
-   ,[ infixM proc_op_aparallel AssocLeft ]
-   ,[ infixM proc_op_lparallel AssocLeft ]
+   ,[ Prefix ( cspKey "not" >> unOp NotExp )]
+   ,[ Infix ( cspKey "and" >> binOp AndExp) AssocLeft ]
+   ,[ Infix ( cspKey "or" >> binOp OrExp) AssocLeft ]
+   ,[ Infix proc_op_aparallel AssocLeft ]
+   ,[ Infix proc_op_lparallel AssocLeft ]
 {-
    these have moved to a sperate level of recursion
    ,[Prefix $ procRep ";"   "repSequence"
@@ -409,38 +410,42 @@ opTable =
     ,Prefix procRepSharing
     ]
 -}
-   ,[infixM procOpSharing AssocLeft ]
-   ,[infixM (nfun2 "&" ) AssocLeft]
-   ,[infixM (nfun2 ";" ) AssocLeft]
-   ,[infixM (nfun2 "/\\" ) AssocLeft]
-   ,[infixM (nfun2 "[]" ) AssocLeft]
-   ,[infixM (nfun2 "[>" ) AssocLeft]
-   ,[infixM (nfun2 "|~|" ) AssocLeft]
-   ,[infixM (nfun2 "|||" ) AssocLeft]
-   ,[infixM (nfun2 "\\" ) AssocLeft]
+   ,[ Infix procOpSharing AssocLeft ]
+   ,[Infix (nfun2 "&" ) AssocLeft]
+   ,[Infix (nfun2 ";" ) AssocLeft]
+   ,[Infix (nfun2 "/\\" ) AssocLeft]
+   ,[Infix (nfun2 "[]" ) AssocLeft]
+   ,[Infix (nfun2 "[>" ) AssocLeft]
+   ,[Infix (nfun2 "|~|" ) AssocLeft]
+   ,[Infix (nfun2 "|||" ) AssocLeft]
+   ,[Infix (nfun2 "\\" ) AssocLeft]
   ] 
   where
-  nfun1 :: String -> PT (LExp -> PT LExp)
+  nfun1 :: String -> PT (LExp -> LExp)
   nfun1 op = do
-    cspSym op
     pos<-getPos
-    return $ (\a -> mkLabeledNode pos $ Fun1 op a)
+    i <- getNewNodeId
+    cspSym op
+    return $ (\a -> unsafeMkLabeledNode i pos $ Fun1 op a)
 
-  nfun2 :: String -> PT (LExp -> LExp -> PT LExp)
+  nfun2 :: String -> PT (LExp -> LExp -> LExp)
   nfun2 op = do
     pos<-getPos
+    i <- getNewNodeId
     cspSym op
-    return $ (\a b -> mkLabeledNode pos $ Fun2 op a b)
+    return $ (\a b -> unsafeMkLabeledNode i pos $ Fun2 op a b)
 
-  binOp :: (LExp -> LExp -> Exp) -> PT (LExp -> LExp -> PT LExp)
+  binOp :: (LExp -> LExp -> Exp) -> PT (LExp -> LExp -> LExp)
   binOp op = do
     pos<-getLastPos
-    return $ (\a b-> mkLabeledNode (mkSrcPos pos) $ op a b)
+    i <- getNewNodeId
+    return $ (\a b-> unsafeMkLabeledNode i (mkSrcPos pos) $ op a b)
 
-  unOp :: (LExp -> Exp) -> PT (LExp -> PT LExp )
+  unOp :: (LExp -> Exp) -> PT (LExp -> LExp )
   unOp op = do
     pos<-getLastPos
-    return $ (\a -> mkLabeledNode (mkSrcPos pos) $ op a)
+    i <- getNewNodeId
+    return $ (\a -> unsafeMkLabeledNode i (mkSrcPos pos) $ op a)
 
 
 parseExp :: PT LExp
@@ -473,11 +478,12 @@ notice : we do not destict between f(a,b,c) and f(a)(b)(c) or f(a,b)(c)
 this is buggy for f(a)(b)(c)
 this may interact with normal function -application !
 -}
-funApplyImplicit :: PT (LExp -> PT LExp)
+funApplyImplicit :: PT (LExp -> LExp)
 funApplyImplicit = do
   args <- parseFunArgs
   pos <-getPos
-  return $ (\fkt -> mkLabeledNode pos $ CallFunction fkt args )
+  i <- getNewNodeId
+  return $ (\fkt -> unsafeMkLabeledNode i pos $ CallFunction fkt args )
 
 
 -- this is complicated and meight as well be buggy !
@@ -532,7 +538,7 @@ parseWithGtLimit maxGt parser = do
     Just p -> return p
     Nothing -> fail "contents of sequence expression"
 
-proc_op_aparallel :: PT (LExp -> LExp -> PT LExp)
+proc_op_aparallel :: PT (LExp -> LExp -> LExp)
 proc_op_aparallel = try $ do
   s <- getNextPos
   cspSym "["
@@ -541,29 +547,32 @@ proc_op_aparallel = try $ do
   a2<-parseExp_noPrefix
   cspSym "]"
   e<-getLastPos
-  return $ (\p1 p2 -> mkLabeledNode (mkSrcSpan s e ) $ ProcAParallel a1 a2 p1 p2 )
+  i <- getNewNodeId
+  return $ (\p1 p2 -> unsafeMkLabeledNode i (mkSrcSpan s e ) $ ProcAParallel a1 a2 p1 p2 )
 
-proc_op_lparallel :: PT (LExp -> LExp -> PT LExp)
+proc_op_lparallel :: PT (LExp -> LExp -> LExp)
 proc_op_lparallel = try $ do
   ren <- parseLinkList
   p <- getPos
-  return $ (\p1 p2 -> mkLabeledNode p $ ProcLinkParallel ren p1 p2)
+  i <- getNewNodeId
+  return $ (\p1 p2 -> unsafeMkLabeledNode i p $ ProcLinkParallel ren p1 p2)
 
-procRenaming :: PT (LExp -> PT LExp)
+procRenaming :: PT (LExp -> LExp)
 procRenaming = do
   rens <- many1 procOneRenaming
-  return $ (\x -> foldl (>>=) (return x) rens)
+  return $ foldl (.) Prelude.id rens
 
-procOneRenaming :: PT (LExp -> PT LExp )
+procOneRenaming :: PT (LExp -> LExp )
 procOneRenaming = try $ do
   cspSym "[["
   ren<-(sepBy parseRename (cspSym ","))
   gens <- optionMaybe parseComprehension
   cspSym "]]"
   p<-getPos
+  i <- getNewNodeId
   case gens of
-    Nothing -> return $ (\p1 -> mkLabeledNode p $ ProcRenaming ren p1)
-    Just g -> return $ (\p1 -> mkLabeledNode p $ ProcRenamingComprehension ren g p1 )
+    Nothing -> return $ (\p1 -> unsafeMkLabeledNode i p $ ProcRenaming ren p1)
+    Just g -> return $ (\p1 -> unsafeMkLabeledNode i p $ ProcRenamingComprehension ren g p1 )
 
 parseLinkList :: PT LLinkList
 parseLinkList = withLoc $ do
@@ -848,12 +857,13 @@ topDeclList = do
     e <- parseExp
     return $ Print e
 
-procOpSharing :: PT (LProc -> LProc -> PT LProc)
+procOpSharing :: PT (LProc -> LProc -> LProc)
 procOpSharing = do
   spos <- getNextPos
   al <- between ( cspSym "[|" ) (cspSym "|]") parseExp
   epos <- getLastPos
-  return $ (\a b  -> mkLabeledNode (mkSrcSpan spos epos) $ Fun3 "sharing" al a b)
+  i <- getNewNodeId
+  return $ (\a b  -> unsafeMkLabeledNode i (mkSrcSpan spos epos) $ Fun3 "sharing" al a b)
 
 closureExp :: PT LExp
 closureExp = inSpan Closure $
