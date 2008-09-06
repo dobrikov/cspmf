@@ -12,6 +12,7 @@ import System.Cmd
 import System.Exit
 import System.IO
 import Control.Monad
+import System.CPUTime
 
 main = do
   args <- getArgs
@@ -21,6 +22,7 @@ main = do
   let fileName = head args
   src <- readFile fileName
   putStrLn $ "Reading File " ++ fileName
+  startTime <- (return $ length src) >> getCPUTime
   t <- lexInclude src
   case t of
     Left e -> do
@@ -31,7 +33,10 @@ main = do
         putStrLn $ "ParseError : " ++ show e
         exitFailure
       Right ast -> do
+        endTime <- getCPUTime
         putStrLn $ "Parsing OK"
+        putStr $ "time : " ++ show (div (endTime - startTime) 1000000000)
+        putStrLn " ms"
         writeFile (fileName ++ ".ast") $ show ast
 --        putStrLn $ show ast
         case renameModule ast of
