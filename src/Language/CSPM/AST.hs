@@ -40,7 +40,7 @@ type LIdent = Labeled Ident
 
 data Ident 
   = Ident  {unIdent :: String}
-  | UIdent UniqueIdent
+  | UIdent {unUIdent :: UniqueIdent}
   deriving (Show,Eq,Ord,Typeable, Data)
 
 data UniqueIdent = UniqueIdent
@@ -58,8 +58,9 @@ data IDType
   deriving (Show,Eq,Ord,Typeable, Data)
 
 type LModule = Labeled Module
-data Module = Module [LDecl]
-  deriving (Show,Eq,Ord,Typeable, Data)
+data Module = Module {
+   moduleDecls :: [LDecl]
+  } deriving (Show,Eq,Ord,Typeable, Data)
 
 
 {-
