@@ -2,8 +2,6 @@
 * add Autoversion to packet
 * make all errors Typeable
 * add wrappers for functions that throw dynamic exceptions
-* move tokenlist into module
-
 -}
 {-# OPTIONS_GHC -fglasgow-exts #-}
 {-# LANGUAGE ImplicitParams #-}
@@ -17,15 +15,16 @@ where
 import Language.CSPM.AST
 
 import Language.CSPM.Token as Token
-  (Token(..),TokenClass(..),tokenSentinel, showToken, unTokenId )
+  (Token(..),TokenClass(..),tokenSentinel, showToken, unTokenId,AlexPosn,mkTokenId )
 
 import Language.CSPM.LexHelper (lexInclude,lexPlain,filterIgnoredToken)
 
 import Text.ParserCombinators.Parsec.ExprM
-import Text.ParserCombinators.Parsec hiding (eof,notFollowedBy,anyToken,label)
+import Text.ParserCombinators.Parsec hiding (eof,notFollowedBy,anyToken,label,ParseError,errorPos)
 import Text.ParserCombinators.Parsec.Pos (newPos)
+import qualified Text.ParserCombinators.Parsec.Error as ParsecError
+import Data.Typeable (Typeable)
 import Control.Monad.State
-
 import Data.List
 import Prelude hiding (exp)
 
@@ -33,7 +32,8 @@ type PT a= GenParser Token PState a
 
 parseCSP :: SourceName -> [Token] -> Either ParseError LModule
 parseCSP filename tokenList
-  = runParser (parseModule tokenList) initialPState filename $ filterIgnoredToken tokenList
+  = wrapParseError tokenList $
+      runParser (parseModule tokenList) initialPState filename $ filterIgnoredToken tokenList
 
 data PState
  = PState {
@@ -111,12 +111,12 @@ inSpan constr exp = do
   mkLabeledNode (mkSrcSpan s e) $ constr l
 
 parseModule :: [Token.Token] -> PT (Labeled Module)
-parseModule tokens = withLoc $ do
+parseModule tokenList = withLoc $ do
  decl<-topDeclList 
  eof <?> "end of module"
  return $ Module {
    moduleDecls = decl
-  ,moduleTokens = Just tokens
+  ,moduleTokens = Just tokenList
   }
 
 linteger :: PT String
@@ -1032,3 +1032,26 @@ mytoken :: ((TokenClass, String) -> Maybe a) -> PT a
 mytoken test = tokenPrimEx Token.showToken primExUpdatePos (Just primExUpdateState) testToken
   where testToken t@(Token {}) = test (tokenClass t, tokenString t)
 
+pprintParsecError :: ParsecError.ParseError -> String
+pprintParsecError err
+  = ParsecError.showErrorMessages "or" "unknown parse error" 
+      "expecting" "unexpected" "end of input"
+        (ParsecError.errorMessages err)
+
+data ParseError = ParseError {
+   errorMsg :: String
+  ,errorToken :: Token
+  ,errorPos   :: AlexPosn
+  } deriving (Show,Typeable)
+
+
+wrapParseError :: [Token] -> Either ParsecError.ParseError LModule -> Either ParseError LModule
+wrapParseError _ (Right ast) = Right ast
+wrapParseError tl (Left err) = Left $ ParseError {
+   errorMsg = pprintParsecError err
+  ,errorToken = errorTok
+  ,errorPos = tokenStart errorTok
+  }
+  where 
+    tokId = mkTokenId $ sourceColumn $ ParsecError.errorPos err
+    errorTok = maybe tokenSentinel id  $ find (\t -> tokenId t ==  tokId) tl
