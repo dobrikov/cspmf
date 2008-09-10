@@ -28,15 +28,18 @@ main = do
     Left e -> do
       putStrLn $ "LexError : " ++ show e
       exitFailure
-    Right tl -> case parseCSP fileName tl of
+    Right tl -> do
+     time_have_tokens <- getCPUTime
+     case parseCSP fileName tl of
       Left e -> do
         putStrLn $ "ParseError : " ++ show e
         exitFailure
       Right ast -> do
-        endTime <- getCPUTime
+        time_have_ast <- getCPUTime
         putStrLn $ "Parsing OK"
-        putStr $ "time : " ++ show (div (endTime - startTime) 1000000000)
-        putStrLn " ms"
+        putStrLn $ "lextime : " ++ show (div (time_have_tokens - startTime) 1000000000)
+        putStrLn $ "parsetime : " ++ show (div (time_have_ast - time_have_tokens) 1000000000)
+        putStrLn $ "total : " ++ show (div (time_have_ast - startTime)  1000000000)
         writeFile (fileName ++ ".ast") $ show ast
 --        putStrLn $ show ast
         case renameModule ast of

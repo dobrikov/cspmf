@@ -4,6 +4,7 @@
 module Language.CSPM.AST
 where
 
+import Data.Ix
 import Data.Typeable (Typeable)
 import Data.Generics.Basics (Data)
 
@@ -12,13 +13,13 @@ import Data.IntMap (IntMap)
 type AstAnnotation x = IntMap x
 
 newtype TokenId = TokenId {unTokenId :: Int}
-  deriving (Show,Eq,Ord,Enum,Typeable, Data)
+  deriving (Show,Eq,Ord,Enum,Ix, Typeable, Data)
 
 mkTokenId :: Int -> TokenId
 mkTokenId = TokenId
 
 newtype NodeId = NodeId {unNodeId :: Int}
-  deriving (Show,Eq,Ord,Enum,Typeable, Data)
+  deriving (Show,Eq,Ord,Enum,Ix, Typeable, Data)
 
 mkNodeId :: Int -> NodeId
 mkNodeId = NodeId

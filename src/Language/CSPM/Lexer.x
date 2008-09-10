@@ -7,7 +7,6 @@ module Language.CSPM.Lexer
 scanner
 ,Lexeme(..)
 ,LexemeClass(..),AlexPosn(..),LexError(..)
-,allLexTypes
 ,alexLine,alexCol,alexPos
 ,pprintAlexPosn
 ,tokenSentinel
@@ -15,7 +14,8 @@ scanner
 ,showToken
 )
 where
-import Data.Char
+import Language.CSPM.Token
+import Language.CSPM.AlexWrapper
 }
 
 $whitechar = [\ \t\n\r\f\v]
@@ -127,121 +127,6 @@ csp :-
    <0> \" @string* \"		{ mkL LString }
 
 {
--- -----------------------------------------------------------------------------
--- Alex wrapper code.
---
--- This code is in the PUBLIC DOMAIN; you may copy it freely and use
--- it for any purpose whatsoever.
-
--- -----------------------------------------------------------------------------
--- The input type
-
-
-type AlexInput = (AlexPosn, 	-- current position,
-		  Char,		-- previous char
-		  String)	-- current input string
-
-alexInputPrevChar :: AlexInput -> Char
-alexInputPrevChar (p,c,s) = c
-
-alexGetChar :: AlexInput -> Maybe (Char,AlexInput)
-alexGetChar (p,c,[]) = Nothing
-alexGetChar (p,_,(c:s))  = let p' = alexMove p c in p' `seq`
-				Just (c, (p', c, s))
-
--- -----------------------------------------------------------------------------
--- Token positions
-
--- `Posn' records the location of a token in the input text.  It has three
--- fields: the address (number of chacaters preceding the token), line number
--- and column of a token within the file. `start_pos' gives the position of the
--- start of the file and `eof_pos' a standard encoding for the end of file.
--- `move_pos' calculates the new position after traversing a given character,
--- assuming the usual eight character tab stops.
-
-data AlexPosn = AlexPn !Int !Int !Int
-	deriving (Eq,Show)
-
-alexLine (AlexPn _ l _) =l
-alexCol (AlexPn _ _ c) =c
-alexPos (AlexPn p _ _) =p
-
-pprintAlexPosn (AlexPn p l c) = "Line: "++show l++" Col: "++show c
-
-alexStartPos :: AlexPosn
-alexStartPos = AlexPn 0 1 1
-
-alexMove :: AlexPosn -> Char -> AlexPosn
-alexMove (AlexPn a l c) '\n' = AlexPn (a+1) (l+1)   1
-alexMove (AlexPn a l c) _    = AlexPn (a+1)  l     (c+1)
-{-
-alexMove (AlexPn a l c) '\t' = AlexPn (a+1)  l     ((c `div` 8)*8+8)
-alexMove (AlexPn a l c) '\t' = AlexPn (a+1)  l     (((c+7) `div` 8)*8+1)
--}
-
--- -----------------------------------------------------------------------------
--- Default monad
-
-
-data AlexState = AlexState {
-	alex_pos :: !AlexPosn,	-- position at current input location
-	alex_inp :: String,	-- the current input
-	alex_chr :: !Char,	-- the character before the input
-	alex_scd :: !Int, 	-- the current startcode
-	alex_cnt :: !Int 	-- nuber of tokens
-    }
-
--- Compile with -funbox-strict-fields for best results!
-
-data LexError = LexError {
-   lexEPos :: !AlexPosn
-  ,lexEMsg :: !String
-  } deriving Show
-
-runAlex :: String -> Alex a -> Either LexError a
-runAlex input (Alex f) 
-   = case f (AlexState {alex_pos = alexStartPos,
- 			alex_inp = input,	
-			alex_chr = '\n',
-			alex_scd = 0,
-                        alex_cnt = 0}) of Left msg -> Left msg
-					  Right ( _, a ) -> Right a
-
-newtype Alex a = Alex { unAlex :: AlexState -> Either LexError (AlexState, a) }
-
-instance Monad Alex where
-  m >>= k  = Alex $ \s -> case unAlex m s of 
-				Left msg -> Left msg
-				Right (s',a) -> unAlex (k a) s'
-  return a = Alex $ \s -> Right (s,a)
-
-alexGetInput :: Alex AlexInput
-alexGetInput
- = Alex $ \s@AlexState{alex_pos=pos,alex_chr=c,alex_inp=inp} -> 
-	Right (s, (pos,c,inp))
-
-alexSetInput :: AlexInput -> Alex ()
-alexSetInput (pos,c,inp)
- = Alex $ \s -> case s{alex_pos=pos,alex_chr=c,alex_inp=inp} of
-		  s@(AlexState{}) -> Right (s, ())
-
-alexError :: String -> Alex a
-alexError message = Alex $ update where
-    update st = Left $ LexError {lexEPos = alex_pos st, lexEMsg = message }
---    update st = Left ( message ++ " " ++( show (alex_pos st) ))
---    update (Right (st,_)) = Left ( message ++ ( show (alex_pos st) ))
---    update _ = Left message
-
-alexGetStartCode :: Alex Int
-alexGetStartCode = Alex $ \s@AlexState{alex_scd=sc} -> Right (s, sc)
-
-alexSetStartCode :: Int -> Alex ()
-alexSetStartCode sc = Alex $ \s -> Right (s{alex_scd=sc}, ())
-
-alexNextToken :: Alex (Int)
-alexNextToken = Alex $ \s@AlexState{alex_cnt=cnt} -> 
-	Right (s {alex_cnt=(cnt+1)}, cnt)
-
 alexMonadScan = do
   inp <- alexGetInput
   sc <- alexGetStartCode
@@ -256,10 +141,12 @@ alexMonadScan = do
 	alexSetInput inp'
 	action inp len
 
--- -----------------------------------------------------------------------------
--- Useful token actions
-
-type AlexAction result = AlexInput -> Int -> result
+scanner str = runAlex str $ do
+  let loop i = do tok@(L _ _ _ cl _) <- alexMonadScan; 
+		  if cl == LEOF
+			then return i
+			else do loop $! (tok:i)
+  loop []
 
 -- just ignore this token and scan another one
 -- skip :: AlexAction result
@@ -268,124 +155,5 @@ skip input len = alexMonadScan
 -- ignore this token, but set the start code to a new value
 -- begin :: Int -> AlexAction result
 begin code input len = do alexSetStartCode code; alexMonadScan
-
--- perform an action for this token, and set the start code to a new value
--- andBegin :: AlexAction result -> Int -> AlexAction result
-(action `andBegin` code) input len = do alexSetStartCode code; action input len
-
--- token :: (String -> Int -> token) -> AlexAction token
-token t input len = return (t input len)
-
-
-id = tokenId
-data Lexeme = L { tokenId :: Int,
-                  startpos ::AlexPosn,
-                  len :: Int,
-                  lexClass :: LexemeClass,
-                  str:: String }
-              deriving Show
-
-data LexemeClass
-  = LInteger
---  | LFloat
---  | LChar
-  | LString
-  | LCspId
-  | LCspBI
-  | LCspsym
-  | LIdent
-  | LCSPFDR
-  | LLComment
-  | LBComment
-  | LEOF
-  | LInclude
-  deriving (Show,Eq,Ord,Enum,Ix)
-
-allLexTypes=[ LInteger,LCspId,LCspBI,LCspsym,LIdent
- ,LCSPFDR,LLComment,LBComment,LEOF ]
-  
-mkL :: LexemeClass -> AlexInput -> Int -> Alex Lexeme
-mkL c (pos,_,str) len = do
-  cnt<-alexNextToken
-  return (L cnt pos len c (take len str))
-
-block_comment :: AlexInput -> Int -> Alex Lexeme
-block_comment (startPos,_,_) _ = do
-  inputs <- alexGetInput
-  go 1 0 inputs inputs
-  where go 0 count input (spos,_,str) = do
-                  alexSetInput input
-                  cnt<-alexNextToken
-                  return (L cnt spos count LBComment (take (count-2) str) )
-	go n count input i= do
-	  case alexGetChar input of
-	    Nothing  -> err input
-	    Just (c,input) -> do
-	      case c of
-	    	'-' -> do
-		  case alexGetChar input of
-		    Nothing  -> err input
-		    Just ('\125',input) -> go (n-1) (count+2) input i
-		    Just (c,input)      -> go n (count+2) input i
-	     	'\123' -> do
-		  case alexGetChar input of
-		    Nothing  -> err input
-		    Just ('-',input) -> go (n+1) (count+2) input i
-		    Just (c,input)   -> go n (count+2) input i
-	    	c -> go n (count+1) input i
-
-        err input = do alexSetInput input;
-                       lexError $ "Unclosed Blockcomment  (starting at :"
-                                   ++ (pprintAlexPosn startPos) ++") "
-
-lexError s = do
-  (p,c,input) <- alexGetInput
-  alexError ( s ++ (if (not (null input))
-		     then " at " ++ showChar (head input)
-		     else " at end of file"))
-  where
-    showChar c = 
-     if isPrint c then show c
-       else "charcode " ++ (show $ ord c)
-
-tokenSentinel= 
- L { tokenId = -1
-   , startpos = AlexPn 0 0 0
-   , len =0
-   ,lexClass =error "CSPLexer.x illegal access tokenSentinel"
-   ,str=error "CSPLexer.x illegal access tokenSentinel"
-   }
-{--
-scanner str = runAlex str $ do
-  let loop i = do tok@(L _ cl _) <- alexMonadScan; 
-		  if cl == LEOF
-			then return i
-			else do loop $! (i+1)
-  loop 0
---}
-
-
-scanner str = runAlex str $ do
-  let loop i = do tok@(L _ _ _ cl _) <- alexMonadScan; 
-		  if cl == LEOF
-			then return i
-			else do loop $! (tok:i)
-  loop []
-
---alexEOF = return (L undefined LEOF "")
-alexEOF = return (L 0 (AlexPn 0 0 0) 0 LEOF "")
-
-showPosn (AlexPn _ line col) = show line ++ ':': show col
-
---main = do
---  s <- getContents
---  print (scanner s)
---  print (scannerb s)
-
-
-showToken (L id (AlexPn o l c) len LCspId str) = "built-in '"++str++"'"
-showToken (L id (AlexPn o l c) len LCspBI str) = "built-in '"++str++"'"
-showToken (L id (AlexPn o l c) len tokClass str) = "'"++str++"'"
-
 
 }

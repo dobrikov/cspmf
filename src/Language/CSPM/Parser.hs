@@ -1,3 +1,11 @@
+{- todo:
+* add Autoversion to packet
+* make all errors Typeable
+* add wrappers for functions that throw dynamic exceptions
+* move Lexeme to AST.hs if possible
+* move tokenlist into module
+
+-}
 {-# OPTIONS_GHC -fglasgow-exts #-}
 {-# LANGUAGE ImplicitParams #-}
 module Language.CSPM.Parser

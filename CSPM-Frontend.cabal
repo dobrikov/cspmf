@@ -1,7 +1,7 @@
-Name:                CSPM-Parser
+Name:                CSPM-Frontend
 Version:             0.22
 
-Description:         Lexer and Parser for CSPM
+Description:         Lexer,AST, Parser and Renaming for CSPM
 License:             OtherLicense
 category:            Language
 License-File:        License
@@ -34,4 +34,6 @@ library
     Language.CSPM.LexHelper
   Other-modules:
     Language.CSPM.Lexer
+    Language.CSPM.AlexWrapper
+    Language.CSPM.Token
 

@@ -3,7 +3,7 @@ module Language.CSPM.LexHelper
    lexInclude
   ,lexPlain
   ,Lexer.Lexeme(..), Lexer.LexemeClass(..), Lexer.LexError(..) -- reexports
-  ,Lexer.alexLine, Lexer.alexCol, Lexer.alexPos
+  ,Lexer.alexLine, Lexer.alexCol, Lexer.alexPos, Lexer.tokenId
   ,filterIgnoredToken
   ,tokenIsIgnored
   ,tokenIsComment
@@ -13,7 +13,8 @@ where
 
 import Language.CSPM.Lexer as Lexer
   (Lexeme(..), LexemeClass(..), LexError(..), scanner
-  ,alexLine, alexCol, alexPos )
+  ,alexLine, alexCol, alexPos
+  ,tokenId)
 
 {- todo : use an error monad -}
 
