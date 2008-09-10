@@ -10,12 +10,14 @@ module Language.CSPM.Parser
   lexInclude
  ,lexPlain
  ,parseCSP
+ ,ParseError(..)
+ ,LexError(..)
 )
 where
 import Language.CSPM.AST
 
 import Language.CSPM.Token as Token
-  (Token(..),TokenClass(..),tokenSentinel, showToken, unTokenId,AlexPosn,mkTokenId )
+  (LexError(..), Token(..),TokenClass(..),tokenSentinel, showToken, unTokenId,AlexPosn,mkTokenId )
 
 import Language.CSPM.LexHelper (lexInclude,lexPlain,filterIgnoredToken)
 
