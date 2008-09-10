@@ -5,13 +5,6 @@
 module Language.CSPM.Lexer 
 (
 scanner
-,Lexeme(..)
-,LexemeClass(..),AlexPosn(..),LexError(..)
-,alexLine,alexCol,alexPos
-,pprintAlexPosn
-,tokenSentinel
-,alexMove
-,showToken
 )
 where
 import Language.CSPM.Token
@@ -130,7 +123,7 @@ csp :-
 alexMonadScan = do
   inp <- alexGetInput
   sc <- alexGetStartCode
-  case alexScan inp sc of
+  case alexScan inp sc of                    -- alexScan is jump to alexGenerated code
     AlexEOF -> alexEOF
     AlexError (pos,chr,h:rest)
          -> lexError $ "lexical error"
@@ -141,12 +134,13 @@ alexMonadScan = do
 	alexSetInput inp'
 	action inp len
 
-scanner str = runAlex str $ do
-  let loop i = do tok@(L _ _ _ cl _) <- alexMonadScan; 
-		  if cl == LEOF
-			then return i
-			else do loop $! (tok:i)
-  loop []
+scanner str = runAlex str $ scannerAcc []
+  where
+    scannerAcc i = do
+      tok <- alexMonadScan; 
+      if tokenClass tok == LEOF
+        then return i
+        else scannerAcc $! (tok:i)
 
 -- just ignore this token and scan another one
 -- skip :: AlexAction result

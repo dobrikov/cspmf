@@ -4,19 +4,15 @@
 module Language.CSPM.AST
 where
 
-import Data.Ix
+import Language.CSPM.Token
+
 import Data.Typeable (Typeable)
 import Data.Generics.Basics (Data)
-
+import Data.Generics.Instances ()
+import Data.Ix
 import Data.IntMap (IntMap)
 
 type AstAnnotation x = IntMap x
-
-newtype TokenId = TokenId {unTokenId :: Int}
-  deriving (Show,Eq,Ord,Enum,Ix, Typeable, Data)
-
-mkTokenId :: Int -> TokenId
-mkTokenId = TokenId
 
 newtype NodeId = NodeId {unNodeId :: Int}
   deriving (Show,Eq,Ord,Enum,Ix, Typeable, Data)
@@ -61,6 +57,7 @@ data IDType
 type LModule = Labeled Module
 data Module = Module {
    moduleDecls :: [LDecl]
+  ,moduleTokens :: Maybe [Token]
   } deriving (Show,Eq,Ord,Typeable, Data)
 
 

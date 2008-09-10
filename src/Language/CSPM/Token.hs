@@ -1,12 +1,23 @@
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 module Language.CSPM.Token
 where
 
+import Data.Typeable (Typeable)
+import Data.Generics.Basics (Data)
+import Data.Generics.Instances ()
 import Data.Ix
-import Data.Typeable
 import Data.Char
 
+newtype TokenId = TokenId {unTokenId :: Int}
+  deriving (Show,Eq,Ord,Enum,Ix, Typeable, Data)
+
+mkTokenId :: Int -> TokenId
+mkTokenId = TokenId
+
+
+
 data AlexPosn = AlexPn !Int !Int !Int
-	deriving (Eq,Show)
+  deriving (Show,Eq,Ord, Typeable, Data)
 
 alexLine (AlexPn _ l _) =l
 alexCol (AlexPn _ _ c) =c
@@ -23,14 +34,24 @@ data LexError = LexError {
   } deriving (Show, Typeable)
 
 
-data Lexeme = L { tokenId :: Int,
-                  startpos ::AlexPosn,
-                  len :: Int,
-                  lexClass :: LexemeClass,
-                  str:: String }
-              deriving Show
+data Token = Token
+  { tokenId     :: TokenId
+  , tokenStart  :: AlexPosn
+  , tokenLen    :: Int
+  , tokenClass  :: TokenClass
+  , tokenString :: String
+  } deriving (Show,Eq,Ord, Typeable, Data)
 
-data LexemeClass
+tokenSentinel = Token
+  { tokenId = mkTokenId (- 1)
+  , tokenStart = AlexPn 0 0 0
+  , tokenLen = 0
+  , tokenClass  =error "CSPLexer.x illegal access tokenSentinel"
+  , tokenString =error "CSPLexer.x illegal access tokenSentinel"}
+
+
+
+data TokenClass
   = LInteger
 --  | LFloat
 --  | LChar
@@ -44,20 +65,8 @@ data LexemeClass
   | LBComment
   | LEOF
   | LInclude
-  deriving (Show,Eq,Ord,Enum,Ix)
-
+  deriving (Show,Eq,Ord,Enum,Ix, Typeable, Data)
 
 showPosn (AlexPn _ line col) = show line ++ ':': show col
+showToken Token {tokenString=str} = "'"++str++"'"
 
-
-showToken (L id (AlexPn o l c) len LCspId str) = "built-in '"++str++"'"
-showToken (L id (AlexPn o l c) len LCspBI str) = "built-in '"++str++"'"
-showToken (L id (AlexPn o l c) len tokClass str) = "'"++str++"'"
-
-tokenSentinel= 
- L { tokenId = -1
-   , startpos = AlexPn 0 0 0
-   , len =0
-   ,lexClass =error "CSPLexer.x illegal access tokenSentinel"
-   ,str=error "CSPLexer.x illegal access tokenSentinel"
-   }

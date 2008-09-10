@@ -2,7 +2,6 @@
 * add Autoversion to packet
 * make all errors Typeable
 * add wrappers for functions that throw dynamic exceptions
-* move Lexeme to AST.hs if possible
 * move tokenlist into module
 
 -}
@@ -13,13 +12,12 @@ module Language.CSPM.Parser
   lexInclude
  ,lexPlain
  ,parseCSP
- ,Lexer.Lexeme(..)
 )
 where
 import Language.CSPM.AST
 
-import qualified Language.CSPM.Lexer as Lexer (Lexeme(..), LexemeClass(..),showToken,tokenSentinel)
-import Language.CSPM.Lexer as Lexer (Lexeme,LexemeClass(..))
+import Language.CSPM.Token as Token
+  (Token(..),TokenClass(..),tokenSentinel, showToken, unTokenId )
 
 import Language.CSPM.LexHelper (lexInclude,lexPlain,filterIgnoredToken)
 
@@ -31,15 +29,15 @@ import Control.Monad.State
 import Data.List
 import Prelude hiding (exp)
 
-type PT a= GenParser Lexeme PState a
+type PT a= GenParser Token PState a
 
-parseCSP :: SourceName -> [Lexeme] -> Either ParseError LModule
+parseCSP :: SourceName -> [Token] -> Either ParseError LModule
 parseCSP filename tokenList
-  = runParser parseModule initialPState filename $ filterIgnoredToken tokenList
+  = runParser (parseModule tokenList) initialPState filename $ filterIgnoredToken tokenList
 
 data PState
  = PState {
-  lastTok        :: Lexeme
+  lastTok        :: Token
  ,lastChannelDir :: LastChannelDir
  ,gtCounter      :: Int
  ,gtMode         :: GtMode
@@ -48,7 +46,7 @@ data PState
 
 initialPState :: PState
 initialPState = PState {
-   lastTok = Lexer.tokenSentinel 
+   lastTok = Token.tokenSentinel 
   ,lastChannelDir = WasOut
   ,gtCounter = 0
   ,gtMode = GtNoLimit
@@ -67,24 +65,24 @@ countGt env = env {gtCounter = gtCounter env +1 }
 data LastChannelDir = WasIn | WasOut deriving Show
 data GtMode=GtNoLimit | GtLimit Int deriving Show
 
-instance NodeIdSupply (GenParser Lexeme PState) where
+instance NodeIdSupply (GenParser Token PState) where
   getNewNodeId = do
     i <- gets nodeIdSupply
     modify $ \s -> s { nodeIdSupply = succ $ nodeIdSupply s}
     return i  
 
-instance MonadState PState (GenParser Lexeme PState) where
+instance MonadState PState (GenParser Token PState) where
   get = getState
   put = setState
 
-getNextPos :: PT Lexeme
+getNextPos :: PT Token
 getNextPos = do
   tokenList <-getInput
   case tokenList of
     (hd:_) -> return hd
-    [] -> return Lexer.tokenSentinel
+    [] -> return Token.tokenSentinel
 
-getLastPos :: PT Lexeme
+getLastPos :: PT Token
 getLastPos = getStates lastTok
 
 getPos :: PT SrcLoc
@@ -92,11 +90,11 @@ getPos = do
   t<-getNextPos 
   return $ mkSrcPos t
 
-mkSrcSpan :: Lexeme -> Lexeme -> SrcLoc
-mkSrcSpan b e= TokSpan (mkTokenId $ Lexer.tokenId b) (mkTokenId $ Lexer.tokenId e)
+mkSrcSpan :: Token -> Token -> SrcLoc
+mkSrcSpan b e= TokSpan (Token.tokenId b) (Token.tokenId e)
 
-mkSrcPos :: Lexeme -> SrcLoc
-mkSrcPos l = TokPos $ mkTokenId $ Lexer.tokenId l
+mkSrcPos :: Token -> SrcLoc
+mkSrcPos l = TokPos $ Token.tokenId l
 
 withLoc :: PT a -> PT (Labeled a)
 withLoc a = do
@@ -112,11 +110,14 @@ inSpan constr exp = do
   e <- getLastPos
   mkLabeledNode (mkSrcSpan s e) $ constr l
 
-parseModule :: PT (Labeled Module)
-parseModule = withLoc $ do
+parseModule :: [Token.Token] -> PT (Labeled Module)
+parseModule tokens = withLoc $ do
  decl<-topDeclList 
  eof <?> "end of module"
- return $ Module decl
+ return $ Module {
+   moduleDecls = decl
+  ,moduleTokens = Just tokens
+  }
 
 linteger :: PT String
 linteger = 
@@ -374,7 +375,7 @@ parenExpOrTupleEnum = withLoc $ do
 -- Warning : postfixM and Prefix may not be nested
 -- "not not true" does not parse !!
 opTable :: [[Text.ParserCombinators.Parsec.ExprM.Operator
-                                           Lexeme PState LExp]]
+                                           Token PState LExp]]
 opTable =
    [
 --   [ infixM ( cspSym "." >> binOp mkDotPair) AssocRight ]
@@ -978,7 +979,7 @@ parseCommField = inComm <|> outComm <|> dotComm <?> "communication field"
 
 
 {-
-Helper routines for connecting the Lexer with the parser
+Helper routines for connecting the Token with the parser
 and general Helper routines
 Te following is not related to CSPM-Syntax
 -}
@@ -999,11 +1000,11 @@ getStates sel = do
   return $ sel st
 
 
-primExUpdatePos :: SourcePos -> Lexeme -> t -> SourcePos
-primExUpdatePos pos (Lexer.L i _ _ _ _) _ 
-  = newPos (sourceName pos) (-1) i
+primExUpdatePos :: SourcePos -> Token -> t -> SourcePos
+primExUpdatePos pos t@(Token {}) _
+  = newPos (sourceName pos) (-1) (unTokenId $ tokenId t)
 
-primExUpdateState :: t -> Lexeme -> t1 -> PState -> PState
+primExUpdateState :: t -> Token -> t1 -> PState -> PState
 primExUpdateState _ tok _ st = st { lastTok =tok}
 
 {-
@@ -1011,11 +1012,11 @@ replicating existing combinators, just to work with our lexer
 improve this
 -}
 
-anyToken :: PT Lexeme
-anyToken = tokenPrimEx Lexer.showToken primExUpdatePos (Just primExUpdateState) Just
+anyToken :: PT Token
+anyToken = tokenPrimEx Token.showToken primExUpdatePos (Just primExUpdateState) Just
 
-notFollowedBy :: PT Lexeme -> PT ()
-notFollowedBy p  = try (do{ c <- p; unexpected $ Lexer.showToken c }
+notFollowedBy :: PT Token -> PT ()
+notFollowedBy p  = try (do{ c <- p; unexpected $ Token.showToken c }
                        <|> return ()
                        )
 
@@ -1027,7 +1028,7 @@ notFollowedBy' p  = try (do{ p; pzero }
 eof :: PT ()
 eof  = notFollowedBy anyToken <?> "end of input"
 
-mytoken :: ((LexemeClass, String) -> Maybe a) -> PT a
-mytoken test = tokenPrimEx Lexer.showToken primExUpdatePos (Just primExUpdateState) testToken
-  where testToken (Lexer.L _ _ _ c s)   = test (c,s)
+mytoken :: ((TokenClass, String) -> Maybe a) -> PT a
+mytoken test = tokenPrimEx Token.showToken primExUpdatePos (Just primExUpdateState) testToken
+  where testToken t@(Token {}) = test (tokenClass t, tokenString t)
 

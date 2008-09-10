@@ -2,8 +2,6 @@ module Language.CSPM.LexHelper
 (
    lexInclude
   ,lexPlain
-  ,Lexer.Lexeme(..), Lexer.LexemeClass(..), Lexer.LexError(..) -- reexports
-  ,Lexer.alexLine, Lexer.alexCol, Lexer.alexPos, Lexer.tokenId
   ,filterIgnoredToken
   ,tokenIsIgnored
   ,tokenIsComment
@@ -11,16 +9,18 @@ module Language.CSPM.LexHelper
 )
 where
 
-import Language.CSPM.Lexer as Lexer
-  (Lexeme(..), LexemeClass(..), LexError(..), scanner
+import qualified Language.CSPM.Lexer as Lexer (scanner)
+import Language.CSPM.Token (Token(..), LexError(..), TokenClass(..))
+import qualified Language.CSPM.Token as Token
+  (Token(..), TokenClass(..), LexError(..)
   ,alexLine, alexCol, alexPos
   ,tokenId)
 
 {- todo : use an error monad -}
 
-lexInclude :: String -> IO (Either LexError [Lexeme])
+lexInclude :: String -> IO (Either LexError [Token])
 lexInclude src = do
-  case scanner src of
+  case Lexer.scanner src of
     Left err -> return $ Left err
     Right toks -> do
       tokenIncl <- processIncludeAndReverse toks
@@ -28,47 +28,47 @@ lexInclude src = do
         Left err -> return $ Left err
         Right t -> return $ Right t
 
-lexPlain :: String -> Either LexError [Lexeme]
-lexPlain src = fmap reverse $ scanner src
+lexPlain :: String -> Either LexError [Token]
+lexPlain src = fmap reverse $ Lexer.scanner src
 
-processIncludeAndReverse :: [Lexeme] -> IO (Either LexError [Lexeme] )
+processIncludeAndReverse :: [Token] -> IO (Either LexError [Token] )
 processIncludeAndReverse tokens = picl_acc tokens []
   where 
-  picl_acc ::[Lexeme] ->[Lexeme] -> IO (Either LexError [Lexeme] )
+  picl_acc ::[Token] ->[Token] -> IO (Either LexError [Token] )
   picl_acc [] acc = return $ Right acc
-  picl_acc ((L _ _ _ LString fname) : (L _ _ _ LInclude _) :trest) acc = do
+  picl_acc ((Token _ _ _ LString fname) : (Token _ _ _ LInclude _) :trest) acc = do
     let fileName = reverse $ tail $ reverse $ tail fname -- remove quotes
     -- putStrLn $ "Including file : " ++ fileName
     input <-readFile fileName
-    case scanner input of
+    case Lexer.scanner input of
       Right toks -> do
         new_acc <- picl_acc toks acc
         case new_acc of
           Right t -> picl_acc trest t
           e -> return e
       Left e -> return $ Left e
-  picl_acc ((incl@(L _ _ _ LInclude _)) : _) _ = 
+  picl_acc ((incl@(Token _ _ _ LInclude _)) : _) _ = 
     return $ Left $ LexError {
-       lexEPos = startpos incl
+       lexEPos = tokenStart incl
       ,lexEMsg = "Include without filename" 
       }
   picl_acc (h:rest) acc = picl_acc rest $ h:acc
 
 
-filterIgnoredToken :: [Lexeme] -> [Lexeme]
+filterIgnoredToken :: [Token] -> [Token]
 filterIgnoredToken = filter ( not . tokenIsIgnored)
 
-tokenIsIgnored :: Lexeme -> Bool
-tokenIsIgnored (Lexer.L _ _ _ LLComment _) = True
-tokenIsIgnored (Lexer.L _ _ _ LCSPFDR _) = True
-tokenIsIgnored (Lexer.L _ _ _ LBComment _) = True
+tokenIsIgnored :: Token -> Bool
+tokenIsIgnored (Token _ _ _ LLComment _) = True
+tokenIsIgnored (Token _ _ _ LCSPFDR _) = True
+tokenIsIgnored (Token _ _ _ LBComment _) = True
 tokenIsIgnored _ = False
 
-tokenIsComment :: Lexeme -> Bool
-tokenIsComment (Lexer.L _ _ _ LLComment _) = True
-tokenIsComment (Lexer.L _ _ _ LBComment _) = True
+tokenIsComment :: Token -> Bool
+tokenIsComment (Token _ _ _ LLComment _) = True
+tokenIsComment (Token _ _ _ LBComment _) = True
 tokenIsComment _ = False
 
-tokenIsFDR :: Lexeme -> Bool
-tokenIsFDR (Lexer.L _ _ _ LCSPFDR _) = True
+tokenIsFDR :: Token -> Bool
+tokenIsFDR (Token _ _ _ LCSPFDR _) = True
 tokenIsFDR _ = False
