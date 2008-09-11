@@ -28,12 +28,13 @@ library
   Extensions: DeriveDataTypeable, GeneralizedNewtypeDeriving
   Hs-Source-Dirs:       src
   Exposed-modules:
+    Language.CSPM.Frontend
     Language.CSPM.AST
     Language.CSPM.Parser
     Language.CSPM.Rename
-    Language.CSPM.LexHelper
+    Language.CSPM.Token
   Other-modules:
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper
-    Language.CSPM.Token
+    Language.CSPM.LexHelper
 

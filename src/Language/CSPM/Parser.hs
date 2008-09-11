@@ -1,26 +1,21 @@
 {- todo:
 * add Autoversion to packet
-* make all errors Typeable
 * add wrappers for functions that throw dynamic exceptions
 -}
 {-# OPTIONS_GHC -fglasgow-exts #-}
 {-# LANGUAGE ImplicitParams #-}
 module Language.CSPM.Parser
 (
-  lexInclude
- ,lexPlain
- ,parseCSP
+  parseCSP
  ,ParseError(..)
- ,LexError(..)
 )
 where
 import Language.CSPM.AST
 
 import Language.CSPM.Token as Token
-  (LexError(..), Token(..),TokenClass(..),tokenSentinel, showToken, unTokenId,AlexPosn,mkTokenId )
+  (Token(..),TokenClass(..),tokenSentinel, showToken, unTokenId,AlexPosn,mkTokenId )
 
-import Language.CSPM.LexHelper (lexInclude,lexPlain,filterIgnoredToken)
-
+import Language.CSPM.LexHelper (filterIgnoredToken)
 import Text.ParserCombinators.Parsec.ExprM
 import Text.ParserCombinators.Parsec hiding (eof,notFollowedBy,anyToken,label,ParseError,errorPos)
 import Text.ParserCombinators.Parsec.Pos (newPos)
@@ -36,6 +31,12 @@ parseCSP :: SourceName -> [Token] -> Either ParseError LModule
 parseCSP filename tokenList
   = wrapParseError tokenList $
       runParser (parseModule tokenList) initialPState filename $ filterIgnoredToken tokenList
+
+data ParseError = ParseError {
+   errorMsg :: String
+  ,errorToken :: Token
+  ,errorPos   :: AlexPosn
+  } deriving (Show,Typeable)
 
 data PState
  = PState {
@@ -1039,12 +1040,6 @@ pprintParsecError err
   = ParsecError.showErrorMessages "or" "unknown parse error" 
       "expecting" "unexpected" "end of input"
         (ParsecError.errorMessages err)
-
-data ParseError = ParseError {
-   errorMsg :: String
-  ,errorToken :: Token
-  ,errorPos   :: AlexPosn
-  } deriving (Show,Typeable)
 
 
 wrapParseError :: [Token] -> Either ParsecError.ParseError LModule -> Either ParseError LModule
