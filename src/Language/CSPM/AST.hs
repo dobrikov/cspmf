@@ -47,12 +47,15 @@ data UniqueIdent = UniqueIdent
   ,bindingLoc  :: SrcLoc
   ,idType      :: IDType
   ,realName    :: String
+  ,prologMode  :: PrologMode
   } deriving (Show,Eq,Ord,Typeable, Data)
 
 data IDType 
-  = VarID | ChannelID | NameTypeID | FunID Int | IdentID
+  = VarID | ChannelID | NameTypeID | FunID Int
   | ConstrID String | DataTypeID | TransparentID
   deriving (Show,Eq,Ord,Typeable, Data)
+
+data PrologMode = PrologGround | PrologVariable deriving (Show,Eq,Ord,Typeable, Data)
 
 type LModule = Labeled Module
 data Module = Module {
@@ -101,9 +104,9 @@ data Exp
   | NotExp LExp
   | Fun1 String LExp    -- remove String
   | Fun2 String LExp LExp  -- remove String
-  | Fun3 String LExp LExp LExp  -- remove String
   | DotTuple [LExp]
   | Closure [LExp]
+  | ProcSharing LExp LProc LProc
   | ProcAParallel LExp LExp LExp LExp
   | ProcLinkParallel LLinkList LProc LProc
   | ProcRenaming [LRename] LProc

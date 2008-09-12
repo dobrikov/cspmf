@@ -868,7 +868,7 @@ procOpSharing = do
   spos <- getNextPos
   al <- between ( cspSym "[|" ) (cspSym "|]") parseExp
   epos <- getLastPos
-  return $ (\a b  -> mkLabeledNode (mkSrcSpan spos epos) $ Fun3 "sharing" al a b)
+  return $ (\a b  -> mkLabeledNode (mkSrcSpan spos epos) $ ProcSharing al a b)
 
 closureExp :: PT LExp
 closureExp = inSpan Closure $
