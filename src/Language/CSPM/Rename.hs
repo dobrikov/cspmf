@@ -1,6 +1,6 @@
 {-
 todo : check that we do not bind variables when we patternmacht against
-constructors
+constructors : add a testcase for that
 todo :: maybe use SYB for gathering the renaming
 todo :: maybe also compute debruin-index/ freevariables
 todo :: check idType in useIdent
@@ -87,30 +87,64 @@ bindNewTopIdent t i = do
 bindNewUniqueIdent :: IDType -> LIdent -> RM ()
 bindNewUniqueIdent iType lIdent = do
   let (Ident origName) = unLabel lIdent
-      nodeID = nodeId lIdent
   local <- gets localBindings
+  {- check that we do not bind a variable twice i.e. in a pattern -}
   case Map.lookup origName local of
     Nothing -> return ()
     Just _ -> throwError $ RenameError {
        errorMsg = "Redefinition of " ++ origName
        ,errorLoc = srcLoc lIdent }
-  unique <- nextUniqueName
-  plMode <- gets prologMode
-  let uIdent = UniqueIdent {
-     uniqueIdentId = unique
-    ,bindingSide = nodeID
-    ,bindingLoc  = srcLoc lIdent
-    ,idType = iType
-    ,realName = origName
-    ,AST.prologMode = plMode }
-  modify $ \s -> s 
-    { localBindings = Map.insert origName uIdent $ localBindings s
-    , visible       = Map.insert origName uIdent $ visible s }
-  modify $ \s -> s
-    { identDefinition =  IntMap.insert (unNodeId nodeID) uIdent $ identDefinition s }
-  return ()
+{- 
+  If we have a Constructor in scope and try to bind
+  a VarID then we actually have a Constructor-Pattern.
+  Same situation for a channelIDs.
+  We throw an error if the csp-code tries to reuse a constructor
+  or a channel for i.e. a function.
+-}
+  vis <- gets visible
+  case (Map.lookup origName vis,iType) of
+   (Just x ,VarID) -> case idType x of
+     ConstrID _ -> useExistingBinding x
+     ChannelID -> useExistingBinding x
+     _ -> addNewBinding
+   (Just x , _) -> case idType x of
+     ConstrID _-> throwError $ RenameError {
+          errorMsg = "Illigal reuse of Contructor " ++ origName
+         ,errorLoc = srcLoc lIdent }
+     ChannelID -> throwError $ RenameError {
+          errorMsg = "Illigal reuse of Channel " ++ origName
+         ,errorLoc = srcLoc lIdent }
+     _ -> addNewBinding
+   (_, _ )  -> addNewBinding
+  where
+    useExistingBinding :: UniqueIdent -> RM ()
+    useExistingBinding constr = do
+      let ptr = unNodeId $ nodeId $ lIdent
+      modify $ \s -> s
+        { identDefinition = IntMap.insert ptr constr (identDefinition s) }
 
-  where 
+    addNewBinding :: RM ()
+    addNewBinding = do
+      let (Ident origName) = unLabel lIdent
+          nodeID = nodeId lIdent
+    
+      unique <- nextUniqueName
+      plMode <- gets prologMode
+      let uIdent = UniqueIdent {
+         uniqueIdentId = unique
+        ,bindingSide = nodeID
+        ,bindingLoc  = srcLoc lIdent
+        ,idType = iType
+        ,realName = origName
+        ,AST.prologMode = plMode }
+      modify $ \s -> s 
+        { localBindings = Map.insert origName uIdent $ localBindings s
+        , visible       = Map.insert origName uIdent $ visible s }
+      modify $ \s -> s
+        { identDefinition = IntMap.insert 
+            (unNodeId nodeID) uIdent $ identDefinition s }
+      return ()
+
     nextUniqueName :: RM UniqueName
     nextUniqueName = do
       n <- gets nameSupply
@@ -128,19 +162,6 @@ localScope h = do
     ,localBindings = localBind }
   return res
 
-useIdent :: IDType -> LIdent -> RM ()
-useIdent idType_todo_check lIdent = do
-  let (Ident origName) = unLabel lIdent
-      nodeID = nodeId lIdent
-  vis <- gets visible
-  case Map.lookup origName vis of
-    Nothing -> throwError $ RenameError {
-       errorMsg = "Unbound Identifier :" ++ origName
-       ,errorLoc = srcLoc lIdent }
-    Just uniqueIdent -> do   -- todo check idType
-       modify $ \s -> s
-         { identUse =  IntMap.insert (unNodeId nodeID) uniqueIdent $ identUse s }
-       return ()
 
 {-
 rn just walks through the AST, without modifing it.
@@ -161,7 +182,7 @@ rnExpList = mapM_ rnExp
 -- rename an expression
 rnExp :: LExp -> RM ()
 rnExp expression = case unLabel expression of
-  Var ident -> useIdent VarID ident
+  Var ident -> useVarIdent ident
   IntExp _ -> nop
   SetEnum a -> rnExpList a
   ListEnum a -> rnExpList a
@@ -212,6 +233,27 @@ rnExp expression = case unLabel expression of
     rnExp chan
     mapM_ rnCommField fields
     rnExp proc
+  where 
+    {- 
+    called from VarExp
+    we can bind lIdent to any Identifier that is in scope
+    (ConstID,FunID ..)
+    -}
+    useVarIdent :: LIdent -> RM ()
+    useVarIdent lIdent = do
+      let (Ident origName) = unLabel lIdent
+          nodeID = nodeId lIdent
+      vis <- gets visible
+      case Map.lookup origName vis of
+        Nothing -> throwError $ RenameError {
+           errorMsg = "Unbound Identifier :" ++ origName
+           ,errorLoc = srcLoc lIdent }
+        Just uniqueIdent -> do   -- todo check idType
+           modify $ \s -> s
+             { identUse =  IntMap.insert 
+                 (unNodeId nodeID) uniqueIdent $ identUse s }
+           return ()
+
 
 rnPatList :: [LPattern] -> RM ()
 rnPatList = mapM_ rnPattern

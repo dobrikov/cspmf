@@ -1,5 +1,10 @@
--- todo : use a datatype for build-ins / operators
--- remove all "unparsed" strings
+{-
+todo
+  * use a datatype for build-ins / operators
+  * remove all "unparsed" strings
+  * remove indirection for tokens, include token or srcPositions
+     directly in the SrcLoc datatype
+-}
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 module Language.CSPM.AST
 where
@@ -158,6 +163,7 @@ data Pattern
   | TruePat
   | FalsePat
   | WildCard
+-- | ContrPat    
   | VarPat LIdent
   | Also [LPattern]
   | Append [LPattern]
