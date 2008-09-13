@@ -5,9 +5,6 @@ todo :: maybe use SYB for gathering the renaming
 todo :: maybe also compute debruin-index/ freevariables
 todo :: check idType in useIdent
 fix topleveldecls to toplevel ? -> allready done by parser
-fix subtype bug
-
-* Process all data-type and channel decls before all value bindings
 -}
 module Language.CSPM.Rename
   (
@@ -194,7 +191,7 @@ rnExpList = mapM_ rnExp
 -- rename an expression
 rnExp :: LExp -> RM ()
 rnExp expression = case unLabel expression of
-  Var ident -> useVarIdent ident
+  Var ident -> useIdent Nothing ident
   IntExp _ -> nop
   SetEnum a -> rnExpList a
   ListEnum a -> rnExpList a
@@ -251,20 +248,27 @@ rnExp expression = case unLabel expression of
     we can bind lIdent to any Identifier that is in scope
     (ConstID,FunID ..)
     -}
-    useVarIdent :: LIdent -> RM ()
-    useVarIdent lIdent = do
-      let (Ident origName) = unLabel lIdent
-          nodeID = nodeId lIdent
-      vis <- gets visible
-      case Map.lookup origName vis of
-        Nothing -> throwError $ RenameError {
-           errorMsg = "Unbound Identifier :" ++ origName
-           ,errorLoc = srcLoc lIdent }
-        Just uniqueIdent -> do   -- todo check idType
-           modify $ \s -> s
-             { identUse =  IntMap.insert 
-                 (unNodeId nodeID) uniqueIdent $ identUse s }
-           return ()
+
+useIdent :: (Maybe IDType) -> LIdent -> RM ()
+useIdent expectedType lIdent = do
+  let (Ident origName) = unLabel lIdent
+      nodeID = nodeId lIdent
+  vis <- gets visible
+  case Map.lookup origName vis of
+    Nothing -> throwError $ RenameError {
+       errorMsg = "Unbound Identifier :" ++ origName
+       ,errorLoc = srcLoc lIdent }
+    Just uniqueIdent -> do   -- todo check idType
+       case expectedType of
+         Nothing -> return ()
+         Just t  -> when (t /= idType uniqueIdent) $ do
+           throwError $ RenameError {
+              errorMsg = "Typeerror :" ++ origName
+             ,errorLoc = srcLoc lIdent }
+       modify $ \s -> s
+         { identUse =  IntMap.insert 
+             (unNodeId nodeID) uniqueIdent $ identUse s }
+       return ()
 
 
 rnPatList :: [LPattern] -> RM ()
@@ -302,19 +306,6 @@ rnCompGen g = case unLabel g of
   Generator pat e -> rnExp e >> rnPattern pat
   Guard e -> rnExp e
 
-rnTypeDef :: LTypeDef -> RM ()
-rnTypeDef t = case unLabel t of
-  TypeTuple l -> rnExpList l
-  TypeDot l -> rnExpList l
-
-rnConstructor :: LConstructor -> RM ()
-rnConstructor = rc . unLabel where
-  rc (Constructor c td) = do
-    bindNewTopIdent (ConstrID "someConstructor") c --Todo -- fix
-    case td of
-      Nothing -> nop
-      Just t  -> rnTypeDef t
-
 reRename :: LRename -> RM ()
 reRename = r2 . unLabel
   where r2 (Rename e1 e2) = rnExp e1 >> rnExp e2
@@ -330,26 +321,39 @@ rnLinkList = rnLink2 . unLabel
 
 -- rename a recursive binding group
 rnDeclList :: [LDecl] -> RM ()
-rnDeclList declList = mapM_ declLHS declList >> mapM_ declRHS declList
+rnDeclList declList = do
+  modify $ \s -> s {prologMode = PrologGround }
+  forM_ declList declLHS
+  modify $ \s -> s {prologMode = PrologVariable }
+  forM_ declList declRHS
 
 declLHS :: LDecl -> RM ()
-declLHS d = prologGroundMode $ case unLabel d of
+declLHS d = case unLabel d of
   PatBind pat _ -> rnPattern pat
    --todo : proper type-checking/counting number of Funargs
   FunBind i _ -> bindNewUniqueIdent (FunID (-1)) i
   AssertRef {} -> nop
   AssertBool {} -> nop
   Transparent tl -> mapM_ (bindNewTopIdent TransparentID) tl
-  SubType i _ -> bindNewTopIdent DataTypeID i   -- fix this
-  DataType i _ -> bindNewTopIdent DataTypeID i
+  SubType i clist -> do
+    bindNewTopIdent DataTypeID i   -- fix this
+    mapM_ rnSubtypeLHS clist
+  DataType i clist -> do
+    bindNewTopIdent DataTypeID i
+    mapM_ rnConstructorLHS clist
   NameType i _ -> bindNewTopIdent NameTypeID i
   Channel chList _ -> mapM_ (bindNewTopIdent ChannelID) chList
   Print _ -> nop
   where
-    prologGroundMode action = do
-      modify $ \s -> s {prologMode = PrologGround }
-      action
-      modify $ \s -> s {prologMode = PrologVariable }
+    rnConstructorLHS :: LConstructor -> RM ()
+    rnConstructorLHS a = do
+      let (Constructor c _ ) = unLabel a
+      bindNewTopIdent (ConstrID "someConstructor") c --Todo -- fix
+
+    rnSubtypeLHS :: LConstructor -> RM ()
+    rnSubtypeLHS a = do
+      let (Constructor c _ ) = unLabel a
+      useIdent Nothing c -- <- fix this Nothing <-> dont check
 
 declRHS :: LDecl -> RM ()
 declRHS d = case unLabel d of
@@ -358,8 +362,8 @@ declRHS d = case unLabel d of
   AssertRef a _ b -> rnExp a >> rnExp b
   AssertBool e -> rnExp e
   Transparent _ -> nop  
-  SubType _ clist -> localScope $ mapM_ rnConstructor clist 
-  DataType _ clist -> mapM_ rnConstructor clist
+  SubType  _ clist -> forM_ clist rnConstructorRHS
+  DataType _ clist -> forM_ clist rnConstructorRHS
   NameType _ td -> rnTypeDef td
   Channel _ Nothing -> nop
   Channel _ (Just td) -> rnTypeDef td
@@ -367,6 +371,16 @@ declRHS d = case unLabel d of
   where
     rnFunCase c = case c of  --todo:uses Labeled version
       (FunCase pat e) -> localScope (mapM_ rnPatList pat >> rnExp e)
+    rnConstructorRHS :: LConstructor -> RM ()
+    rnConstructorRHS = rc . unLabel where
+      rc (Constructor _ Nothing ) = nop
+      rc (Constructor _ (Just t)) = rnTypeDef t
+
+
+rnTypeDef :: LTypeDef -> RM ()
+rnTypeDef t = case unLabel t of
+  TypeTuple l -> rnExpList l
+  TypeDot l -> rnExpList l
 
 applyRenaming ::
      (AstAnnotation UniqueIdent,AstAnnotation UniqueIdent)
