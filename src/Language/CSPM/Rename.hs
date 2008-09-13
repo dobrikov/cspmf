@@ -6,6 +6,8 @@ todo :: maybe also compute debruin-index/ freevariables
 todo :: check idType in useIdent
 fix topleveldecls to toplevel ? -> allready done by parser
 fix subtype bug
+
+* Process all data-type and channel decls before all value bindings
 -}
 module Language.CSPM.Rename
   (
@@ -24,6 +26,8 @@ import Data.Typeable (Typeable)
 
 import Control.Monad.Error
 import Control.Monad.State
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
@@ -49,7 +53,7 @@ data RState = RState
    ,visible  :: Bindings       -- everything that is visible
    ,identDefinition :: AstAnnotation UniqueIdent 
    ,identUse  :: AstAnnotation UniqueIdent 
---   ,usedNames :: Map String Int
+   ,usedNames :: Set String
    ,prologMode :: PrologMode
   } deriving Show
 
@@ -61,6 +65,7 @@ initialRState = RState
    ,visible       = Map.empty
    ,identDefinition = IntMap.empty
    ,identUse        = IntMap.empty
+   ,usedNames       = Set.empty
    ,prologMode      = PrologVariable
   }
 
@@ -128,7 +133,7 @@ bindNewUniqueIdent iType lIdent = do
       let (Ident origName) = unLabel lIdent
           nodeID = nodeId lIdent
     
-      unique <- nextUniqueName
+      (nameNew,unique) <- nextUniqueName origName
       plMode <- gets prologMode
       let uIdent = UniqueIdent {
          uniqueIdentId = unique
@@ -136,6 +141,7 @@ bindNewUniqueIdent iType lIdent = do
         ,bindingLoc  = srcLoc lIdent
         ,idType = iType
         ,realName = origName
+        ,newName = nameNew
         ,AST.prologMode = plMode }
       modify $ \s -> s 
         { localBindings = Map.insert origName uIdent $ localBindings s
@@ -145,11 +151,17 @@ bindNewUniqueIdent iType lIdent = do
             (unNodeId nodeID) uIdent $ identDefinition s }
       return ()
 
-    nextUniqueName :: RM UniqueName
-    nextUniqueName = do
+    nextUniqueName :: String -> RM (String,UniqueName)
+    nextUniqueName oldName = do
       n <- gets nameSupply
       modify $ \s -> s {nameSupply = succ n}
-      return $ n
+      occupied <- gets usedNames
+      let
+         suffixes = "" : map show ([2..9] ++ [n + 10 .. ])
+         candidates = map ((++) oldName) suffixes
+         nextName = head $ filter (\x -> not $ Set.member x occupied) candidates
+      modify $ \s -> s {usedNames = Set.insert nextName $ usedNames s}
+      return (nextName,n)
 
 localScope :: RM x -> RM x
 localScope h = do 

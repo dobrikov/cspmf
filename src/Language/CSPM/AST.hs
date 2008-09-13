@@ -52,6 +52,7 @@ data UniqueIdent = UniqueIdent
   ,bindingLoc  :: SrcLoc
   ,idType      :: IDType
   ,realName    :: String
+  ,newName     :: String
   ,prologMode  :: PrologMode
   } deriving (Show,Eq,Ord,Typeable, Data)
 
