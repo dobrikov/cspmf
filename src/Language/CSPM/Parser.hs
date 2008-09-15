@@ -11,9 +11,11 @@ module Language.CSPM.Parser
 )
 where
 import Language.CSPM.AST
+import Language.CSPM.Token (Token(..),TokenClass(..),AlexPosn)
+import qualified Language.CSPM.Token as Token
 
-import Language.CSPM.Token as Token
-  (Token(..),TokenClass(..),tokenSentinel, showToken, unTokenId,AlexPosn,mkTokenId )
+import Language.CSPM.SrcLoc (SrcLoc(..))
+import qualified Language.CSPM.SrcLoc as SrcLoc
 
 import Language.CSPM.LexHelper (filterIgnoredToken)
 import Text.ParserCombinators.Parsec.ExprM
@@ -94,10 +96,10 @@ getPos = do
   return $ mkSrcPos t
 
 mkSrcSpan :: Token -> Token -> SrcLoc
-mkSrcSpan b e= TokSpan (Token.tokenId b) (Token.tokenId e)
+mkSrcSpan b e= TokSpan b e
 
 mkSrcPos :: Token -> SrcLoc
-mkSrcPos l = TokPos $ Token.tokenId l
+mkSrcPos l = TokPos l
 
 withLoc :: PT a -> PT (Labeled a)
 withLoc a = do
@@ -1005,7 +1007,7 @@ getStates sel = do
 
 primExUpdatePos :: SourcePos -> Token -> t -> SourcePos
 primExUpdatePos pos t@(Token {}) _
-  = newPos (sourceName pos) (-1) (unTokenId $ tokenId t)
+  = newPos (sourceName pos) (-1) (Token.unTokenId $ Token.tokenId t)
 
 primExUpdateState :: t -> Token -> t1 -> PState -> PState
 primExUpdateState _ tok _ st = st { lastTok =tok}
@@ -1050,5 +1052,5 @@ wrapParseError tl (Left err) = Left $ ParseError {
   ,errorPos = tokenStart errorTok
   }
   where 
-    tokId = mkTokenId $ sourceColumn $ ParsecError.errorPos err
-    errorTok = maybe tokenSentinel id  $ find (\t -> tokenId t ==  tokId) tl
+    tokId = Token.mkTokenId $ sourceColumn $ ParsecError.errorPos err
+    errorTok = maybe Token.tokenSentinel id  $ find (\t -> tokenId t ==  tokId) tl

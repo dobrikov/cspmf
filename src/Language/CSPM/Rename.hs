@@ -16,6 +16,7 @@ where
 
 import Language.CSPM.AST hiding (prologMode)
 import qualified Language.CSPM.AST as AST
+import qualified Language.CSPM.SrcLoc as SrcLoc
 
 import qualified Data.Generics.Schemes (everywhere)
 import qualified Data.Generics.Aliases (mkT)
@@ -69,12 +70,12 @@ initialRState = RState
 data RenameError
   = RenameError {
    errorMsg :: String
-  ,errorLoc :: SrcLoc
+  ,errorLoc :: SrcLoc.SrcLoc
   } deriving (Show,Typeable)
 
 instance Error RenameError where
-  noMsg = RenameError { errorMsg = "no Messsage", errorLoc = NoLocation }
-  strMsg m = RenameError { errorMsg = m, errorLoc = NoLocation }
+  noMsg = RenameError { errorMsg = "no Messsage", errorLoc = SrcLoc.NoLocation }
+  strMsg m = RenameError { errorMsg = m, errorLoc = SrcLoc.NoLocation }
 
 bindNewTopIdent :: IDType -> LIdent -> RM ()
 bindNewTopIdent t i = do

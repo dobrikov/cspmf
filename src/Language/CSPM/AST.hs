@@ -10,6 +10,7 @@ module Language.CSPM.AST
 where
 
 import Language.CSPM.Token
+import Language.CSPM.SrcLoc (SrcLoc(..))
 
 import Data.Typeable (Typeable)
 import Data.Generics.Basics (Data)
@@ -24,12 +25,6 @@ newtype NodeId = NodeId {unNodeId :: Int}
 
 mkNodeId :: Int -> NodeId
 mkNodeId = NodeId
-
-data SrcLoc
-  = TokPos TokenId
-  | TokSpan TokenId TokenId
-  | NoLocation
-  deriving (Show,Eq,Ord,Typeable, Data)
 
 data Labeled t = Labeled {
     nodeId :: NodeId

@@ -33,6 +33,7 @@ library
     Language.CSPM.Parser
     Language.CSPM.Rename
     Language.CSPM.Token
+    Language.CSPM.SrcLoc
   Other-modules:
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper

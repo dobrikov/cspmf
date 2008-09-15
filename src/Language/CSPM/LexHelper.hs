@@ -12,9 +12,7 @@ where
 import qualified Language.CSPM.Lexer as Lexer (scanner)
 import Language.CSPM.Token (Token(..), LexError(..), TokenClass(..))
 import qualified Language.CSPM.Token as Token
-  (Token(..), TokenClass(..), LexError(..)
-  ,alexLine, alexCol, alexPos
-  ,tokenId)
+  (Token(..), TokenClass(..), LexError(..))
 
 {- todo : use an error monad -}
 
