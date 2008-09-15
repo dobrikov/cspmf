@@ -1,3 +1,15 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Language.CSPM.Rename
+-- Copyright   :  (c) Fontaine 2008
+-- License     :  BSD
+-- 
+-- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
+-- Stability   :  provisional
+-- Portability :  GHC-only
+--
+-- Compute the mapping between the using occurences and the defining occurences of all Identifier in a Module
+-- Also decide whether to use ground or non-ground- representaions for the translation to Prolog.
 {-
 todo : check that we do not bind variables when we patternmacht against
 constructors : add a testcase for that
@@ -30,6 +42,11 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
 
+-- | 'getRenaming' computes two 'AstAnnotation's.
+-- The first one contains all the defining occurences of identifier
+-- The second one contains all the using occurences of identitier.
+-- 'getRename' returns an 'RenameError' if the 'Module' contains unbound
+-- identifiers or illegal redefinitions.
 getRenaming ::
      LModule 
   -> Either RenameError (AstAnnotation UniqueIdent,AstAnnotation UniqueIdent)
@@ -383,6 +400,10 @@ rnTypeDef t = case unLabel t of
   TypeTuple l -> rnExpList l
   TypeDot l -> rnExpList l
 
+-- | 'applyRenaming' uses SYB to replace turn every 'Ident' in the 'Module' into to the
+-- 'UIdent' version, i.e. set the 'UniqueIdent'.
+-- It is an error if the 'Module' contains occurences of 'Ident' that are not covered by
+-- the 'AstAnnotation's.
 applyRenaming ::
      (AstAnnotation UniqueIdent,AstAnnotation UniqueIdent)
   -> LModule 

@@ -1,3 +1,14 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Language.CSPM.AST
+-- Copyright   :  (c) Fontaine 2008
+-- License     :  BSD
+-- 
+-- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
+-- Stability   :  provisional
+-- Portability :  GHC-only
+--
+-- This Module defines an Abstract Syntax Tree for CSPM.
 {-
 todo
   * use a datatype for build-ins / operators
@@ -159,7 +170,7 @@ data Pattern
   | TruePat
   | FalsePat
   | WildCard
--- | ContrPat    
+{-  ContrPat    -}
   | VarPat LIdent
   | Also [LPattern]
   | Append [LPattern]

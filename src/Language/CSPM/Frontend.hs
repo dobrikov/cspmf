@@ -1,3 +1,15 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Language.CSPM.Frontend
+-- Copyright   :  (c) Fontaine 2008
+-- License     :  BSD
+-- 
+-- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
+-- Stability   :  provisional
+-- Portability :  GHC-only
+--
+-- Frontend contains some reexports from other modules
+
 module Language.CSPM.Frontend
 (
    module Language.CSPM.Token

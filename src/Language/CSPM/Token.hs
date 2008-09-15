@@ -1,3 +1,15 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Language.CSPM.Token
+-- Copyright   :  (c) Fontaine 2008
+-- License     :  BSD
+-- 
+-- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
+-- Stability   :  provisional
+-- Portability :  GHC-only
+--
+-- This module contains the datatype Tokens.
+
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 module Language.CSPM.Token
 where

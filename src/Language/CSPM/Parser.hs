@@ -1,3 +1,16 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Language.CSPM.Parser
+-- Copyright   :  (c) Fontaine 2008
+-- License     :  BSD
+-- 
+-- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
+-- Stability   :  provisional
+-- Portability :  GHC-only
+--
+-- This modules defines a Parser for CSPM
+-- 
+-----------------------------------------------------------------------------
 {- todo:
 * add Autoversion to packet
 * add wrappers for functions that throw dynamic exceptions
@@ -29,7 +42,13 @@ import Prelude hiding (exp)
 
 type PT a= GenParser Token PState a
 
-parseCSP :: SourceName -> [Token] -> Either ParseError LModule
+-- | The 'parse' function parses a List of 'Token'.
+-- It returns a 'ParseError' or a 'Labled' 'Module'.
+-- The 'SourceName' argument is currently not used.
+parseCSP :: 
+      SourceName
+   -> [Token]
+   -> Either ParseError LModule
 parseCSP filename tokenList
   = wrapParseError tokenList $
       runParser (parseModule tokenList) initialPState filename $ filterIgnoredToken tokenList
