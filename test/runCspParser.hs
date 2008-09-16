@@ -5,9 +5,6 @@ read file, parse it and write the result to a File
 -}
 
 import Language.CSPM.Frontend
-import Language.CSPM.Parser
-import Language.CSPM.Rename
-import Language.CSPM.AST
 
 import Control.Exception
 import System.Environment
@@ -36,7 +33,7 @@ main
   tokenList <- lexInclude src >>= errToExc
   time_have_tokens <- getCPUTime
 
-  ast <- errToExc $ parseCSP fileName tokenList
+  ast <- errToExc $ parse fileName tokenList
   time_have_ast <- getCPUTime
 
   renaming <- errToExc $ getRenaming ast

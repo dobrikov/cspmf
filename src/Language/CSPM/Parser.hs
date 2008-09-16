@@ -5,7 +5,7 @@
 -- License     :  BSD
 -- 
 -- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
--- Stability   :  provisional
+-- Stability   :  experimental
 -- Portability :  GHC-only
 --
 -- This modules defines a Parser for CSPM
@@ -19,7 +19,7 @@
 {-# LANGUAGE ImplicitParams #-}
 module Language.CSPM.Parser
 (
-  parseCSP
+  parse
  ,ParseError(..)
 )
 where
@@ -32,7 +32,8 @@ import qualified Language.CSPM.SrcLoc as SrcLoc
 
 import Language.CSPM.LexHelper (filterIgnoredToken)
 import Text.ParserCombinators.Parsec.ExprM
-import Text.ParserCombinators.Parsec hiding (eof,notFollowedBy,anyToken,label,ParseError,errorPos)
+import Text.ParserCombinators.Parsec
+  hiding (parse,eof,notFollowedBy,anyToken,label,ParseError,errorPos)
 import Text.ParserCombinators.Parsec.Pos (newPos)
 import qualified Text.ParserCombinators.Parsec.Error as ParsecError
 import Data.Typeable (Typeable)
@@ -45,18 +46,18 @@ type PT a= GenParser Token PState a
 -- | The 'parse' function parses a List of 'Token'.
 -- It returns a 'ParseError' or a 'Labled' 'Module'.
 -- The 'SourceName' argument is currently not used.
-parseCSP :: 
+parse :: 
       SourceName
    -> [Token]
    -> Either ParseError LModule
-parseCSP filename tokenList
+parse filename tokenList
   = wrapParseError tokenList $
       runParser (parseModule tokenList) initialPState filename $ filterIgnoredToken tokenList
 
 data ParseError = ParseError {
-   errorMsg :: String
-  ,errorToken :: Token
-  ,errorPos   :: AlexPosn
+   parseErrorMsg :: String
+  ,parseErrorToken :: Token
+  ,parseErrorPos   :: AlexPosn
   } deriving (Show,Typeable)
 
 data PState
@@ -1066,9 +1067,9 @@ pprintParsecError err
 wrapParseError :: [Token] -> Either ParsecError.ParseError LModule -> Either ParseError LModule
 wrapParseError _ (Right ast) = Right ast
 wrapParseError tl (Left err) = Left $ ParseError {
-   errorMsg = pprintParsecError err
-  ,errorToken = errorTok
-  ,errorPos = tokenStart errorTok
+   parseErrorMsg = pprintParsecError err
+  ,parseErrorToken = errorTok
+  ,parseErrorPos = tokenStart errorTok
   }
   where 
     tokId = Token.mkTokenId $ sourceColumn $ ParsecError.errorPos err

@@ -5,26 +5,30 @@
 -- License     :  BSD
 -- 
 -- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
--- Stability   :  provisional
+-- Stability   :  experimental
 -- Portability :  GHC-only
 --
 -- Frontend contains some reexports from other modules
 
 module Language.CSPM.Frontend
 (
-   module Language.CSPM.Token
-  ,module Language.CSPM.AST
+   module Language.CSPM.AST
   ,testFrontend
+  ,parseFile
   ,Lexer.lexInclude
   ,Lexer.lexPlain
   ,Lexer.filterIgnoredToken
-  ,Parser.parseCSP
+  ,LexError(..)
+  ,Parser.parse
+  ,Parser.ParseError(..)
   ,Rename.getRenaming
   ,Rename.applyRenaming
+  ,Rename.RenameError(..)
   ,errToExc
   ,handleLexError
   ,handleParseError
   ,handleRenameError
+  ,version
 )
 where
 import Language.CSPM.Token
@@ -34,6 +38,7 @@ import qualified Language.CSPM.Rename as Rename
 
 import qualified Language.CSPM.LexHelper as Lexer
   (lexInclude,lexPlain,filterIgnoredToken)
+import Language.CSPM.Version
 
 import Control.Exception
 import System.CPUTime
@@ -52,6 +57,12 @@ handleParseError handler proc = catchDyn proc handler
 handleRenameError :: (Rename.RenameError -> IO a) -> IO a -> IO a
 handleRenameError handler proc = catchDyn proc handler
 
+parseFile :: FilePath -> IO LModule
+parseFile fileName = do
+  src <- readFile fileName
+  tokenList <- Lexer.lexInclude src >>= errToExc
+  errToExc $ Parser.parse fileName tokenList
+
 testFrontend :: FilePath -> IO (LModule,LModule)
 testFrontend fileName = do
   src <- readFile fileName
@@ -61,7 +72,7 @@ testFrontend fileName = do
   tokenList <- Lexer.lexInclude src >>= errToExc
   time_have_tokens <- getCPUTime
 
-  ast <- errToExc $ Parser.parseCSP fileName tokenList
+  ast <- errToExc $ Parser.parse fileName tokenList
   time_have_ast <- getCPUTime
 
   renaming <- errToExc $ Rename.getRenaming ast

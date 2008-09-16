@@ -5,7 +5,7 @@
 -- License     :  BSD
 -- 
 -- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
--- Stability   :  provisional
+-- Stability   :  experimental
 -- Portability :  GHC-only
 --
 -- Compute the mapping between the using occurences and the defining occurences of all Identifier in a Module
@@ -86,13 +86,13 @@ initialRState = RState
 
 data RenameError
   = RenameError {
-   errorMsg :: String
-  ,errorLoc :: SrcLoc.SrcLoc
+   renameErrorMsg :: String
+  ,renameErrorLoc :: SrcLoc.SrcLoc
   } deriving (Show,Typeable)
 
 instance Error RenameError where
-  noMsg = RenameError { errorMsg = "no Messsage", errorLoc = SrcLoc.NoLocation }
-  strMsg m = RenameError { errorMsg = m, errorLoc = SrcLoc.NoLocation }
+  noMsg = RenameError { renameErrorMsg = "no Messsage", renameErrorLoc = SrcLoc.NoLocation }
+  strMsg m = RenameError { renameErrorMsg = m, renameErrorLoc = SrcLoc.NoLocation }
 
 bindNewTopIdent :: IDType -> LIdent -> RM ()
 bindNewTopIdent t i = do
@@ -101,8 +101,8 @@ bindNewTopIdent t i = do
   case Map.lookup origName vis of
     Nothing -> bindNewUniqueIdent t i
     Just _ -> throwError $ RenameError {
-      errorMsg = "Redefinition of toplevel name " ++ origName
-     ,errorLoc = srcLoc i }
+      renameErrorMsg = "Redefinition of toplevel name " ++ origName
+     ,renameErrorLoc = srcLoc i }
 
 bindNewUniqueIdent :: IDType -> LIdent -> RM ()
 bindNewUniqueIdent iType lIdent = do
@@ -112,8 +112,8 @@ bindNewUniqueIdent iType lIdent = do
   case Map.lookup origName local of
     Nothing -> return ()
     Just _ -> throwError $ RenameError {
-       errorMsg = "Redefinition of " ++ origName
-       ,errorLoc = srcLoc lIdent }
+       renameErrorMsg = "Redefinition of " ++ origName
+       ,renameErrorLoc = srcLoc lIdent }
 {- 
   If we have a Constructor in scope and try to bind
   a VarID then we actually have a Constructor-Pattern.
@@ -129,11 +129,11 @@ bindNewUniqueIdent iType lIdent = do
      _ -> addNewBinding
    (Just x , _) -> case idType x of
      ConstrID _-> throwError $ RenameError {
-          errorMsg = "Illigal reuse of Contructor " ++ origName
-         ,errorLoc = srcLoc lIdent }
+          renameErrorMsg = "Illigal reuse of Contructor " ++ origName
+         ,renameErrorLoc = srcLoc lIdent }
      ChannelID -> throwError $ RenameError {
-          errorMsg = "Illigal reuse of Channel " ++ origName
-         ,errorLoc = srcLoc lIdent }
+          renameErrorMsg = "Illigal reuse of Channel " ++ origName
+         ,renameErrorLoc = srcLoc lIdent }
      _ -> addNewBinding
    (_, _ )  -> addNewBinding
   where
@@ -274,15 +274,15 @@ useIdent expectedType lIdent = do
   vis <- gets visible
   case Map.lookup origName vis of
     Nothing -> throwError $ RenameError {
-       errorMsg = "Unbound Identifier :" ++ origName
-       ,errorLoc = srcLoc lIdent }
+       renameErrorMsg = "Unbound Identifier :" ++ origName
+       ,renameErrorLoc = srcLoc lIdent }
     Just uniqueIdent -> do   -- todo check idType
        case expectedType of
          Nothing -> return ()
          Just t  -> when (t /= idType uniqueIdent) $ do
            throwError $ RenameError {
-              errorMsg = "Typeerror :" ++ origName
-             ,errorLoc = srcLoc lIdent }
+              renameErrorMsg = "Typeerror :" ++ origName
+             ,renameErrorLoc = srcLoc lIdent }
        modify $ \s -> s
          { identUse =  IntMap.insert 
              (unNodeId nodeID) uniqueIdent $ identUse s }

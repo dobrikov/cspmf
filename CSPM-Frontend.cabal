@@ -1,5 +1,5 @@
 Name:                CSPM-Frontend
-Version:             0.22
+Version:             0.2.3
 
 Description:
   This Package contains functions for lexing, parsing and renaming
@@ -25,7 +25,7 @@ library
     buildable: False
   }
 
-  Build-Depends:       base,containers,array,parsec >=2.1.0.0 && < 3.0 ,parsecExprM, pretty,mtl,haskell-src,haskell98
+  Build-Depends:       base,containers,array,parsec >=2.1.0.0 && < 3.0 ,parsecExprM,old-time,template-haskell, pretty,mtl,haskell-src,haskell98
 
   GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s -Wall
   Extensions: DeriveDataTypeable, GeneralizedNewtypeDeriving
@@ -38,6 +38,7 @@ library
     Language.CSPM.Token
     Language.CSPM.SrcLoc
   Other-modules:
+    Language.CSPM.Version
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper
     Language.CSPM.LexHelper

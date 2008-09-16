@@ -5,7 +5,7 @@
 -- License     :  BSD
 -- 
 -- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
--- Stability   :  provisional
+-- Stability   :  experimental
 -- Portability :  GHC-only
 --
 -- This Module defines an Abstract Syntax Tree for CSPM.
