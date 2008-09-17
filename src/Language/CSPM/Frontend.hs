@@ -12,29 +12,32 @@
 
 module Language.CSPM.Frontend
 (
-   module Language.CSPM.AST
-  ,testFrontend
+   testFrontend
   ,parseFile
+  ,Token
   ,Lexer.lexInclude
   ,Lexer.lexPlain
   ,Lexer.filterIgnoredToken
   ,LexError(..)
-  ,Parser.parse
-  ,Parser.ParseError(..)
-  ,Rename.getRenaming
-  ,Rename.applyRenaming
-  ,Rename.RenameError(..)
-  ,errToExc
+  ,parse
+  ,ParseError(..)
+  ,Module
+  ,LModule
+  ,Labeled(..)
+  ,getRenaming
+  ,applyRenaming
+  ,RenameError(..)
+  ,eitherToExc
   ,handleLexError
   ,handleParseError
   ,handleRenameError
   ,version
 )
 where
-import Language.CSPM.Token
-import Language.CSPM.AST
-import qualified Language.CSPM.Parser as Parser
-import qualified Language.CSPM.Rename as Rename
+import Language.CSPM.Parser (ParseError(..),parse)
+import Language.CSPM.Rename (RenameError(..),getRenaming,applyRenaming)
+import Language.CSPM.Token (Token,LexError(..))
+import Language.CSPM.AST (Labeled(..),LModule,Module(..))
 
 import qualified Language.CSPM.LexHelper as Lexer
   (lexInclude,lexPlain,filterIgnoredToken)
@@ -44,24 +47,29 @@ import Control.Exception
 import System.CPUTime
 import Data.Typeable
 
-errToExc :: Typeable a => Either a b -> IO b
-errToExc (Right r) = return r
-errToExc (Left e) = throwDyn e
+-- | "eitherToExe" returns the Right part of "Either" or throws the Left part as an dynamic exception.
+eitherToExc :: Typeable a => Either a b -> IO b
+eitherToExc (Right r) = return r
+eitherToExc (Left e) = throwDyn e
 
+-- | Handle a dymanic exception of type "LexError".
 handleLexError :: (LexError -> IO a) -> IO a -> IO a
 handleLexError handler proc = catchDyn proc handler
 
-handleParseError :: (Parser.ParseError -> IO a) -> IO a -> IO a
+-- | Handle a dymanic exception of type "ParseError".
+handleParseError :: (ParseError -> IO a) -> IO a -> IO a
 handleParseError handler proc = catchDyn proc handler
 
-handleRenameError :: (Rename.RenameError -> IO a) -> IO a -> IO a
+-- | Handle a dymanic exception of type "RenameError".
+handleRenameError :: (RenameError -> IO a) -> IO a -> IO a
 handleRenameError handler proc = catchDyn proc handler
 
+-- | Lex and parse a file and return a "LModule", throw an exception in case of an error
 parseFile :: FilePath -> IO LModule
 parseFile fileName = do
   src <- readFile fileName
-  tokenList <- Lexer.lexInclude src >>= errToExc
-  errToExc $ Parser.parse fileName tokenList
+  tokenList <- Lexer.lexInclude src >>= eitherToExc
+  eitherToExc $ parse fileName tokenList
 
 testFrontend :: FilePath -> IO (LModule,LModule)
 testFrontend fileName = do
@@ -69,14 +77,14 @@ testFrontend fileName = do
 
   putStrLn $ "Reading File " ++ fileName
   startTime <- (return $ length src) >> getCPUTime
-  tokenList <- Lexer.lexInclude src >>= errToExc
+  tokenList <- Lexer.lexInclude src >>= eitherToExc
   time_have_tokens <- getCPUTime
 
-  ast <- errToExc $ Parser.parse fileName tokenList
+  ast <- eitherToExc $ parse fileName tokenList
   time_have_ast <- getCPUTime
 
-  renaming <- errToExc $ Rename.getRenaming ast
-  let astNew = Rename.applyRenaming renaming ast
+  renaming <- eitherToExc $ getRenaming ast
+  let astNew = applyRenaming renaming ast
   time_have_renaming <- getCPUTime
 
   putStrLn $ "Parsing OK"
@@ -85,6 +93,6 @@ testFrontend fileName = do
   putStrLn $ "renamingtime : " ++ showTime (time_have_renaming - time_have_ast)
   putStrLn $ "total : " ++ showTime(time_have_ast - startTime)
   return (ast,astNew)
-
-showTime :: Integer -> String
-showTime a = show (div a 1000000000) ++ "ms"
+  where
+    showTime :: Integer -> String
+    showTime a = show (div a 1000000000) ++ "ms"

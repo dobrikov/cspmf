@@ -30,13 +30,13 @@ main
 
   putStrLn $ "Reading File " ++ fileName
   startTime <- (return $ length src) >> getCPUTime
-  tokenList <- lexInclude src >>= errToExc
+  tokenList <- lexInclude src >>= eitherToExc
   time_have_tokens <- getCPUTime
 
-  ast <- errToExc $ parse fileName tokenList
+  ast <- eitherToExc $ parse fileName tokenList
   time_have_ast <- getCPUTime
 
-  renaming <- errToExc $ getRenaming ast
+  renaming <- eitherToExc $ getRenaming ast
   let astNew = applyRenaming renaming ast
   case astNew of Labeled {} -> return () -- force astNew ?
   time_have_renaming <- getCPUTime
