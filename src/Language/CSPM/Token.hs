@@ -80,6 +80,9 @@ data TokenClass
   | LInclude
   deriving (Show,Eq,Ord,Enum,Ix, Typeable, Data)
 
+allTokenClasses :: [TokenClass]
+allTokenClasses = [LInteger .. LInclude]
+
 showPosn :: AlexPosn -> String
 showPosn (AlexPn _ line col) = show line ++ ':': show col
 
