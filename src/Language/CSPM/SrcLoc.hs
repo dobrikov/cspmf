@@ -13,7 +13,7 @@
 module Language.CSPM.SrcLoc
 where
 
-import Language.CSPM.Token
+import Language.CSPM.Token as Token
 
 import Control.Monad
 import Data.Typeable (Typeable)
@@ -68,6 +68,13 @@ getEndOffset :: SrcLoc -> SrcOffset
 getEndOffset (TokSpan _s e) = alexPos $ tokenStart e
 getEndOffset (TokPos t) = alexPos $ tokenStart t
 getEndOffset _ =  error "no SrcOffset Availabel"
+
+getTokenId :: SrcLoc -> TokenId
+getTokenId (TokIdPos x) = x
+getTokenId (TokIdSpan x _) = x
+getTokenId (TokSpan x _ ) = Token.tokenId x
+getTokenId (TokPos x) = Token.tokenId x
+getTokenId _ = error "no SrcOffset Availabel"
 
 
 {-
