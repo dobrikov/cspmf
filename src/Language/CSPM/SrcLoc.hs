@@ -23,7 +23,8 @@ import Data.Generics.Instances ()
 data SrcLoc
   = TokIdPos TokenId
   | TokIdSpan TokenId TokenId
-  | TokSpan Token Token
+  | TokSpan Token Token -- the spans are closed intervals
+                        -- single token with token x :: TokSpan x x
   | TokPos Token
   | NoLocation
   deriving (Show,Eq,Ord,Typeable, Data)
@@ -51,8 +52,13 @@ getStartOffset _ =  error "no SrcOffset Availabel"
 
 getTokenLen :: SrcLoc -> SrcOffset
 getTokenLen (TokPos t) = tokenLen t
-getTokenLen (TokSpan s e) = (alexPos $ tokenStart e) - (alexPos $ tokenStart s)
+getTokenLen (TokSpan s e)
+  = (alexPos $ tokenStart e) - (alexPos $ tokenStart s) + tokenLen e
 getTokenLen _ = error "getTokenLen : info not Available"
+
+{-
+fix this !!
+-}
 
 getEndLine :: SrcLoc -> SrcLine
 getEndLine (TokSpan _s e) = alexLine $ tokenStart e

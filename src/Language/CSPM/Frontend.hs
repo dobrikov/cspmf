@@ -45,7 +45,6 @@ import Language.CSPM.Version
 
 import Control.Exception as Exception
 import System.CPUTime
-import Data.Typeable
 
 -- | "eitherToExe" returns the Right part of "Either" or throws the Left part as an dynamic exception.
 eitherToExc :: Exception a => Either a b -> IO b
