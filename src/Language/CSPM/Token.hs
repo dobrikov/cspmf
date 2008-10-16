@@ -19,6 +19,7 @@ import Data.Generics.Basics (Data)
 import Data.Generics.Instances ()
 import Data.Ix
 import Data.Char
+import Control.Exception (Exception)
 
 newtype TokenId = TokenId {unTokenId :: Int}
   deriving (Show,Eq,Ord,Enum,Ix, Typeable, Data)
@@ -44,6 +45,7 @@ data LexError = LexError {
    lexEPos :: !AlexPosn
   ,lexEMsg :: !String
   } deriving (Show, Typeable)
+instance Exception LexError
 
 
 data Token = Token

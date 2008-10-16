@@ -40,6 +40,7 @@ import Data.Typeable (Typeable)
 import Control.Monad.State
 import Data.List
 import Prelude hiding (exp)
+import Control.Exception (Exception)
 
 type PT a= GenParser Token PState a
 
@@ -59,6 +60,8 @@ data ParseError = ParseError {
   ,parseErrorToken :: Token
   ,parseErrorPos   :: AlexPosn
   } deriving (Show,Typeable)
+
+instance Exception ParseError
 
 data PState
  = PState {

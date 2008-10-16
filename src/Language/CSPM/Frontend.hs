@@ -43,26 +43,26 @@ import qualified Language.CSPM.LexHelper as Lexer
   (lexInclude,lexPlain,filterIgnoredToken)
 import Language.CSPM.Version
 
-import Control.Exception
+import Control.Exception as Exception
 import System.CPUTime
 import Data.Typeable
 
 -- | "eitherToExe" returns the Right part of "Either" or throws the Left part as an dynamic exception.
-eitherToExc :: Typeable a => Either a b -> IO b
+eitherToExc :: Exception a => Either a b -> IO b
 eitherToExc (Right r) = return r
-eitherToExc (Left e) = throwDyn e
+eitherToExc (Left e) = throw e
 
 -- | Handle a dymanic exception of type "LexError".
 handleLexError :: (LexError -> IO a) -> IO a -> IO a
-handleLexError handler proc = catchDyn proc handler
+handleLexError handler proc = Exception.catch proc handler
 
 -- | Handle a dymanic exception of type "ParseError".
 handleParseError :: (ParseError -> IO a) -> IO a -> IO a
-handleParseError handler proc = catchDyn proc handler
+handleParseError handler proc = Exception.catch proc handler
 
 -- | Handle a dymanic exception of type "RenameError".
 handleRenameError :: (RenameError -> IO a) -> IO a -> IO a
-handleRenameError handler proc = catchDyn proc handler
+handleRenameError handler proc = Exception.catch proc handler
 
 -- | Lex and parse a file and return a "LModule", throw an exception in case of an error
 parseFile :: FilePath -> IO LModule

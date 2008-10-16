@@ -1,5 +1,5 @@
 Name:                CSPM-Frontend
-Version:             0.2.3
+Version:             0.2.4
 
 Description:
   This Package contains functions for lexing, parsing and renaming
@@ -10,7 +10,7 @@ category:            Language
 License-File:        License
 Author:              2006-2008 Marc Fontaine
 Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>
-cabal-Version:       >= 1.2
+cabal-Version:       >= 1.6
 build-type: Simple
 Extra-source-files:
 
@@ -25,7 +25,7 @@ library
     buildable: False
   }
 
-  Build-Depends:       base,containers,array,parsec >=2.1.0.0 && < 3.0 ,old-time,template-haskell, pretty,mtl,haskell98
+  Build-Depends:       base >= 4.0 ,containers,array,parsec >=2.1.0.0 && < 3.0 ,old-time,template-haskell, pretty,mtl,haskell98, syb
 
   GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s -Wall
   Extensions: DeriveDataTypeable, GeneralizedNewtypeDeriving

@@ -33,6 +33,7 @@ import qualified Language.CSPM.SrcLoc as SrcLoc
 import qualified Data.Generics.Schemes (everywhere)
 import qualified Data.Generics.Aliases (mkT)
 import Data.Typeable (Typeable)
+import Control.Exception (Exception)
 
 import Control.Monad.Error
 import Control.Monad.State
@@ -89,6 +90,9 @@ data RenameError
    renameErrorMsg :: String
   ,renameErrorLoc :: SrcLoc.SrcLoc
   } deriving (Show,Typeable)
+
+instance Exception RenameError
+
 
 instance Error RenameError where
   noMsg = RenameError { renameErrorMsg = "no Messsage", renameErrorLoc = SrcLoc.NoLocation }
