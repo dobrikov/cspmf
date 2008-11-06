@@ -8,7 +8,7 @@
 -- Stability   :  provisional
 -- Portability :  GHC-only
 --
--- This module contains the datatype for Sourcelocations and some utility functions.
+-- This module contains the datatype for sourcelocations and some utility functions.
 
 module Language.CSPM.SrcLoc
 where
@@ -33,8 +33,6 @@ data SrcLoc
 type SrcLine = Int
 type SrcCol  = Int
 type SrcOffset  = Int
-
-
 
 getStartLine :: SrcLoc -> SrcLine
 getStartLine (TokSpan s _e) = alexLine $ tokenStart s

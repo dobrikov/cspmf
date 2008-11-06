@@ -11,7 +11,7 @@
 -- Compute the mapping between the using occurences and the defining occurences of all Identifier in a Module
 -- Also decide whether to use ground or non-ground- representaions for the translation to Prolog.
 {-
-todo : check that we do not bind variables when we patternmacht against
+todo : check that we do not bind variables when we pattern match against
 constructors : add a testcase for that
 todo :: maybe use SYB for gathering the renaming
 todo :: maybe also compute debruin-index/ freevariables
