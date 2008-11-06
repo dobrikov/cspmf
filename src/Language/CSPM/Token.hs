@@ -11,6 +11,7 @@
 -- This module contains the datatype Tokens.
 
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
+
 module Language.CSPM.Token
 where
 
@@ -27,8 +28,6 @@ newtype TokenId = TokenId {unTokenId :: Int}
 mkTokenId :: Int -> TokenId
 mkTokenId = TokenId
 
-
-
 data AlexPosn = AlexPn {
    alexPos :: !Int
   ,alexLine   :: !Int 
@@ -40,6 +39,11 @@ pprintAlexPosn (AlexPn _p l c) = "Line: "++show l++" Col: "++show c
 
 alexStartPos :: AlexPosn
 alexStartPos = AlexPn 0 1 1
+
+alexMove :: AlexPosn -> Char -> AlexPosn
+alexMove (AlexPn a l _c) '\n' = AlexPn (a+1) (l+1)   1
+alexMove (AlexPn a l c) _    = AlexPn (a+1)  l     (c+1)
+
 
 data LexError = LexError {
    lexEPos :: !AlexPosn

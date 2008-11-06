@@ -15,6 +15,7 @@ where
 
 import Language.CSPM.Token as Token
 
+import Data.List
 import Control.Monad
 import Data.Typeable (Typeable)
 import Data.Generics.Basics (Data)
@@ -56,23 +57,22 @@ getTokenLen (TokSpan s e)
   = (alexPos $ tokenStart e) - (alexPos $ tokenStart s) + tokenLen e
 getTokenLen _ = error "getTokenLen : info not Available"
 
-{-
-fix this !!
--}
-
 getEndLine :: SrcLoc -> SrcLine
-getEndLine (TokSpan _s e) = alexLine $ tokenStart e
-getEndLine (TokPos t) = alexLine $ tokenStart t
+getEndLine (TokSpan _s e) = alexLine $ computeEndPos e
+getEndLine (TokPos t) = alexLine $ computeEndPos t
 getEndLine _ =  error "no SrcLine Availabel"
 
 getEndCol :: SrcLoc -> SrcCol
-getEndCol (TokSpan _s e) = alexCol $ tokenStart e
-getEndCol (TokPos t) = alexCol $ tokenStart t
+getEndCol (TokSpan _s e) = alexCol $ computeEndPos e
+getEndCol (TokPos t) = alexCol $ computeEndPos t
 getEndCol _ =  error "no SrcCol Availabel"
 
+computeEndPos :: Token -> AlexPosn
+computeEndPos t = foldl' alexMove (tokenStart t) (tokenString t)
+
 getEndOffset :: SrcLoc -> SrcOffset
-getEndOffset (TokSpan _s e) = alexPos $ tokenStart e
-getEndOffset (TokPos t) = alexPos $ tokenStart t
+getEndOffset (TokSpan _s e) = (alexPos $ tokenStart e) + tokenLen e
+getEndOffset (TokPos t) = (alexPos $ tokenStart t) + tokenLen t
 getEndOffset _ =  error "no SrcOffset Availabel"
 
 getTokenId :: SrcLoc -> TokenId

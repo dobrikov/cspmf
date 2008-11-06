@@ -25,7 +25,7 @@ library
     buildable: False
   }
 
-  Build-Depends:       base >= 4.0 ,containers,array,parsec >=2.1.0.0 && < 3.0 ,old-time,template-haskell, pretty,mtl,haskell98, syb
+  Build-Depends:       base >= 4.0 ,containers,array,parsec >=2.1.0.0 && < 3.0 ,old-time,template-haskell, pretty,mtl,haskell98,syb
 
   GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s -Wall
   Extensions: DeriveDataTypeable, GeneralizedNewtypeDeriving
