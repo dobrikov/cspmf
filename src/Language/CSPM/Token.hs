@@ -15,6 +15,8 @@
 module Language.CSPM.Token
 where
 
+import Language.CSPM.TokenClasses
+
 import Data.Typeable (Typeable)
 import Data.Generics.Basics (Data)
 import Data.Generics.Instances ()
@@ -70,24 +72,6 @@ tokenSentinel = Token
 
 
 
-data TokenClass
-  = LInteger
---  | LFloat
---  | LChar
-  | LString
-  | LCspId
-  | LCspBI
-  | LCspsym
-  | LIdent
-  | LCSPFDR
-  | LLComment
-  | LBComment
-  | LEOF
-  | LInclude
-  deriving (Show,Eq,Ord,Enum,Ix, Typeable, Data)
-
-allTokenClasses :: [TokenClass]
-allTokenClasses = [LInteger .. LInclude]
 
 showPosn :: AlexPosn -> String
 showPosn (AlexPn _ line col) = show line ++ ':': show col

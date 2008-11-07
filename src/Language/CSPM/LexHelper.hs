@@ -10,9 +10,10 @@ module Language.CSPM.LexHelper
 where
 
 import qualified Language.CSPM.Lexer as Lexer (scanner)
-import Language.CSPM.Token (Token(..), LexError(..), TokenClass(..))
+import Language.CSPM.Token (Token(..), LexError(..) )
+import Language.CSPM.TokenClasses (TokenClass(..))
 import qualified Language.CSPM.Token as Token
-  (Token(..), TokenClass(..), LexError(..))
+  (Token(..), LexError(..))
 
 {- todo : use an error monad -}
 

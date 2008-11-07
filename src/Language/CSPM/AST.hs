@@ -21,6 +21,7 @@ module Language.CSPM.AST
 where
 
 import Language.CSPM.Token
+import qualified Language.CSPM.TokenClasses as TokenClasses
 import Language.CSPM.SrcLoc (SrcLoc(..))
 
 import Data.Typeable (Typeable)
@@ -154,7 +155,7 @@ type LRename = Labeled Rename
 data Rename = Rename LExp LExp deriving (Show,Eq,Ord,Typeable, Data)
 
 type LBuiltIn = Labeled BuiltIn
-data BuiltIn = BuiltIn String deriving (Show,Eq,Ord,Typeable, Data)
+data BuiltIn = BuiltIn TokenClasses.BuiltIn deriving (Show,Eq,Ord,Typeable, Data)
 
  --generators inside a comprehension-expression
 type LCompGen = Labeled CompGen

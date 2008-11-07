@@ -24,14 +24,18 @@ module Language.CSPM.Parser
 )
 where
 import Language.CSPM.AST
-import Language.CSPM.Token (Token(..),TokenClass(..),AlexPosn)
+import Language.CSPM.Token (Token(..),AlexPosn)
+import Language.CSPM.TokenClasses as TokenClasses
 import qualified Language.CSPM.Token as Token
 
 import Language.CSPM.SrcLoc (SrcLoc(..))
 import qualified Language.CSPM.SrcLoc as SrcLoc
 
+
 import Language.CSPM.LexHelper (filterIgnoredToken)
 import Text.ParserCombinators.Parsec.ExprM
+
+import Data.Set as Set (fromList,member)
 import Text.ParserCombinators.Parsec
   hiding (parse,eof,notFollowedBy,anyToken,label,ParseError,errorPos)
 import Text.ParserCombinators.Parsec.Pos (newPos)
@@ -159,23 +163,29 @@ cspSym name =
                       (LCspsym,s)   | s == name  -> Just ()
                       _ -> Nothing )
 
-cspKey :: String -> PT ()
-cspKey name= 
+keyword :: Keyword -> PT ()
+keyword k = 
   mytoken ( \tok -> case tok of
-                      (LCspId,s)   | s == name  -> Just ()
+                      (LCspKeyword x,_)   | x == k  -> Just ()
                       _ -> Nothing )
 
-cspBI :: PT String
-cspBI = 
+
+anyBuiltIn :: PT TokenClasses.BuiltIn
+anyBuiltIn = 
   mytoken ( \tok -> case tok of
-                      (LCspBI,s) -> Just s
+                      (LCspBuiltIn b ,_) -> Just b
                       _ -> Nothing )
 
+cspBI :: TokenClasses.BuiltIn -> PT ()
+cspBI b = 
+  mytoken ( \tok -> case tok of
+                      (LCspBuiltIn x,_)   | x == b  -> Just ()
+                      _ -> Nothing )
 
 blockBuiltIn :: PT a
 blockBuiltIn = do
-  bi <- cspBI
-  fail $ "can not use built-in '"++ bi ++ "' here"
+  bi <- anyBuiltIn
+  fail $ "can not use built-in '"++ show bi ++ "' here" -- todo fix: better error -message
 
 
 lIdent :: PT String
@@ -294,19 +304,19 @@ litPat = inSpan IntPat intLit
 
 letExp :: PT LExp
 letExp = withLoc $ do
-  cspKey "let"
+  keyword T_let
   decl <- parseDeclList
-  cspKey "within"
+  keyword T_within
   exp <- parseExp
   return $ Let decl exp            
 
 ifteExp :: PT LExp
 ifteExp = withLoc $ do
-  cspKey "if"
+  keyword T_if
   cond <- parseExp
-  cspKey "then"
+  keyword T_then
   thenExp <- parseExp
-  cspKey "else"
+  keyword T_else
   elseExp <- parseExp
   return $ Ifte cond thenExp elseExp
 
@@ -325,10 +335,18 @@ funCallBi = withLoc $ do
   fkt <- builtIn
   args <- parseFunArgs
   return $ CallBuiltIn fkt args
-
-
-builtIn :: PT LBuiltIn
-builtIn = inSpan BuiltIn cspBI
+  where 
+    builtIn :: PT LBuiltIn
+    builtIn = withLoc $ do
+      b <- anyBuiltIn
+      if Set.member b properFunctions
+        then return $ BuiltIn b
+        else fail "not a callable function"
+    properFunctions = Set.fromList
+      [ T_union ,T_inter, T_diff, T_Union, T_Inter,
+        T_member, T_card, T_empty, T_set, T_Set,
+        T_Seq, T_null, T_head, T_tail, T_concat,
+        T_elem, T_length, T_CHAOS ]
 
 parseFunArgs :: PT [[LExp]]
 parseFunArgs =  do
@@ -360,13 +378,13 @@ parseExpBase :: PT LExp
 parseExpBase =
          parenExpOrTupleEnum 
      <|> (try funCall)
-     <|> withLoc ( cspKey "STOP" >> return Stop)
-     <|> withLoc ( cspKey "SKIP" >> return Skip)
-     <|> withLoc ( cspKey "true" >> return CTrue)
-     <|> withLoc ( cspKey "false" >> return CFalse)
-     <|> withLoc ( cspKey "Events" >> return Events)
-     <|> withLoc ( cspKey "Bool" >> return BoolSet)
-     <|> withLoc ( cspKey "Int" >> return IntSet)
+     <|> withLoc ( cspBI T_STOP >> return Stop)
+     <|> withLoc ( cspBI T_SKIP >> return Skip)
+     <|> withLoc ( cspBI T_true >> return CTrue)
+     <|> withLoc ( cspBI T_false >> return CFalse)
+     <|> withLoc ( cspBI T_Events >> return Events)
+     <|> withLoc ( cspBI T_Bool >> return BoolSet)
+     <|> withLoc ( cspBI T_Int >> return IntSet)
      <|> ifteExp
      <|> letExp
      <|> litExp
@@ -433,9 +451,9 @@ opTable =
         return $ (\a b-> mkLabeledNode pos $ Fun2 ">" a b)
       ) AssocLeft
     ]
-   ,[ prefixM ( cspKey "not" >> unOp NotExp )]
-   ,[ infixM ( cspKey "and" >> binOp AndExp) AssocLeft ]
-   ,[ infixM ( cspKey "or" >> binOp OrExp) AssocLeft ]
+   ,[ prefixM ( cspBI T_not >> unOp NotExp )]
+   ,[ infixM ( cspBI T_and >> binOp AndExp) AssocLeft ]
+   ,[ infixM ( cspBI T_or >> binOp OrExp) AssocLeft ]
    ,[ infixM proc_op_aparallel AssocLeft ]
    ,[ infixM proc_op_lparallel AssocLeft ]
 {-
@@ -671,8 +689,8 @@ parsePatternDot = case ?innerDot of
 parsePatternCore :: (?innerDot::Bool) => PT LPattern
 parsePatternCore =
       nestedPattern
-  <|> withLoc ( cspKey "true" >> return TruePat)
-  <|> withLoc ( cspKey "false" >> return FalsePat)
+  <|> withLoc ( cspBI T_true >> return TruePat)
+  <|> withLoc ( cspBI T_false >> return FalsePat)
   <|> litPat
   <|> varPat
   <|> tuplePatEnum
@@ -811,7 +829,7 @@ topDeclList = do
     <?> "top-level declaration"   
 
   assertRef = withLoc $ do
-    cspKey "assert"
+    keyword T_assert
     p1<-parseExp
     op<-     (cspSym "[T=" >> return "[T=" )
          <|> (cspSym "[F=" >> return "[F=" )
@@ -820,7 +838,7 @@ topDeclList = do
     return $ AssertRef p1 op p2
 
   assertBool = withLoc $ do
-    cspKey "assert"
+    keyword T_assert
     b<-parseExp
     return $ AssertBool b
 
@@ -829,13 +847,13 @@ topDeclList = do
 
   parseTransparent :: PT LDecl
   parseTransparent = withLoc $ do
-    cspKey "transparent"
+    keyword T_transparent
     l <- sepBy1Comma ident
     return $ Transparent l
 
   parseSubtype :: PT LDecl
   parseSubtype = withLoc $ do
-    cspKey "subtype"
+    keyword T_subtype
     i <- ident
     cspSym "="
     conList<-sepBy1 constrDef (cspSym "|")
@@ -843,7 +861,7 @@ topDeclList = do
 
   parseDatatype :: PT LDecl
   parseDatatype = withLoc $ do
-    cspKey "datatype"
+    keyword T_datatype
     i <- ident
     cspSym "="
     conList<-sepBy1 constrDef (cspSym "|")
@@ -859,7 +877,7 @@ topDeclList = do
 
   parseNametype :: PT LDecl
   parseNametype = withLoc $ do
-    cspKey "nametype"
+    keyword T_nametype
     i <- ident
     cspSym "="
     t<-typeExp
@@ -867,7 +885,7 @@ topDeclList = do
 
   parseChannel :: PT LDecl
   parseChannel = withLoc $ do
-    cspKey "channel"
+    keyword T_channel
     identl<-sepBy1Comma ident
     t<-optionMaybe typeDef
     return $ Channel identl t
@@ -884,7 +902,7 @@ topDeclList = do
 
   parsePrint :: PT LDecl
   parsePrint = withLoc $ do
-    cspKey "print"
+    keyword T_print
     e <- parseExp
     return $ Print e
 

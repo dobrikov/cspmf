@@ -2,6 +2,7 @@ module Language.CSPM.AlexWrapper
 where
 
 import Language.CSPM.Token
+import Language.CSPM.TokenClasses
 
 import Data.Char
 
@@ -83,6 +84,12 @@ mkL :: TokenClass -> AlexInput -> Int -> Alex Token
 mkL c (pos,_,str) len = do
   cnt<-alexNextToken
   return (Token (mkTokenId cnt) pos len c (take len str))
+
+mkKeyword :: Keyword -> AlexInput -> Int -> Alex Token
+mkKeyword k = mkL $ LCspKeyword k
+
+mkBuiltIn :: BuiltIn -> AlexInput -> Int -> Alex Token
+mkBuiltIn b = mkL $ LCspBuiltIn b
 
 block_comment :: AlexInput -> Int -> Alex Token
 block_comment (startPos,_,_) _ = do

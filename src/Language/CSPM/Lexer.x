@@ -11,6 +11,7 @@ scanner
 )
 where
 import Language.CSPM.Token
+import Language.CSPM.TokenClasses
 import Language.CSPM.AlexWrapper
 }
 
@@ -39,18 +40,6 @@ $idchar    = [$alpha $digit \' \_]
 $symchar   = [$symbol \:]
 $nl        = [\n\r]
 
-@cspid = 
-        channel|datatype|nametype|subtype
-        | assert |pragma|transparent|external|print
-        | STOP|SKIP|true|false|if|then|else|let|within
-        | not | and | or | Int | Bool
-        | Events
-
-@cspbi =
-  CHAOS
-  | union | inter | diff | Union | Inter | member | card
-  | empty | set | Set | Seq
-  | null | head | tail | concat | elem | length
 
 @cspsym = 
      "(" | ")" | "<" | ">" | "[" | "]" | "[[" | "]]" | "[|" | "|]"
@@ -94,20 +83,61 @@ $charesc = [abfnrtv\\\"\'\&]
 
 csp :-
 
+-- CSP-M Keywords
+<0> "channel"     { mkKeyword T_channel  }
+<0> "datatype"    { mkKeyword T_datatype }
+<0> "nametype"    { mkKeyword T_nametype }
+<0> "subtype"     { mkKeyword T_subtype }
+<0> "assert"      { mkKeyword T_assert }
+<0> "pragma"      { mkKeyword T_pragma }
+<0> "transparent"    { mkKeyword T_transparent }
+<0> "external"    { mkKeyword T_external }
+<0> "print"    { mkKeyword T_print }
+<0> "if"    { mkKeyword T_if }
+<0> "then"    { mkKeyword T_then }
+<0> "else"    { mkKeyword T_else }
+<0> "let"    { mkKeyword T_let }
+<0> "within"    { mkKeyword T_within }
+
+-- CSP-M builtIns
+
+<0> "STOP"    { mkBuiltIn T_STOP }
+<0> "SKIP"    { mkBuiltIn T_SKIP }
+<0> "true"    { mkBuiltIn T_true }
+<0> "false"    { mkBuiltIn T_false }
+<0> "not"    { mkBuiltIn T_not }
+<0> "and"    { mkBuiltIn T_and }
+<0> "or"    { mkBuiltIn T_or }
+<0> "Int"    { mkBuiltIn T_Int }
+<0> "Bool"    { mkBuiltIn T_Bool }
+<0> "Events"    { mkBuiltIn T_Events }
+<0> "CHAOS"    { mkBuiltIn T_CHAOS }
+<0> "union"    { mkBuiltIn T_union }
+<0> "inter"    { mkBuiltIn T_inter }
+<0> "diff"    { mkBuiltIn T_diff }
+<0> "Union"    { mkBuiltIn T_Union }
+<0> "Inter"    { mkBuiltIn T_Inter }
+<0> "member"    { mkBuiltIn T_member }
+<0> "card"    { mkBuiltIn T_card }
+<0> "empty"    { mkBuiltIn T_empty }
+<0> "set"    { mkBuiltIn T_set }
+<0> "Set"    { mkBuiltIn T_Set }
+<0> "Seq"    { mkBuiltIn T_Seq }
+<0> "null"    { mkBuiltIn T_null }
+<0> "head"    { mkBuiltIn T_head }
+<0> "tail"    { mkBuiltIn T_tail }
+<0> "concat"    { mkBuiltIn T_concat }
+<0> "elem"    { mkBuiltIn T_elem }
+<0> "length"    { mkBuiltIn T_length }
+
 <0> $white+			{ skip }
 <0> "--".*			{ mkL LLComment }
 "{-"				{ block_comment }
---<0> "include"\-*[^$symbol].*    { mkL LCSPFDR }
-
 
 -- Fixme : tread this properly
 <0> ":[" $whitechar* @assertCore $whitechar* "]"    { mkL LCSPFDR }
 
 <0> "include"                   { mkL LInclude }
-
-<0> @cspid			{ mkL LCspId }
-
-<0> @cspbi			{ mkL LCspBI }
 
 <0> @cspsym                     { mkL LCspsym} -- ambiguity for wildcardpattern _
 
@@ -121,6 +151,9 @@ csp :-
 -- <0> \' ($graphic # [\'\\] | " " | @escape) \' { mkL LChar }
 
    <0> \" @string* \"		{ mkL LString }
+
+
+
 
 {
 alexMonadScan = do

@@ -1,5 +1,5 @@
 Name:                CSPM-Frontend
-Version:             0.2.4.2
+Version:             0.2.5.0
 
 Description:
   This Package contains functions for lexing, parsing and renaming
@@ -43,4 +43,5 @@ library
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper
     Language.CSPM.LexHelper
+    Language.CSPM.TokenClasses
     Text.ParserCombinators.Parsec.ExprM
