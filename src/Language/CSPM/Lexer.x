@@ -47,7 +47,7 @@ $nl        = [\n\r]
      | "->" | "<-" | "<->" 
      | ":" | ".."
      | "." | "?" | "!" | "@" | "," | "=" | "@@"
-     | "_"
+     | "_" | "^"
      | "[FD=" | "[F=" | "[T="
 
 
@@ -127,7 +127,7 @@ csp :-
 <0> "concat"    { mkBuiltIn T_concat }
 <0> "elem"    { mkBuiltIn T_elem }
 <0> "length"    { mkBuiltIn T_length }
-<0> "^"    { mkBuiltIn T_Concat }
+--<0> "^"    { mkBuiltIn T_Concat }
 <0> "#"    { mkBuiltIn T_Len2 }
 <0> "*"    { mkBuiltIn T_Mult }
 <0> "/"    { mkBuiltIn T_Div }
@@ -142,7 +142,7 @@ csp :-
 --  <0> ">"    { mkBuiltIn T_GT }
 <0> "&"    { mkBuiltIn T_Guard }
 <0> ";"    { mkBuiltIn T_Semicolon }
-<0> "/\\"    { mkBuiltIn T_Interrupt }
+<0> "/\"    { mkBuiltIn T_Interrupt }
 <0> "[]"    { mkBuiltIn T_ExtChoice }
 <0> "[>"    { mkBuiltIn T_Timeout }
 <0> "|~|"    { mkBuiltIn T_IntChoice }

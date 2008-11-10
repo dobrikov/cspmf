@@ -430,7 +430,7 @@ opTable =
 -- ToDo : fix funApply and procRenaming
     [ postfixM funApplyImplicit ]
    ,[ postfixM procRenaming ]
-   ,[ infixM (nfun2 T_Concat ) AssocLeft,
+   ,[ infixM (nfun2Sym "^" T_Concat ) AssocLeft,
       prefixM (nfun1 T_Len2 ) -- different from Roscoe Book
     ]
    ,[ infixM (nfun2 T_Mult ) AssocLeft
