@@ -56,7 +56,9 @@ data Keyword
   | T_within
   deriving (Show,Eq,Ord,Typeable, Data)
 
--- builtin functions
+{-
+builtin functions
+-}
 data BuiltIn
   = T_true
   | T_false
@@ -86,4 +88,29 @@ data BuiltIn
   | T_Int
   | T_Bool
   | T_CHAOS
+{-
+maybe it would be better to strictly distinct between token and semantics
+todo : next time
+-}
+  | T_Concat       -- "^"
+  | T_Len2         -- "#"
+  | T_Mult         -- "*"
+  | T_Div          -- "/"
+  | T_Mod          -- "%"
+  | T_Add          -- "+"
+  | T_Sub          -- "-"
+  | T_Eq           -- "=="
+  | T_NEq          -- "!="
+  | T_GE           -- ">="
+  | T_LE           -- "<-"
+  | T_LT           -- "<"
+  | T_GT           -- ">"
+  | T_Guard        -- "&"
+  | T_Semicolon    -- ";"
+  | T_Interrupt    -- "/\\"
+  | T_ExtChoice    -- "[]"
+  | T_Timeout      -- "[>"
+  | T_IntChoice    -- "|~|"
+  | T_Interleave   -- "|||"
+  | T_Hiding       -- "\\"
   deriving (Show,Eq,Ord,Typeable, Data)

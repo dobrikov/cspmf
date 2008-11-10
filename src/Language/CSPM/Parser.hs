@@ -430,25 +430,26 @@ opTable =
 -- ToDo : fix funApply and procRenaming
     [ postfixM funApplyImplicit ]
    ,[ postfixM procRenaming ]
-   ,[ infixM (nfun2 "^" ) AssocLeft,
-      prefixM (nfun1 "#" ) -- different from Roscoe Book
+   ,[ infixM (nfun2 T_Concat ) AssocLeft,
+      prefixM (nfun1 T_Len2 ) -- different from Roscoe Book
     ]
-   ,[ infixM (nfun2 "*" ) AssocLeft
-     ,infixM (nfun2 "/" ) AssocLeft
-     ,infixM (nfun2 "%"  ) AssocLeft
+   ,[ infixM (nfun2 T_Mult ) AssocLeft
+     ,infixM (nfun2 T_Div ) AssocLeft
+     ,infixM (nfun2 T_Mod  ) AssocLeft
     ]
-   ,[ infixM (nfun2 "+" ) AssocLeft,
-      infixM (nfun2 "-" ) AssocLeft
+   ,[ infixM (nfun2 T_Add ) AssocLeft,
+      infixM (nfun2Sym "-" T_Sub ) AssocLeft
     ]
-   ,[ infixM (nfun2 "==" ) AssocLeft
-     ,infixM (nfun2 "!=" ) AssocLeft
-     ,infixM (nfun2 ">=" ) AssocLeft
-     ,infixM (nfun2 "<=" ) AssocLeft
-     ,infixM (nfun2 "<" ) AssocLeft
+   ,[ infixM (nfun2 T_Eq ) AssocLeft
+     ,infixM (nfun2 T_NEq ) AssocLeft
+     ,infixM (nfun2 T_GE ) AssocLeft
+     ,infixM (nfun2 T_LE ) AssocLeft
+     ,infixM (nfun2Sym "<" T_LT ) AssocLeft
      ,infixM (do
         gtSym
+        op <- mkLabeledNode NoLocation (BuiltIn T_GT)  -- ToDo : fix this
         pos <- getPos
-        return $ (\a b-> mkLabeledNode pos $ Fun2 ">" a b)
+        return $ (\a b-> mkLabeledNode pos $ Fun2 op a b)
       ) AssocLeft
     ]
    ,[ prefixM ( cspBI T_not >> unOp NotExp )]
@@ -456,39 +457,35 @@ opTable =
    ,[ infixM ( cspBI T_or >> binOp OrExp) AssocLeft ]
    ,[ infixM proc_op_aparallel AssocLeft ]
    ,[ infixM proc_op_lparallel AssocLeft ]
-{-
-   these have moved to a sperate level of recursion
-   ,[Prefix $ procRep ";"   "repSequence"
-    ,Prefix $ procRep "|~|" "repInternalChoice" 
-    ,Prefix $ procRep "|||" "repInterleave"
-    ,Prefix $ procRep "[]"  "repChoice"
-    ,Prefix procRepAParallel
-    ,Prefix procRepLinkParallel
-    ,Prefix procRepSharing
-    ]
--}
+
    ,[infixM procOpSharing AssocLeft ]
-   ,[infixM (nfun2 "&" ) AssocLeft]
-   ,[infixM (nfun2 ";" ) AssocLeft]
-   ,[infixM (nfun2 "/\\" ) AssocLeft]
-   ,[infixM (nfun2 "[]" ) AssocLeft]
-   ,[infixM (nfun2 "[>" ) AssocLeft]
-   ,[infixM (nfun2 "|~|" ) AssocLeft]
-   ,[infixM (nfun2 "|||" ) AssocLeft]
-   ,[infixM (nfun2 "\\" ) AssocLeft]
+   ,[infixM (nfun2 T_Guard ) AssocLeft]
+   ,[infixM (nfun2 T_Semicolon ) AssocLeft]
+   ,[infixM (nfun2 T_Interrupt ) AssocLeft]
+   ,[infixM (nfun2 T_ExtChoice ) AssocLeft]
+   ,[infixM (nfun2 T_Timeout ) AssocLeft]
+   ,[infixM (nfun2 T_IntChoice ) AssocLeft]
+   ,[infixM (nfun2 T_Interleave ) AssocLeft]
+   ,[infixM (nfun2Sym "\\" T_Hiding) AssocLeft]
   ] 
   where
-  nfun1 :: String -> PT (LExp -> PT LExp)
+  nfun1 :: TokenClasses.BuiltIn -> PT (LExp -> PT LExp)
   nfun1 op = do
-    cspSym op
+    fkt <- biOp op
     pos<-getPos
-    return $ (\a -> mkLabeledNode pos $ Fun1 op a)
+    return $ (\a -> mkLabeledNode pos $ Fun1 fkt a)
 
-  nfun2 :: String -> PT (LExp -> LExp -> PT LExp)
+  nfun2 :: TokenClasses.BuiltIn -> PT (LExp -> LExp -> PT LExp)
   nfun2 op = do
     pos<-getPos
-    cspSym op
-    return $ (\a b -> mkLabeledNode pos $ Fun2 op a b)
+    fkt <- biOp op
+    return $ (\a b -> mkLabeledNode pos $ Fun2 fkt a b)
+  nfun2Sym :: String -> TokenClasses.BuiltIn -> PT (LExp -> LExp -> PT LExp)
+  nfun2Sym s t = do
+    cspSym s
+    op <- mkLabeledNode NoLocation (BuiltIn t)  -- ToDo : fix this
+    pos <- getPos
+    return $ (\a b-> mkLabeledNode pos $ Fun2 op a b)
 
   binOp :: (LExp -> LExp -> Exp) -> PT (LExp -> LExp -> PT LExp)
   binOp op = do
@@ -500,6 +497,8 @@ opTable =
     pos<-getLastPos
     return $ (\a -> mkLabeledNode (mkSrcPos pos) $ op a)
 
+  biOp :: TokenClasses.BuiltIn -> PT LBuiltIn
+  biOp op = inSpan BuiltIn (cspBI op  >> return op)
 
 parseExp :: PT LExp
 parseExp =
@@ -922,10 +921,10 @@ closureExp = inSpan Closure $
 
 parseProcReplicatedExp :: PT LProc
 parseProcReplicatedExp = do
-      procRep ";"   ProcRepSequence
-  <|> procRep "|~|" ProcRepInternalChoice
-  <|> procRep "|||" ProcRepInterleave
-  <|> procRep "[]"  ProcRepChoice
+      procRep T_Semicolon   ProcRepSequence
+  <|> procRep T_IntChoice ProcRepInternalChoice
+  <|> procRep T_Interleave ProcRepInterleave
+  <|> procRep T_ExtChoice  ProcRepChoice
   <|> procRepAParallel
   <|> procRepLinkParallel
   <|> procRepSharing
@@ -934,9 +933,9 @@ parseProcReplicatedExp = do
   <?> "parseProcReplicatedExp"
   where
   -- todo : refactor all these to using inSpan
-  procRep :: String -> ([LCompGen] -> LProc -> Exp) -> PT LProc
+  procRep :: TokenClasses.BuiltIn -> ([LCompGen] -> LProc -> Exp) -> PT LProc
   procRep sym fkt = withLoc $ do
-    cspSym sym
+    cspBI sym
     l<-comprehensionRep
     body <- parseProcReplicatedExp
     return $ fkt l body

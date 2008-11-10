@@ -9,6 +9,8 @@
 -- Portability :  GHC-only
 --
 -- This Module defines an Abstract Syntax Tree for CSPM.
+-- This is the AST that is computed by the parser.
+-- For historycal reasons, it is rather unstructured
 {-
 todo
   * use a datatype for build-ins / operators
@@ -115,8 +117,8 @@ data Exp
   | AndExp LExp LExp
   | OrExp LExp LExp
   | NotExp LExp
-  | Fun1 String LExp    -- remove String
-  | Fun2 String LExp LExp  -- remove String
+  | Fun1 LBuiltIn LExp
+  | Fun2 LBuiltIn LExp LExp
   | DotTuple [LExp]
   | Closure [LExp]
   | ProcSharing LExp LProc LProc
@@ -171,7 +173,7 @@ data Pattern
   | TruePat
   | FalsePat
   | WildCard
-{-  ContrPat    -}
+{-  ConstrPat    -}
   | VarPat LIdent
   | Also [LPattern]
   | Append [LPattern]
@@ -230,7 +232,7 @@ mkLabeledNode loc node = do
    ,srcLoc = loc
    ,unLabel = node }
 
-
+{-
 -- user must supply a unique NodeId
 unsafeMkLabeledNode :: NodeId -> SrcLoc -> t -> Labeled t
 unsafeMkLabeledNode i loc node
@@ -238,6 +240,7 @@ unsafeMkLabeledNode i loc node
     nodeId = i
    ,srcLoc = loc
    ,unLabel = node }
+-}
 
 class (Monad m) => NodeIdSupply m where
   getNewNodeId :: m NodeId
