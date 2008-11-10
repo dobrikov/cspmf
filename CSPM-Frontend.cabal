@@ -38,10 +38,10 @@ library
     Language.CSPM.Token
     Language.CSPM.SrcLoc
     Language.CSPM.AstUtils
+    Language.CSPM.TokenClasses
   Other-modules:
     Language.CSPM.Version
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper
     Language.CSPM.LexHelper
-    Language.CSPM.TokenClasses
     Text.ParserCombinators.Parsec.ExprM

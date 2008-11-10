@@ -126,16 +126,17 @@ data Exp
   | ProcLinkParallel LLinkList LProc LProc
   | ProcRenaming [LRename] LProc
   | ProcRenamingComprehension [LRename] [LCompGen] LProc
-  | ProcRepSequence [LCompGen] LProc
-  | ProcRepInternalChoice [LCompGen] LProc
-  | ProcRepInterleave [LCompGen] LProc
-  | ProcRepChoice [LCompGen] LProc
-  | ProcRepAParallel [LCompGen] LExp LProc
-  | ProcRepLinkParallel [LCompGen] LLinkList LProc
-  | ProcRepSharing [LCompGen] LExp LProc
+  | ProcRepSequence LCompGenList LProc
+  | ProcRepInternalChoice LCompGenList LProc
+  | ProcRepInterleave LCompGenList LProc
+  | ProcRepChoice LCompGenList LProc
+  | ProcRepAParallel LCompGenList LExp LProc
+  | ProcRepLinkParallel LCompGenList LLinkList LProc
+  | ProcRepSharing LCompGenList LExp LProc
   | PrefixExp LExp [LCommField] LProc
   deriving (Show,Eq,Ord,Typeable, Data)
 
+type LCompGenList = Labeled [LCompGen]
 
 type LCommField = Labeled CommField
 data CommField

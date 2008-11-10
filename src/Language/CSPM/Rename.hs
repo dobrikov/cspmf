@@ -252,14 +252,14 @@ rnExp expression = case unLabel expression of
 {- scopingrules for LCompGen as found in FDR -} 
   ProcRenamingComprehension re comp proc
      -> inCompGen comp (mapM_ reRename re) >> rnExp proc
-  ProcRepSequence a p -> inCompGen a (rnExp p)
-  ProcRepInternalChoice a p -> inCompGen a (rnExp p)
-  ProcRepInterleave a p -> inCompGen a (rnExp p)
-  ProcRepChoice  a p -> inCompGen a (rnExp p)
-  ProcRepAParallel comp a p -> inCompGen comp (rnExp a >> rnExp p)
+  ProcRepSequence a p -> inCompGenL a (rnExp p)
+  ProcRepInternalChoice a p -> inCompGenL a (rnExp p)
+  ProcRepInterleave a p -> inCompGenL a (rnExp p)
+  ProcRepChoice  a p -> inCompGenL a (rnExp p)
+  ProcRepAParallel comp a p -> inCompGenL comp (rnExp a >> rnExp p)
   ProcRepLinkParallel comp l p
-    -> rnLinkList l >> inCompGen comp (rnExp p)
-  ProcRepSharing comp s p -> rnExp s >> inCompGen comp (rnExp p)
+    -> rnLinkList l >> inCompGenL comp (rnExp p)
+  ProcRepSharing comp s p -> rnExp s >> inCompGenL comp (rnExp p)
   PrefixExp chan fields proc -> localScope $ do
     rnExp chan
     mapM_ rnCommField fields
@@ -316,6 +316,9 @@ rnCommField f = case unLabel f of
   InComm pat -> rnPattern pat
   InCommGuarded p g -> rnPattern p >> rnExp g
   OutComm e -> rnExp e
+
+inCompGenL :: LCompGenList -> RM () -> RM ()
+inCompGenL l r = inCompGen (unLabel l) r
 
 inCompGen :: [LCompGen] -> RM () -> RM ()
 inCompGen (h:t) ret = localScope $ do

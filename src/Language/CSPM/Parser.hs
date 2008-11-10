@@ -243,8 +243,8 @@ compGenerator = try $ withLoc $ do
   return $ Generator pat exp
 
 -- replicated operations use comprehensions with a differen Syntax
-comprehensionRep :: PT [LCompGen]
-comprehensionRep = do
+comprehensionRep :: PT LCompGenList
+comprehensionRep = withLoc $ do
   l <- sepByComma (repGenerator <|> compGuard)
   cspSym "@"
   return l
@@ -933,7 +933,7 @@ parseProcReplicatedExp = do
   <?> "parseProcReplicatedExp"
   where
   -- todo : refactor all these to using inSpan
-  procRep :: TokenClasses.BuiltIn -> ([LCompGen] -> LProc -> Exp) -> PT LProc
+  procRep :: TokenClasses.BuiltIn -> (LCompGenList -> LProc -> Exp) -> PT LProc
   procRep sym fkt = withLoc $ do
     cspBI sym
     l<-comprehensionRep
