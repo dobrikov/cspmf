@@ -35,7 +35,7 @@ processIncludeAndReverse tokens = picl_acc tokens []
   where 
   picl_acc ::[Token] ->[Token] -> IO (Either LexError [Token] )
   picl_acc [] acc = return $ Right acc
-  picl_acc ((Token _ _ _ LString fname) : (Token _ _ _ LInclude _) :trest) acc = do
+  picl_acc ((Token _ _ _ L_String fname) : (Token _ _ _ L_Include _) :trest) acc = do
     let fileName = reverse $ tail $ reverse $ tail fname -- remove quotes
     -- putStrLn $ "Including file : " ++ fileName
     input <-readFile fileName
@@ -46,7 +46,7 @@ processIncludeAndReverse tokens = picl_acc tokens []
           Right t -> picl_acc trest t
           e -> return e
       Left e -> return $ Left e
-  picl_acc ((incl@(Token _ _ _ LInclude _)) : _) _ = 
+  picl_acc ((incl@(Token _ _ _ L_Include _)) : _) _ = 
     return $ Left $ LexError {
        lexEPos = tokenStart incl
       ,lexEMsg = "Include without filename" 
@@ -58,16 +58,16 @@ filterIgnoredToken :: [Token] -> [Token]
 filterIgnoredToken = filter ( not . tokenIsIgnored)
 
 tokenIsIgnored :: Token -> Bool
-tokenIsIgnored (Token _ _ _ LLComment _) = True
-tokenIsIgnored (Token _ _ _ LCSPFDR _) = True
-tokenIsIgnored (Token _ _ _ LBComment _) = True
+tokenIsIgnored (Token _ _ _ L_LComment _) = True
+tokenIsIgnored (Token _ _ _ L_CSPFDR _) = True
+tokenIsIgnored (Token _ _ _ L_BComment _) = True
 tokenIsIgnored _ = False
 
 tokenIsComment :: Token -> Bool
-tokenIsComment (Token _ _ _ LLComment _) = True
-tokenIsComment (Token _ _ _ LBComment _) = True
+tokenIsComment (Token _ _ _ L_LComment _) = True
+tokenIsComment (Token _ _ _ L_BComment _) = True
 tokenIsComment _ = False
 
 tokenIsFDR :: Token -> Bool
-tokenIsFDR (Token _ _ _ LCSPFDR _) = True
+tokenIsFDR (Token _ _ _ L_CSPFDR _) = True
 tokenIsFDR _ = False

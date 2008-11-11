@@ -245,3 +245,4 @@ unsafeMkLabeledNode i loc node
 
 class (Monad m) => NodeIdSupply m where
   getNewNodeId :: m NodeId
+

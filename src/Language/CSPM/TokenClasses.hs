@@ -20,19 +20,17 @@ import Data.Generics.Basics (Data)
 import Data.Generics.Instances ()
 
 data TokenClass
-  = LInteger
-  | LString
-  | LCspKeyword Keyword
-  | LCspBuiltIn BuiltIn     -- builtIns called by name
-  | LCspId
-  | LCspsym
-  | LIdent
-  | LCSPFDR      -- needed for special assertions
-  | LLComment
-  | LBComment
-  | LEOF
-  | LInclude
---  deriving (Show,Eq,Ord,Enum,Ix, Typeable, Data)
+  = L_Integer
+  | L_String
+  | L_Keyword Keyword
+  | L_BuiltIn BuiltIn
+  | L_Symbol Symbol
+  | L_Ident
+  | L_CSPFDR      -- needed for special assertions
+  | L_LComment
+  | L_BComment
+  | L_EOF
+  | L_Include
   deriving (Show,Eq,Ord, Typeable, Data)
 
 --allTokenClasses :: [TokenClass]
@@ -88,29 +86,77 @@ data BuiltIn
   | T_Int
   | T_Bool
   | T_CHAOS
-{-
-maybe it would be better to strictly distinct between token and semantics
-todo : next time
--}
-  | T_Concat       -- "^"
-  | T_Len2         -- "#"
-  | T_Mult         -- "*"
-  | T_Div          -- "/"
-  | T_Mod          -- "%"
-  | T_Add          -- "+"
-  | T_Sub          -- "-"
-  | T_Eq           -- "=="
-  | T_NEq          -- "!="
-  | T_GE           -- ">="
-  | T_LE           -- "<-"
-  | T_LT           -- "<"
-  | T_GT           -- ">"
-  | T_Guard        -- "&"
-  | T_Semicolon    -- ";"
-  | T_Interrupt    -- "/\\"
-  | T_ExtChoice    -- "[]"
-  | T_Timeout      -- "[>"
-  | T_IntChoice    -- "|~|"
-  | T_Interleave   -- "|||"
-  | T_Hiding       -- "\\"
+-- move these to the AST
+  | T_Concat
+  | T_Len2
+  | T_Mult
+  | T_Div
+  | T_Mod
+  | T_Add
+  | T_Sub
+  | T_Eq
+  | T_NEq
+  | T_GE
+  | T_LE
+  | T_LT
+  | T_GT
+  | T_Guard
+  | T_Semicolon
+  | T_Interrupt
+  | T_ExtChoice
+  | T_Timeout
+  | T_IntChoice
+  | T_Interleave
+  | T_Hiding
+  deriving (Show,Eq,Ord,Typeable, Data)
+
+data Symbol
+  = T_hat          -- "^"
+  | T_hash         -- "#"
+  | T_times        -- "*"
+  | T_slash        -- "/"
+  | T_percent      -- "%"
+  | T_plus         -- "+"
+  | T_minus        -- "-"
+  | T_eq           -- "=="
+  | T_neq          -- "!="
+  | T_ge           -- ">="
+  | T_le           -- "<="
+  | T_lt           -- "<"
+  | T_gt           -- ">"
+  | T_amp          -- "&"
+  | T_semicolon    -- ";"
+  | T_comma        -- ","
+  | T_triangle     -- "/\\"
+  | T_box          -- "[]"
+  | T_rhd          -- "[>"
+  | T_sqcap        -- "|~|"
+  | T_interleave   -- "|||"
+  | T_backslash    -- "\\"
+  | T_parallel     -- "||"
+  | T_mid          -- "|"
+  | T_at           -- "@"
+  | T_atat         -- "@@"
+  | T_rightarrow   -- "->"
+  | T_leftarrow    -- "<-"
+  | T_leftrightarrow -- "<->"
+  | T_dot          -- "."
+  | T_dotdot       -- ".."
+  | T_exclamation  -- "!"
+  | T_questionmark -- "?"
+  | T_colon        -- ":"
+  | T_openParen    -- "("
+  | T_closeParen   -- ")"
+  | T_openBrace    -- "{"
+  | T_closeBrace   -- "}"
+  | T_openBrack    -- "["
+  | T_closeBrack   -- "]"
+  | T_openOxBrack  -- "[|"
+  | T_closeOxBrack -- "|]"
+  | T_openBrackBrack  -- "[["
+  | T_closeBrackBrack -- "]]"
+  | T_openPBrace   -- "{|"
+  | T_closePBrace  -- "|}"
+  | T_underscore   -- "_"
+  | T_is           -- "="
   deriving (Show,Eq,Ord,Typeable, Data)

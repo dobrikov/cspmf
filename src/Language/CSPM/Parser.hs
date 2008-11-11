@@ -154,32 +154,32 @@ parseModule tokenList = withLoc $ do
 linteger :: PT String
 linteger = 
   mytoken ( \tok -> case tok of
-                      (LInteger,s) -> Just s
+                      (L_Integer,s) -> Just s
                       _ -> Nothing )
 
-cspSym :: String -> PT ()
-cspSym name =
+symbol :: TokenClasses.Symbol -> PT ()
+symbol sym =
   mytoken ( \tok -> case tok of
-                      (LCspsym,s)   | s == name  -> Just ()
+                      (L_Symbol s,_)   | s == sym  -> Just ()
                       _ -> Nothing )
 
 keyword :: Keyword -> PT ()
 keyword k = 
   mytoken ( \tok -> case tok of
-                      (LCspKeyword x,_)   | x == k  -> Just ()
+                      (L_Keyword x,_)   | x == k  -> Just ()
                       _ -> Nothing )
 
 
 anyBuiltIn :: PT TokenClasses.BuiltIn
 anyBuiltIn = 
   mytoken ( \tok -> case tok of
-                      (LCspBuiltIn b ,_) -> Just b
+                      (L_BuiltIn b ,_) -> Just b
                       _ -> Nothing )
 
-cspBI :: TokenClasses.BuiltIn -> PT ()
-cspBI b = 
+builtIn :: TokenClasses.BuiltIn -> PT ()
+builtIn b = 
   mytoken ( \tok -> case tok of
-                      (LCspBuiltIn x,_)   | x == b  -> Just ()
+                      (L_BuiltIn x,_)   | x == b  -> Just ()
                       _ -> Nothing )
 
 blockBuiltIn :: PT a
@@ -191,7 +191,7 @@ blockBuiltIn = do
 lIdent :: PT String
 lIdent= 
   mytoken ( \tok -> case tok of
-                      (LIdent,s) -> Just s
+                      (L_Ident,s) -> Just s
                       _ -> Nothing )
   <?> "identifier"
 
@@ -202,7 +202,7 @@ varExp :: PT LExp
 varExp= withLoc (ident >>= return . Var)
 
 commaSeperator :: PT ()
-commaSeperator = cspSym ","
+commaSeperator = symbol T_comma
 
 sepByComma :: PT x -> PT [x]
 sepByComma a = sepBy a commaSeperator
@@ -213,14 +213,14 @@ sepBy1Comma a = sepBy1 a commaSeperator
 rangeCloseExp :: PT (LExp,LExp)
 rangeCloseExp = do
   s<-parseExp_noPrefix
-  cspSym ".."
+  symbol T_dotdot
   e<- parseExp_noPrefix
   return (s,e)
 
 rangeOpenExp :: PT LExp
 rangeOpenExp = do
   s <- parseExp_noPrefix
-  cspSym ".."
+  symbol T_dotdot
   return s
 
 comprehensionExp :: PT ([LExp],[LCompGen])
@@ -230,7 +230,7 @@ comprehensionExp = do
   return (expList,gens)
 
 parseComprehension :: PT [LCompGen]
-parseComprehension = cspSym "|" >> sepByComma (compGenerator<|>compGuard )
+parseComprehension = symbol T_mid >> sepByComma (compGenerator<|>compGuard )
 
 compGuard :: PT LCompGen
 compGuard= withLoc (parseExp_noPrefix >>= return . Guard)
@@ -238,7 +238,7 @@ compGuard= withLoc (parseExp_noPrefix >>= return . Guard)
 compGenerator :: PT LCompGen
 compGenerator = try $ withLoc $ do
   pat <- parsePattern
-  cspSym "<-"
+  symbol T_leftarrow
   exp <- parseExp_noPrefix
   return $ Generator pat exp
 
@@ -246,47 +246,54 @@ compGenerator = try $ withLoc $ do
 comprehensionRep :: PT LCompGenList
 comprehensionRep = withLoc $ do
   l <- sepByComma (repGenerator <|> compGuard)
-  cspSym "@"
+  symbol T_at
   return l
 
 repGenerator :: PT LCompGen
 repGenerator = try $ withLoc $ do
   pat <- parsePattern
-  cspSym ":"
+  symbol T_dot
   exp <- parseExp_noPrefix
   return $ Generator pat exp
 
+inBraces :: PT x -> PT x
+inBraces = between (symbol T_openBrace) (symbol T_closeBrace)
+
+inParens :: PT x -> PT x
+inParens = between (symbol T_openParen) (symbol T_closeParen)
+
 setExpEnum :: PT LExp
-setExpEnum =   inSpan SetEnum $ between (cspSym "{") (cspSym "}") (sepByComma parseExp) 
+setExpEnum =   inSpan SetEnum $ inBraces  (sepByComma parseExp) 
 
 listExpEnum :: PT LExp
 listExpEnum =  inSpan ListEnum $ betweenLtGt (sepByComma parseExp_noPrefix)
 
 setExpOpen :: PT LExp
-setExpOpen  =  inSpan SetOpen  $ between (cspSym "{") (cspSym "}") rangeOpenExp 
+setExpOpen  =  inSpan SetOpen  $ inBraces rangeOpenExp 
 
 listExpOpen :: PT LExp
 listExpOpen =  inSpan ListOpen $ betweenLtGt rangeOpenExp
 
 setExpClose :: PT LExp
-setExpClose =  inSpan SetClose $ between (cspSym "{") (cspSym "}") rangeCloseExp
+setExpClose =  inSpan SetClose $ inBraces rangeCloseExp
 
 listExpClose :: PT LExp
 listExpClose =  inSpan ListClose $ betweenLtGt rangeCloseExp 
 
 setComprehension :: PT LExp
-setComprehension =  inSpan SetComprehension $ between (cspSym "{") (cspSym "}") comprehensionExp
+setComprehension =  inSpan SetComprehension $ inBraces comprehensionExp
 
 listComprehension :: PT LExp
 listComprehension =  inSpan  ListComprehension $ betweenLtGt comprehensionExp
 
 closureComprehension :: PT LExp
-closureComprehension = inSpan  ClosureComprehension $ between (cspSym "{|") (cspSym "|}") comprehensionExp
+closureComprehension = inSpan  ClosureComprehension
+  $ between (symbol T_openPBrace) (symbol T_closePBrace) comprehensionExp
 
 -- todo check in csp-m doku size of Int
 intLit :: PT Integer
 intLit = ( do
-   cspSym "-"
+   symbol T_minus
    val <- linteger
    return  ( - (read val :: Integer) )
   )
@@ -362,15 +369,15 @@ g = h
 
 funArgsT :: PT [LExp]
 funArgsT = try $ do
-   tArgs <- between (cspSym "(") (cspSym ")") $ sepByComma parseExp
-   notFollowedBy' $ cspSym "="
+   tArgs <- inParens $ sepByComma parseExp
+   notFollowedBy' token_is
    return tArgs
 
 lambdaExp :: PT LExp
 lambdaExp = withLoc $ do
-  cspSym "\\"
-  patList <- sepBy1 parsePattern $ cspSym ","
-  cspSym "@"
+  symbol T_backslash
+  patList <- sepBy1 parsePattern $ symbol T_comma
+  symbol T_at
   exp <- parseExp
   return $ Lambda patList exp
 
@@ -378,13 +385,13 @@ parseExpBase :: PT LExp
 parseExpBase =
          parenExpOrTupleEnum 
      <|> (try funCall)
-     <|> withLoc ( cspBI T_STOP >> return Stop)
-     <|> withLoc ( cspBI T_SKIP >> return Skip)
-     <|> withLoc ( cspBI T_true >> return CTrue)
-     <|> withLoc ( cspBI T_false >> return CFalse)
-     <|> withLoc ( cspBI T_Events >> return Events)
-     <|> withLoc ( cspBI T_Bool >> return BoolSet)
-     <|> withLoc ( cspBI T_Int >> return IntSet)
+     <|> withLoc ( builtIn T_STOP >> return Stop)
+     <|> withLoc ( builtIn T_SKIP >> return Skip)
+     <|> withLoc ( builtIn T_true >> return CTrue)
+     <|> withLoc ( builtIn T_false >> return CFalse)
+     <|> withLoc ( builtIn T_Events >> return Events)
+     <|> withLoc ( builtIn T_Bool >> return BoolSet)
+     <|> withLoc ( builtIn T_Int >> return IntSet)
      <|> ifteExp
      <|> letExp
      <|> litExp
@@ -411,7 +418,7 @@ parenExps are now a special case of TupleExps
 
 parenExpOrTupleEnum :: PT LExp
 parenExpOrTupleEnum = withLoc $ do
-  body <- between (cspSym "(") (cspSym ")") (sepByComma parseExp)
+  body <- inParens $ sepByComma parseExp
   case body of
     [] -> return $ TupleExp []
     [x] -> return $ Parens x
@@ -430,7 +437,7 @@ opTable =
 -- ToDo : fix funApply and procRenaming
     [ postfixM funApplyImplicit ]
    ,[ postfixM procRenaming ]
-   ,[ infixM (nfun2Sym "^" T_Concat ) AssocLeft,
+   ,[ infixM (nfun2Sym T_hat T_Concat ) AssocLeft,
       prefixM (nfun1 T_Len2 ) -- different from Roscoe Book
     ]
    ,[ infixM (nfun2 T_Mult ) AssocLeft
@@ -452,9 +459,9 @@ opTable =
         return $ (\a b-> mkLabeledNode pos $ Fun2 op a b)
       ) AssocLeft
     ]
-   ,[ prefixM ( cspBI T_not >> unOp NotExp )]
-   ,[ infixM ( cspBI T_and >> binOp AndExp) AssocLeft ]
-   ,[ infixM ( cspBI T_or >> binOp OrExp) AssocLeft ]
+   ,[ prefixM ( builtIn T_not >> unOp NotExp )]
+   ,[ infixM ( builtIn T_and >> binOp AndExp) AssocLeft ]
+   ,[ infixM ( builtIn T_or >> binOp OrExp) AssocLeft ]
    ,[ infixM proc_op_aparallel AssocLeft ]
    ,[ infixM proc_op_lparallel AssocLeft ]
 
@@ -466,7 +473,7 @@ opTable =
    ,[infixM (nfun2 T_Timeout ) AssocLeft]
    ,[infixM (nfun2 T_IntChoice ) AssocLeft]
    ,[infixM (nfun2 T_Interleave ) AssocLeft]
-   ,[infixM (nfun2Sym "\\" T_Hiding) AssocLeft]
+   ,[infixM (nfun2Sym T_backslash T_Hiding) AssocLeft]
   ] 
   where
   nfun1 :: TokenClasses.BuiltIn -> PT (LExp -> PT LExp)
@@ -475,14 +482,14 @@ opTable =
     pos<-getPos
     return $ (\a -> mkLabeledNode pos $ Fun1 fkt a)
 
-  nfun2 :: TokenClasses.BuiltIn -> PT (LExp -> LExp -> PT LExp)
+  nfun2 :: TokenClasses.Symbol -> PT (LExp -> LExp -> PT LExp)
   nfun2 op = do
     pos<-getPos
     fkt <- biOp op
     return $ (\a b -> mkLabeledNode pos $ Fun2 fkt a b)
-  nfun2Sym :: String -> TokenClasses.BuiltIn -> PT (LExp -> LExp -> PT LExp)
+  nfun2Sym :: TokenClasses.Symbol -> TokenClasses.BuiltIn -> PT (LExp -> LExp -> PT LExp)
   nfun2Sym s t = do
-    cspSym s
+    symbol s
     op <- mkLabeledNode NoLocation (BuiltIn t)  -- ToDo : fix this
     pos <- getPos
     return $ (\a b-> mkLabeledNode pos $ Fun2 op a b)
@@ -498,7 +505,7 @@ opTable =
     return $ (\a -> mkLabeledNode (mkSrcPos pos) $ op a)
 
   biOp :: TokenClasses.BuiltIn -> PT LBuiltIn
-  biOp op = inSpan BuiltIn (cspBI op  >> return op)
+  biOp op = inSpan BuiltIn (builtIn op  >> return op)
 
 parseExp :: PT LExp
 parseExp =
@@ -516,7 +523,7 @@ parseExp_noPrefix = parseDotExpOf parseExp_noPrefix_NoDot
 parseDotExpOf :: PT LExp -> PT LExp
 parseDotExpOf baseExp = do
   sPos <-getNextPos
-  dotExp <- sepBy1 baseExp $ cspSym "."
+  dotExp <- sepBy1 baseExp $ symbol T_dot
   ePos <-getLastPos
   case dotExp of 
      [x] -> return x
@@ -540,7 +547,7 @@ funApplyImplicit = do
 -- this is complicated and meight as well be buggy !
 gtSym :: PT ()
 gtSym = try $ do
-  cspSym ">"
+  symbol T_gt
   updateState countGt  --we count the occurences of gt-symbols
   next <- testFollows parseExp  -- and accept it only if it is followed by an expression
   case next of
@@ -558,21 +565,28 @@ parse an sequenceexpression <...>
 we have to be carefull not to parse the end of sequence ">"
 as comparision
 -}
+
+token_gt :: PT ()
+token_gt = symbol T_gt
+
+token_lt :: PT ()
+token_lt = symbol T_lt
+
 betweenLtGt :: PT a -> PT a
 betweenLtGt parser = do
-  cspSym "<"
+  token_lt
   st <- getParserState  -- maybe we need to backtrack
   body <- parser           -- even if this is successfull
   cnt <- getStates gtCounter
-  endSym <-testFollows $ cspSym ">"
+  endSym <-testFollows token_gt
   case endSym of
     Just () -> do
-      cspSym ">"
+      token_gt
       return body   -- gtSym could make distinction between endOfSequence and GtSym
     Nothing -> do  -- last comparision expression was indeed end of sequence
       setParserState st --backtrack
       s <- parseWithGtLimit (cnt) parser
-      cspSym ">"
+      token_gt
       return s
 
 --parse an expression which contains as most count Greater-symbols (">"
@@ -592,11 +606,11 @@ parseWithGtLimit maxGt parser = do
 proc_op_aparallel :: PT (LExp -> LExp -> PT LExp)
 proc_op_aparallel = try $ do
   s <- getNextPos
-  cspSym "["
+  symbol T_openBrack
   a1<-parseExp_noPrefix
-  cspSym "||"
+  symbol T_parallel
   a2<-parseExp_noPrefix
-  cspSym "]"
+  symbol T_closeBrack
   e<-getLastPos
   return $ (\p1 p2 -> mkLabeledNode (mkSrcSpan s e ) $ ProcAParallel a1 a2 p1 p2 )
 
@@ -613,10 +627,10 @@ procRenaming = do
 
 procOneRenaming :: PT (LExp -> PT LExp )
 procOneRenaming = try $ do
-  cspSym "[["
-  ren<-(sepBy parseRename (cspSym ","))
+  symbol T_openBrackBrack
+  ren<-(sepBy parseRename commaSeperator)
   gens <- optionMaybe parseComprehension
-  cspSym "]]"
+  symbol T_closeBrackBrack
   p<-getPos
   case gens of
     Nothing -> return $ (\p1 -> mkLabeledNode p $ ProcRenaming ren p1)
@@ -624,10 +638,10 @@ procOneRenaming = try $ do
 
 parseLinkList :: PT LLinkList
 parseLinkList = withLoc $ do
-  cspSym "["
-  linkList<-(sepBy parseLink (cspSym ","))
+  symbol T_openBrack
+  linkList<-(sepBy parseLink commaSeperator)
   gens <- optionMaybe parseComprehension
-  cspSym "]"
+  symbol T_closeBrack
   case gens of
     Nothing -> return $ LinkList linkList
     Just g -> return $ LinkListComprehension g linkList
@@ -635,14 +649,14 @@ parseLinkList = withLoc $ do
 parseLink :: PT LLink
 parseLink= withLoc $ do
   e1<-parseExp_noPrefix
-  cspSym "<->"
+  symbol T_leftrightarrow
   e2<-parseExp_noPrefix
   return $ Link e1 e2
 
 parseRename :: PT LRename
 parseRename= withLoc $ do
   e1<-parseExp_noPrefix
-  cspSym "<-"
+  symbol T_leftarrow
   e2<-parseExp_noPrefix
   return $ Rename e1 e2
 
@@ -657,7 +671,7 @@ parsePattern = let ?innerDot = True in parsePatternAlso
 parsePatternAlso :: (?innerDot::Bool) => PT LPattern
 parsePatternAlso = ( do
   sPos <- getNextPos
-  concList <- sepBy1 parsePatternAppend (cspSym "@@")
+  concList <- sepBy1 parsePatternAppend (symbol T_atat)
   ePos <- getLastPos
   case concList of 
     [x] -> return x
@@ -668,7 +682,7 @@ parsePatternAlso = ( do
 parsePatternAppend :: (?innerDot::Bool) => PT LPattern
 parsePatternAppend = do
   sPos <- getNextPos
-  concList <- sepBy1 parsePatternDot (cspSym "^")
+  concList <- sepBy1 parsePatternDot (symbol T_hat)
   ePos <- getLastPos
   case concList of 
     [x] -> return x
@@ -679,7 +693,7 @@ parsePatternDot = case ?innerDot of
   False -> parsePatternCore
   True -> do
     s <- getNextPos
-    dList <- sepBy1 parsePatternCore (cspSym ".")
+    dList <- sepBy1 parsePatternCore (symbol T_dot)
     e <- getLastPos
     case dList of
       [p] -> return p
@@ -688,34 +702,34 @@ parsePatternDot = case ?innerDot of
 parsePatternCore :: (?innerDot::Bool) => PT LPattern
 parsePatternCore =
       nestedPattern
-  <|> withLoc ( cspBI T_true >> return TruePat)
-  <|> withLoc ( cspBI T_false >> return FalsePat)
+  <|> withLoc ( builtIn T_true >> return TruePat)
+  <|> withLoc ( builtIn T_false >> return FalsePat)
   <|> litPat
   <|> varPat
   <|> tuplePatEnum
   <|> listPatEnum
   <|> singleSetPat
   <|> emptySetPat
-  <|> withLoc ( cspSym "_" >> return WildCard)
+  <|> withLoc ( symbol T_underscore >> return WildCard)
   <|> blockBuiltIn
   <?> "pattern"
   where
-    nestedPattern = try $ between (cspSym "(") (cspSym ")") parsePattern
+    nestedPattern = try $ inParens parsePattern
 
     varPat :: (?innerDot :: Bool) => PT LPattern
     varPat = inSpan VarPat ident
 
     singleSetPat :: (?innerDot :: Bool) => PT LPattern
-    singleSetPat = try $ inSpan SingleSetPat $ between (cspSym "{") (cspSym "}") parsePattern
+    singleSetPat = try $ inSpan SingleSetPat $ inBraces parsePattern
 
     emptySetPat :: (?innerDot :: Bool) => PT LPattern
-    emptySetPat = withLoc ( cspSym "{" >> cspSym "}" >> return EmptySetPat )
+    emptySetPat = withLoc ( symbol T_openBrace >> symbol T_closeBrace >> return EmptySetPat )
 
     listPatEnum :: (?innerDot :: Bool) => PT LPattern
-    listPatEnum =  inSpan ListEnumPat $ between (cspSym "<") (cspSym ">") (sepByComma parsePattern)
+    listPatEnum =  inSpan ListEnumPat $ between token_lt token_gt (sepByComma parsePattern)
 
     tuplePatEnum :: (?innerDot :: Bool) => PT LPattern
-    tuplePatEnum = inSpan TuplePat $ between (cspSym "(") (cspSym ")") (sepByComma parsePattern)
+    tuplePatEnum = inSpan TuplePat $ inParens (sepByComma parsePattern)
 
 
 -- FixMe: do not use patBind to parse variable bindings ?
@@ -723,7 +737,7 @@ parsePatternCore =
 patBind :: PT LDecl
 patBind = withLoc $ do
   pat <- parsePattern
-  cspSym "="
+  token_is
   exp <-parseExp
   return $ PatBind pat exp
 
@@ -749,7 +763,7 @@ funBind = do
 sfun :: PT (LIdent,(FunArgs,LExp))
 sfun = do
   (fname,patl) <- try sfunHead
-  cspSym "=" <?> "rhs of function clause"
+  token_is <?> "rhs of function clause"
   exp <-parseExp
   return (fname,(patl,exp))
   where
@@ -770,7 +784,7 @@ parseFktCurryPat :: PT [[LPattern]]
 parseFktCurryPat = many1 parseFktCspPat
 
 parseFktCspPat :: PT [LPattern]
-parseFktCspPat = between (cspSym "(") (cspSym ")") $ sepByComma parsePattern
+parseFktCspPat = inParens $ sepByComma parsePattern
 
 {-
 5. nov 2007 remove try to give better error-messages
@@ -830,9 +844,13 @@ topDeclList = do
   assertRef = withLoc $ do
     keyword T_assert
     p1<-parseExp
+{- todo:
+fix this according to scattergood
     op<-     (cspSym "[T=" >> return "[T=" )
          <|> (cspSym "[F=" >> return "[F=" )
          <|> (cspSym "[FD=" >> return "[FD=" )
+-}
+    op <- return "k"
     p2<-parseExp
     return $ AssertRef p1 op p2
 
@@ -854,16 +872,16 @@ topDeclList = do
   parseSubtype = withLoc $ do
     keyword T_subtype
     i <- ident
-    cspSym "="
-    conList<-sepBy1 constrDef (cspSym "|")
+    token_is
+    conList<-sepBy1 constrDef $ symbol T_mid
     return $ SubType i conList
 
   parseDatatype :: PT LDecl
   parseDatatype = withLoc $ do
     keyword T_datatype
     i <- ident
-    cspSym "="
-    conList<-sepBy1 constrDef (cspSym "|")
+    token_is
+    conList<-sepBy1 constrDef $ symbol T_mid
     return $ DataType i conList
 
   constrDef :: PT LConstructor
@@ -872,13 +890,13 @@ topDeclList = do
     ty <- optionMaybe constrType
     return $ Constructor i ty
 
-  constrType = try ( cspSym "." >> typeExp)
+  constrType = try ( symbol T_dot >> typeExp)
 
   parseNametype :: PT LDecl
   parseNametype = withLoc $ do
     keyword T_nametype
     i <- ident
-    cspSym "="
+    token_is
     t<-typeExp
     return $ NameType i t
 
@@ -890,14 +908,13 @@ topDeclList = do
     return $ Channel identl t
 
   
-  typeDef = cspSym ":" >> typeExp
+  typeDef = symbol T_colon >> typeExp
   typeExp = typeTuple <|> typeDot
 
-  typeTuple = inSpan TypeTuple $
-    between (cspSym "(") (cspSym ")")  (sepBy1Comma parseExp )
+  typeTuple = inSpan TypeTuple $ inParens $ sepBy1Comma parseExp
 
   typeDot = inSpan TypeDot $
-    sepBy1 parseExpBase (cspSym ".")
+    sepBy1 parseExpBase (symbol T_dot)
 
   parsePrint :: PT LDecl
   parsePrint = withLoc $ do
@@ -908,23 +925,23 @@ topDeclList = do
 procOpSharing :: PT (LProc -> LProc -> PT LProc)
 procOpSharing = do
   spos <- getNextPos
-  al <- between ( cspSym "[|" ) (cspSym "|]") parseExp
+  al <- between ( symbol T_openOxBrack) (symbol T_closeOxBrack) parseExp
   epos <- getLastPos
   return $ (\a b  -> mkLabeledNode (mkSrcSpan spos epos) $ ProcSharing al a b)
 
 closureExp :: PT LExp
 closureExp = inSpan Closure $
-  between (cspSym "{|") (cspSym "|}") 
+  between (symbol T_openPBrace ) (symbol T_closePBrace)
           (sepBy1Comma parseExp )
 
 {- Replicated Expressions in Prefix form -}
 
 parseProcReplicatedExp :: PT LProc
 parseProcReplicatedExp = do
-      procRep T_Semicolon   ProcRepSequence
-  <|> procRep T_IntChoice ProcRepInternalChoice
-  <|> procRep T_Interleave ProcRepInterleave
-  <|> procRep T_ExtChoice  ProcRepChoice
+      procRep T_semicolon   ProcRepSequence
+  <|> procRep T_sqcap ProcRepInternalChoice
+  <|> procRep T_interleave ProcRepInterleave
+  <|> procRep T_box  ProcRepChoice
   <|> procRepAParallel
   <|> procRepLinkParallel
   <|> procRepSharing
@@ -933,19 +950,19 @@ parseProcReplicatedExp = do
   <?> "parseProcReplicatedExp"
   where
   -- todo : refactor all these to using inSpan
-  procRep :: TokenClasses.BuiltIn -> (LCompGenList -> LProc -> Exp) -> PT LProc
+  procRep :: TokenClasses.Symbol -> (LCompGenList -> LProc -> Exp) -> PT LProc
   procRep sym fkt = withLoc $ do
-    cspBI sym
+    symbol sym
     l<-comprehensionRep
     body <- parseProcReplicatedExp
     return $ fkt l body
 
   procRepAParallel = withLoc $ do
-    cspSym "||"
+    symbol T_parallel
     l<-comprehensionRep
-    cspSym "["
+    symbol T_openBrack
     alph <- parseExp
-    cspSym "]"
+    symbol T_closeBrack
     body <- parseProcReplicatedExp
     return $ ProcRepAParallel l alph body
 
@@ -956,7 +973,7 @@ parseProcReplicatedExp = do
     return $ ProcRepLinkParallel gen link body
 
   procRepSharing = withLoc $ do
-    al <- between ( cspSym "[|" ) (cspSym "|]") parseExp
+    al <- between ( symbol T_openOxBrack ) (symbol T_closeOxBrack) parseExp
     gen <- comprehensionRep
     body <- parseProcReplicatedExp
     return $ ProcRepSharing gen al body
@@ -981,7 +998,7 @@ parsePrefixExp = withLoc $ do
     channel <- try funCall <|> varExp --maybe permit even more
     updateState $ setLastChannelDir WasOut
     commfields <- many parseCommField
-    cspSym "->"
+    symbol T_rightarrow
     return (channel,commfields)
 
 
@@ -993,26 +1010,26 @@ parseCommField :: PT LCommField
 parseCommField = inComm <|> outComm <|> dotComm <?> "communication field"
   where
   inComm = withLoc $ do
-    cspSym "?"
+    symbol T_questionmark
     updateState$ setLastChannelDir WasIn
     inCommCore
 
   inCommCore = do
     pat<-parsePatternNoDot
-    guarD <- optionMaybe (cspSym ":" >> parseExp_noPrefix_NoDot)
+    guarD <- optionMaybe (symbol T_colon >> parseExp_noPrefix_NoDot)
     case guarD of
       Nothing -> return $ InComm pat
       Just g  -> return $ InCommGuarded pat g
 
   outComm = withLoc $ do
-    cspSym "!" 
+    symbol T_exclamation
     updateState $ setLastChannelDir WasOut
     e <- parseExp_noPrefix_NoDot    
     return $ OutComm e
 
 -- repeat the direction of the last CommField
   dotComm = withLoc $ do
-    cspSym "."
+    symbol T_dot
     lastDir <- getStates lastChannelDir
     case lastDir of
       WasOut -> do
@@ -1094,3 +1111,7 @@ wrapParseError tl (Left err) = Left $ ParseError {
   where 
     tokId = Token.mkTokenId $ sourceColumn $ ParsecError.errorPos err
     errorTok = maybe Token.tokenSentinel id  $ find (\t -> tokenId t ==  tokId) tl
+
+
+token_is :: PT ()
+token_is = symbol T_is

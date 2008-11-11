@@ -127,50 +127,76 @@ csp :-
 <0> "concat"    { mkBuiltIn T_concat }
 <0> "elem"    { mkBuiltIn T_elem }
 <0> "length"    { mkBuiltIn T_length }
---<0> "^"    { mkBuiltIn T_Concat }
-<0> "#"    { mkBuiltIn T_Len2 }
-<0> "*"    { mkBuiltIn T_Mult }
-<0> "/"    { mkBuiltIn T_Div }
-<0> "%"    { mkBuiltIn T_Mod }
-<0> "+"    { mkBuiltIn T_Add }
---<0> "-"    { mkBuiltIn T_Sub }
-<0> "=="    { mkBuiltIn T_Eq }
-<0> "!="    { mkBuiltIn T_NEq }
-<0> ">="    { mkBuiltIn T_GE }
-<0> "<="    { mkBuiltIn T_LE }
---  <0> "<"    { mkBuiltIn T_LT }
---  <0> ">"    { mkBuiltIn T_GT }
-<0> "&"    { mkBuiltIn T_Guard }
-<0> ";"    { mkBuiltIn T_Semicolon }
-<0> "/\"    { mkBuiltIn T_Interrupt }
-<0> "[]"    { mkBuiltIn T_ExtChoice }
-<0> "[>"    { mkBuiltIn T_Timeout }
-<0> "|~|"    { mkBuiltIn T_IntChoice }
-<0> "|||"    { mkBuiltIn T_Interleave }
--- <0> "\"    { mkBuiltIn T_Hiding }
 
+
+<0> "^" { mkSymbol T_hat }
+<0> "#" { mkSymbol T_hash }
+<0> "*" { mkSymbol T_times }
+<0> "/" { mkSymbol T_slash }
+<0> "%" { mkSymbol T_percent }
+<0> "+" { mkSymbol T_plus }
+<0> "-" { mkSymbol T_minus }
+<0> "==" { mkSymbol T_eq }
+<0> "!=" { mkSymbol T_neq }
+<0> ">=" { mkSymbol T_ge }
+<0> "<=" { mkSymbol T_le }
+<0> "<" { mkSymbol T_lt }
+<0> ">" { mkSymbol T_gt }
+<0> "&" { mkSymbol T_amp }
+<0> ";" { mkSymbol T_semicolon }
+<0> "," { mkSymbol T_comma }
+<0> "/\\" { mkSymbol T_triangle }
+<0> "[]" { mkSymbol T_box }
+<0> "[>" { mkSymbol T_rhd }
+<0> "|~|" { mkSymbol T_sqcap }
+<0> "|||" { mkSymbol T_interleave }
+<0> "\\" { mkSymbol T_backslash }
+<0> "||" { mkSymbol T_parallel }
+<0> "|" { mkSymbol T_mid }
+<0> "@" { mkSymbol T_at }
+<0> "@@" { mkSymbol T_atat }
+<0> "->" { mkSymbol T_rightarrow }
+<0> "<-" { mkSymbol T_leftarrow }
+<0> "<->" { mkSymbol T_leftrightarrow }
+<0> "." { mkSymbol T_dot }
+<0> ".." { mkSymbol T_dotdot }
+<0> "!" { mkSymbol T_exclamation }
+<0> "?" { mkSymbol T_questionmark }
+<0> ":" { mkSymbol T_colon }
+<0> "(" { mkSymbol T_openParen }
+<0> ")" { mkSymbol T_closeParen }
+<0> "{" { mkSymbol T_openBrace }
+<0> "}" { mkSymbol T_closeBrace }
+<0> "[" { mkSymbol T_openBrack }
+<0> "]" { mkSymbol T_closeBrack }
+<0> "[|" { mkSymbol T_openOxBrack }
+<0> "|]" { mkSymbol T_closeOxBrack }
+<0> "{|" { mkSymbol T_openPBrace }
+<0> "|}" { mkSymbol T_closePBrace }
+<0> "_"  { mkSymbol T_underscore }
+<0> "="  { mkSymbol T_is }
+<0> "[[" { mkSymbol T_openBrackBrack }
+<0> "]]" { mkSymbol T_closeBrackBrack }
 
 <0> $white+			{ skip }
-<0> "--".*			{ mkL LLComment }
+<0> "--".*			{ mkL L_LComment }
 "{-"				{ block_comment }
 
 -- Fixme : tread this properly
-<0> ":[" $whitechar* @assertCore $whitechar* "]"    { mkL LCSPFDR }
+<0> ":[" $whitechar* @assertCore $whitechar* "]"    { mkL L_CSPFDR }
 
-<0> "include"                   { mkL LInclude }
+<0> "include"                   { mkL L_Include }
 
-<0> @cspsym                     { mkL LCspsym} -- ambiguity for wildcardpattern _
-
-<0> @ident                      { mkL LIdent}  -- ambiguity for wildcardpattern _
+<0> @ident                      { mkL L_Ident}  -- ambiguity for wildcardpattern _
 
 <0> @decimal 
   | 0[oO] @octal
-  | 0[xX] @hexadecimal		{ mkL LInteger }
+  | 0[xX] @hexadecimal		{ mkL L_Integer }
 
 
 -- <0> \' ($graphic # [\'\\] | " " | @escape) \' { mkL LChar }
 
-   <0> \" @string* \"		{ mkL LString }
+   <0> \" @string* \"		{ mkL L_String }
 
 
 
@@ -194,7 +220,7 @@ scanner str = runAlex str $ scannerAcc []
   where
     scannerAcc i = do
       tok <- alexMonadScan; 
-      if tokenClass tok == LEOF
+      if tokenClass tok == L_EOF
         then return i
         else scannerAcc $! (tok:i)
 
