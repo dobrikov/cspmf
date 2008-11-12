@@ -150,17 +150,12 @@ parseModule tokenList = withLoc $ do
   ,moduleTokens = Just tokenList
   }
 
-linteger :: PT String
-linteger = 
-  mytoken ( \tok -> case tok of
-                      (L_Integer,s) -> Just s
-                      _ -> Nothing )
-
 token :: TokenClasses.PrimToken -> PT ()
-token t =  mytoken 
-  ( \tok -> case tok of
-         (h ,_)   | t == h  -> Just ()
-         _ -> Nothing )
+token t = tokenPrimExDefault tokenTest
+  where
+    tokenTest tok = if tokenClass tok == t
+      then Just ()
+      else Nothing
 
 {-
 builtInFunctions :: Set TokenClasses.PrimToken
@@ -173,7 +168,7 @@ builtInFunctions = Set.fromList
 
 anyBuiltIn :: PT Const
 anyBuiltIn = try $ do
-  tok <- mytoken (Just . fst )
+  tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
   case tok of
     T_union  -> return F_union
     T_inter  -> return F_inter
@@ -203,11 +198,13 @@ blockBuiltIn = do
 
 
 lIdent :: PT String
-lIdent= 
-  mytoken ( \tok -> case tok of
-                      (L_Ident,s) -> Just s
-                      _ -> Nothing )
+lIdent =
+  tokenPrimExDefault testToken
   <?> "identifier"
+  where
+    testToken t = case tokenClass t of
+      L_Ident -> Just $ tokenString t
+      _ -> Nothing
 
 ident :: PT LIdent
 ident   = withLoc (lIdent >>= return . Ident)
@@ -306,16 +303,15 @@ closureComprehension = inSpan  ClosureComprehension
 
 -- todo check in csp-m doku size of Int
 intLit :: PT Integer
-intLit = ( do
-   token T_minus
-   val <- linteger
-   return  ( - (read val :: Integer) )
-  )
- <|>
-   ( do
-     val <- linteger
-     return (read val :: Integer)
-   )
+intLit =
+      (token T_minus >> linteger >>= return . negate)
+  <|> linteger
+  where 
+    linteger :: PT Integer
+    linteger = tokenPrimExDefault testToken
+    testToken t = if tokenClass t == L_Integer
+      then Just $ read $ tokenString t
+      else Nothing 
 
 litExp :: PT LExp
 litExp = inSpan IntExp intLit
@@ -842,9 +838,8 @@ topDeclList = do
     p1<-parseExp
     op<- token T_Refine
 {- ToDo: fix this -}
-    op <- return "k"
     p2<-parseExp
-    return $ AssertRef p1 op p2
+    return $ AssertRef p1 "k" p2
 
   assertBool = withLoc $ do
     token T_assert
@@ -1082,10 +1077,6 @@ notFollowedBy' p  = try (do{ p; pzero }
 eof :: PT ()
 eof  = notFollowedBy anyToken <?> "end of input"
 
-mytoken :: ((PrimToken, String) -> Maybe a) -> PT a
-mytoken test = tokenPrimEx Token.showToken primExUpdatePos (Just primExUpdateState) testToken
-  where testToken t@(Token {}) = test (tokenClass t, tokenString t)
-
 pprintParsecError :: ParsecError.ParseError -> String
 pprintParsecError err
   = ParsecError.showErrorMessages "or" "unknown parse error" 
@@ -1107,3 +1098,6 @@ wrapParseError tl (Left err) = Left $ ParseError {
 
 token_is :: PT ()
 token_is = token T_is
+
+tokenPrimExDefault :: (Token -> Maybe a) -> GenParser Token PState a
+tokenPrimExDefault = tokenPrimEx Token.showToken primExUpdatePos (Just primExUpdateState)
