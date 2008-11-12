@@ -80,20 +80,10 @@ type AlexAction result = AlexInput -> Int -> result
 --token t input len = return (t input len)
 
 -- after the dfa calls mkL, we copy the position and string to the token
-mkL :: TokenClass -> AlexInput -> Int -> Alex Token
+mkL :: PrimToken -> AlexInput -> Int -> Alex Token
 mkL c (pos,_,str) len = do
   cnt<-alexNextToken
   return (Token (mkTokenId cnt) pos len c (take len str))
-
-mkKeyword :: Keyword -> AlexInput -> Int -> Alex Token
-mkKeyword k = mkL $ L_Keyword k
-
-mkBuiltIn :: BuiltIn -> AlexInput -> Int -> Alex Token
-mkBuiltIn b = mkL $ L_BuiltIn b
-
-mkSymbol :: Symbol -> AlexInput -> Int -> Alex Token
-mkSymbol b = mkL $ L_Symbol b
-
 
 block_comment :: AlexInput -> Int -> Alex Token
 block_comment (startPos,_,_) _ = do

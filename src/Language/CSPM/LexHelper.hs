@@ -11,7 +11,7 @@ where
 
 import qualified Language.CSPM.Lexer as Lexer (scanner)
 import Language.CSPM.Token (Token(..), LexError(..) )
-import Language.CSPM.TokenClasses (TokenClass(..))
+import Language.CSPM.TokenClasses (PrimToken(..))
 import qualified Language.CSPM.Token as Token
   (Token(..), LexError(..))
 

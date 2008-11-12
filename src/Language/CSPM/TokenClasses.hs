@@ -19,26 +19,18 @@ import Data.Typeable (Typeable)
 import Data.Generics.Basics (Data)
 import Data.Generics.Instances ()
 
-data TokenClass
+data PrimToken
   = L_Integer
   | L_String
-  | L_Keyword Keyword
-  | L_BuiltIn BuiltIn
-  | L_Symbol Symbol
   | L_Ident
   | L_CSPFDR      -- needed for special assertions
   | L_LComment
   | L_BComment
   | L_EOF
   | L_Include
-  deriving (Show,Eq,Ord, Typeable, Data)
-
---allTokenClasses :: [TokenClass]
---allTokenClasses = [LInteger .. LInclude]
-
--- csp-specific
-data Keyword
-  = T_channel
+  | T_Refine
+-- keywords
+  | T_channel
   | T_datatype
   | T_nametype
   | T_subtype
@@ -52,13 +44,8 @@ data Keyword
   | T_else
   | T_let
   | T_within
-  deriving (Show,Eq,Ord,Typeable, Data)
-
-{-
-builtin functions
--}
-data BuiltIn
-  = T_true
+-- constants and builtins
+  | T_true
   | T_false
   | T_not
   | T_and
@@ -86,32 +73,8 @@ data BuiltIn
   | T_Int
   | T_Bool
   | T_CHAOS
--- move these to the AST
-  | T_Concat
-  | T_Len2
-  | T_Mult
-  | T_Div
-  | T_Mod
-  | T_Add
-  | T_Sub
-  | T_Eq
-  | T_NEq
-  | T_GE
-  | T_LE
-  | T_LT
-  | T_GT
-  | T_Guard
-  | T_Semicolon
-  | T_Interrupt
-  | T_ExtChoice
-  | T_Timeout
-  | T_IntChoice
-  | T_Interleave
-  | T_Hiding
-  deriving (Show,Eq,Ord,Typeable, Data)
-
-data Symbol
-  = T_hat          -- "^"
+-- symbols
+  | T_hat          -- "^"
   | T_hash         -- "#"
   | T_times        -- "*"
   | T_slash        -- "/"

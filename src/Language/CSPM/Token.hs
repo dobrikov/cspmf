@@ -58,7 +58,7 @@ data Token = Token
   { tokenId     :: TokenId
   , tokenStart  :: AlexPosn
   , tokenLen    :: Int
-  , tokenClass  :: TokenClass
+  , tokenClass  :: PrimToken
   , tokenString :: String
   } deriving (Show,Eq,Ord, Typeable, Data)
 

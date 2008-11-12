@@ -35,9 +35,8 @@ import qualified Language.CSPM.SrcLoc as SrcLoc
 import Language.CSPM.LexHelper (filterIgnoredToken)
 import Text.ParserCombinators.Parsec.ExprM
 
-import Data.Set as Set (fromList,member)
 import Text.ParserCombinators.Parsec
-  hiding (parse,eof,notFollowedBy,anyToken,label,ParseError,errorPos)
+  hiding (parse,eof,notFollowedBy,anyToken,label,ParseError,errorPos,token)
 import Text.ParserCombinators.Parsec.Pos (newPos)
 import qualified Text.ParserCombinators.Parsec.Error as ParsecError
 import Data.Typeable (Typeable)
@@ -157,30 +156,45 @@ linteger =
                       (L_Integer,s) -> Just s
                       _ -> Nothing )
 
-symbol :: TokenClasses.Symbol -> PT ()
-symbol sym =
-  mytoken ( \tok -> case tok of
-                      (L_Symbol s,_)   | s == sym  -> Just ()
-                      _ -> Nothing )
+token :: TokenClasses.PrimToken -> PT ()
+token t =  mytoken 
+  ( \tok -> case tok of
+         (h ,_)   | t == h  -> Just ()
+         _ -> Nothing )
 
-keyword :: Keyword -> PT ()
-keyword k = 
-  mytoken ( \tok -> case tok of
-                      (L_Keyword x,_)   | x == k  -> Just ()
-                      _ -> Nothing )
+{-
+builtInFunctions :: Set TokenClasses.PrimToken
+builtInFunctions = Set.fromList
+      [ T_union ,T_inter, T_diff, T_Union, T_Inter,
+        T_member, T_card, T_empty, T_set, T_Set,
+        T_Seq, T_null, T_head, T_tail, T_concat,
+        T_elem, T_length, T_CHAOS ]
+-}
 
+anyBuiltIn :: PT Const
+anyBuiltIn = try $ do
+  tok <- mytoken (Just . fst )
+  case tok of
+    T_union  -> return F_union
+    T_inter  -> return F_inter
+    T_diff   -> return F_diff
+    T_Union  -> return F_Union
+    T_Inter  -> return F_Inter
+    T_member -> return F_member
+    T_card   -> return F_card
+    T_empty  -> return F_empty
+    T_set    -> return F_set
+    T_Set    -> return F_Set
+    T_Seq    -> return F_Seq
+    T_null   -> return F_null
+    T_head   -> return F_head
+    T_tail   -> return F_tail
+    T_concat -> return F_concat
+    T_elem   -> return F_elem
+    T_length -> return F_length
+    T_CHAOS  -> return F_CHAOS
+    _        -> fail "not a built-in function"
 
-anyBuiltIn :: PT TokenClasses.BuiltIn
-anyBuiltIn = 
-  mytoken ( \tok -> case tok of
-                      (L_BuiltIn b ,_) -> Just b
-                      _ -> Nothing )
-
-builtIn :: TokenClasses.BuiltIn -> PT ()
-builtIn b = 
-  mytoken ( \tok -> case tok of
-                      (L_BuiltIn x,_)   | x == b  -> Just ()
-                      _ -> Nothing )
 
 blockBuiltIn :: PT a
 blockBuiltIn = do
@@ -202,7 +216,7 @@ varExp :: PT LExp
 varExp= withLoc (ident >>= return . Var)
 
 commaSeperator :: PT ()
-commaSeperator = symbol T_comma
+commaSeperator = token T_comma
 
 sepByComma :: PT x -> PT [x]
 sepByComma a = sepBy a commaSeperator
@@ -213,14 +227,14 @@ sepBy1Comma a = sepBy1 a commaSeperator
 rangeCloseExp :: PT (LExp,LExp)
 rangeCloseExp = do
   s<-parseExp_noPrefix
-  symbol T_dotdot
+  token T_dotdot
   e<- parseExp_noPrefix
   return (s,e)
 
 rangeOpenExp :: PT LExp
 rangeOpenExp = do
   s <- parseExp_noPrefix
-  symbol T_dotdot
+  token T_dotdot
   return s
 
 comprehensionExp :: PT ([LExp],[LCompGen])
@@ -230,7 +244,7 @@ comprehensionExp = do
   return (expList,gens)
 
 parseComprehension :: PT [LCompGen]
-parseComprehension = symbol T_mid >> sepByComma (compGenerator<|>compGuard )
+parseComprehension = token T_mid >> sepByComma (compGenerator<|>compGuard )
 
 compGuard :: PT LCompGen
 compGuard= withLoc (parseExp_noPrefix >>= return . Guard)
@@ -238,7 +252,7 @@ compGuard= withLoc (parseExp_noPrefix >>= return . Guard)
 compGenerator :: PT LCompGen
 compGenerator = try $ withLoc $ do
   pat <- parsePattern
-  symbol T_leftarrow
+  token T_leftarrow
   exp <- parseExp_noPrefix
   return $ Generator pat exp
 
@@ -246,21 +260,21 @@ compGenerator = try $ withLoc $ do
 comprehensionRep :: PT LCompGenList
 comprehensionRep = withLoc $ do
   l <- sepByComma (repGenerator <|> compGuard)
-  symbol T_at
+  token T_at
   return l
 
 repGenerator :: PT LCompGen
 repGenerator = try $ withLoc $ do
   pat <- parsePattern
-  symbol T_dot
+  token T_colon
   exp <- parseExp_noPrefix
   return $ Generator pat exp
 
 inBraces :: PT x -> PT x
-inBraces = between (symbol T_openBrace) (symbol T_closeBrace)
+inBraces = between (token T_openBrace) (token T_closeBrace)
 
 inParens :: PT x -> PT x
-inParens = between (symbol T_openParen) (symbol T_closeParen)
+inParens = between (token T_openParen) (token T_closeParen)
 
 setExpEnum :: PT LExp
 setExpEnum =   inSpan SetEnum $ inBraces  (sepByComma parseExp) 
@@ -288,12 +302,12 @@ listComprehension =  inSpan  ListComprehension $ betweenLtGt comprehensionExp
 
 closureComprehension :: PT LExp
 closureComprehension = inSpan  ClosureComprehension
-  $ between (symbol T_openPBrace) (symbol T_closePBrace) comprehensionExp
+  $ between (token T_openPBrace) (token T_closePBrace) comprehensionExp
 
 -- todo check in csp-m doku size of Int
 intLit :: PT Integer
 intLit = ( do
-   symbol T_minus
+   token T_minus
    val <- linteger
    return  ( - (read val :: Integer) )
   )
@@ -311,19 +325,19 @@ litPat = inSpan IntPat intLit
 
 letExp :: PT LExp
 letExp = withLoc $ do
-  keyword T_let
+  token T_let
   decl <- parseDeclList
-  keyword T_within
+  token T_within
   exp <- parseExp
   return $ Let decl exp            
 
 ifteExp :: PT LExp
 ifteExp = withLoc $ do
-  keyword T_if
+  token T_if
   cond <- parseExp
-  keyword T_then
+  token T_then
   thenExp <- parseExp
-  keyword T_else
+  token T_else
   elseExp <- parseExp
   return $ Ifte cond thenExp elseExp
 
@@ -339,21 +353,9 @@ funCallFkt = withLoc $ do
 
 funCallBi :: PT LExp
 funCallBi = withLoc $ do
-  fkt <- builtIn
+  fkt <- inSpan BuiltIn anyBuiltIn
   args <- parseFunArgs
   return $ CallBuiltIn fkt args
-  where 
-    builtIn :: PT LBuiltIn
-    builtIn = withLoc $ do
-      b <- anyBuiltIn
-      if Set.member b properFunctions
-        then return $ BuiltIn b
-        else fail "not a callable function"
-    properFunctions = Set.fromList
-      [ T_union ,T_inter, T_diff, T_Union, T_Inter,
-        T_member, T_card, T_empty, T_set, T_Set,
-        T_Seq, T_null, T_head, T_tail, T_concat,
-        T_elem, T_length, T_CHAOS ]
 
 parseFunArgs :: PT [[LExp]]
 parseFunArgs =  do
@@ -375,9 +377,9 @@ funArgsT = try $ do
 
 lambdaExp :: PT LExp
 lambdaExp = withLoc $ do
-  symbol T_backslash
-  patList <- sepBy1 parsePattern $ symbol T_comma
-  symbol T_at
+  token T_backslash
+  patList <- sepBy1 parsePattern $ token T_comma
+  token T_at
   exp <- parseExp
   return $ Lambda patList exp
 
@@ -385,13 +387,13 @@ parseExpBase :: PT LExp
 parseExpBase =
          parenExpOrTupleEnum 
      <|> (try funCall)
-     <|> withLoc ( builtIn T_STOP >> return Stop)
-     <|> withLoc ( builtIn T_SKIP >> return Skip)
-     <|> withLoc ( builtIn T_true >> return CTrue)
-     <|> withLoc ( builtIn T_false >> return CFalse)
-     <|> withLoc ( builtIn T_Events >> return Events)
-     <|> withLoc ( builtIn T_Bool >> return BoolSet)
-     <|> withLoc ( builtIn T_Int >> return IntSet)
+     <|> withLoc ( token T_STOP >> return Stop)
+     <|> withLoc ( token T_SKIP >> return Skip)
+     <|> withLoc ( token T_true >> return CTrue)
+     <|> withLoc ( token T_false >> return CFalse)
+     <|> withLoc ( token T_Events >> return Events)
+     <|> withLoc ( token T_Bool >> return BoolSet)
+     <|> withLoc ( token T_Int >> return IntSet)
      <|> ifteExp
      <|> letExp
      <|> litExp
@@ -437,62 +439,56 @@ opTable =
 -- ToDo : fix funApply and procRenaming
     [ postfixM funApplyImplicit ]
    ,[ postfixM procRenaming ]
-   ,[ infixM (nfun2Sym T_hat T_Concat ) AssocLeft,
-      prefixM (nfun1 T_Len2 ) -- different from Roscoe Book
+   ,[ infixM (nfun2 T_hat     F_Concat ) AssocLeft,
+     prefixM (nfun1 T_hash    F_Len2 ) -- different from Roscoe Book
     ]
-   ,[ infixM (nfun2 T_Mult ) AssocLeft
-     ,infixM (nfun2 T_Div ) AssocLeft
-     ,infixM (nfun2 T_Mod  ) AssocLeft
+   ,[ infixM (nfun2 T_times   F_Mult ) AssocLeft
+     ,infixM (nfun2 T_slash   F_Div ) AssocLeft
+     ,infixM (nfun2 T_percent F_Mod  ) AssocLeft
     ]
-   ,[ infixM (nfun2 T_Add ) AssocLeft,
-      infixM (nfun2Sym "-" T_Sub ) AssocLeft
+   ,[ infixM (nfun2 T_plus    F_Add ) AssocLeft,
+      infixM (nfun2 T_minus   F_Sub ) AssocLeft
     ]
-   ,[ infixM (nfun2 T_Eq ) AssocLeft
-     ,infixM (nfun2 T_NEq ) AssocLeft
-     ,infixM (nfun2 T_GE ) AssocLeft
-     ,infixM (nfun2 T_LE ) AssocLeft
-     ,infixM (nfun2Sym "<" T_LT ) AssocLeft
+   ,[ infixM (nfun2 T_eq      F_Eq ) AssocLeft
+     ,infixM (nfun2 T_neq     F_NEq) AssocLeft
+     ,infixM (nfun2 T_ge      F_GE ) AssocLeft
+     ,infixM (nfun2 T_le      F_LE ) AssocLeft
+     ,infixM (nfun2 T_lt      F_LT ) AssocLeft
      ,infixM (do
         gtSym
-        op <- mkLabeledNode NoLocation (BuiltIn T_GT)  -- ToDo : fix this
+        op <- mkLabeledNode NoLocation (BuiltIn F_GT)  -- ToDo : fix this
         pos <- getPos
         return $ (\a b-> mkLabeledNode pos $ Fun2 op a b)
       ) AssocLeft
     ]
-   ,[ prefixM ( builtIn T_not >> unOp NotExp )]
-   ,[ infixM ( builtIn T_and >> binOp AndExp) AssocLeft ]
-   ,[ infixM ( builtIn T_or >> binOp OrExp) AssocLeft ]
+   ,[ prefixM ( token T_not >> unOp NotExp )]
+   ,[ infixM ( token T_and >> binOp AndExp) AssocLeft ]
+   ,[ infixM ( token T_or >> binOp OrExp) AssocLeft ]
    ,[ infixM proc_op_aparallel AssocLeft ]
    ,[ infixM proc_op_lparallel AssocLeft ]
 
    ,[infixM procOpSharing AssocLeft ]
-   ,[infixM (nfun2 T_Guard ) AssocLeft]
-   ,[infixM (nfun2 T_Semicolon ) AssocLeft]
-   ,[infixM (nfun2 T_Interrupt ) AssocLeft]
-   ,[infixM (nfun2 T_ExtChoice ) AssocLeft]
-   ,[infixM (nfun2 T_Timeout ) AssocLeft]
-   ,[infixM (nfun2 T_IntChoice ) AssocLeft]
-   ,[infixM (nfun2 T_Interleave ) AssocLeft]
-   ,[infixM (nfun2Sym T_backslash T_Hiding) AssocLeft]
+   ,[infixM (nfun2 T_amp        F_Guard      ) AssocLeft]
+   ,[infixM (nfun2 T_semicolon  F_Sequential ) AssocLeft]
+   ,[infixM (nfun2 T_triangle   F_Interrupt  ) AssocLeft]
+   ,[infixM (nfun2 T_box        F_ExtChoice  ) AssocLeft]
+   ,[infixM (nfun2 T_rhd        F_Timeout    ) AssocLeft]
+   ,[infixM (nfun2 T_sqcap      F_IntChoice  ) AssocLeft]
+   ,[infixM (nfun2 T_interleave F_Interleave ) AssocLeft]
+   ,[infixM (nfun2 T_backslash  F_Hiding     ) AssocLeft]
   ] 
   where
-  nfun1 :: TokenClasses.BuiltIn -> PT (LExp -> PT LExp)
-  nfun1 op = do
-    fkt <- biOp op
+  nfun1 :: TokenClasses.PrimToken -> Const -> PT (LExp -> PT LExp)
+  nfun1 tok cst = do
+    fkt <- biOp tok cst
     pos<-getPos
     return $ (\a -> mkLabeledNode pos $ Fun1 fkt a)
 
-  nfun2 :: TokenClasses.Symbol -> PT (LExp -> LExp -> PT LExp)
-  nfun2 op = do
+  nfun2 :: TokenClasses.PrimToken -> Const -> PT (LExp -> LExp -> PT LExp)
+  nfun2 tok cst = do
     pos<-getPos
-    fkt <- biOp op
+    fkt <- biOp tok cst
     return $ (\a b -> mkLabeledNode pos $ Fun2 fkt a b)
-  nfun2Sym :: TokenClasses.Symbol -> TokenClasses.BuiltIn -> PT (LExp -> LExp -> PT LExp)
-  nfun2Sym s t = do
-    symbol s
-    op <- mkLabeledNode NoLocation (BuiltIn t)  -- ToDo : fix this
-    pos <- getPos
-    return $ (\a b-> mkLabeledNode pos $ Fun2 op a b)
 
   binOp :: (LExp -> LExp -> Exp) -> PT (LExp -> LExp -> PT LExp)
   binOp op = do
@@ -504,8 +500,8 @@ opTable =
     pos<-getLastPos
     return $ (\a -> mkLabeledNode (mkSrcPos pos) $ op a)
 
-  biOp :: TokenClasses.BuiltIn -> PT LBuiltIn
-  biOp op = inSpan BuiltIn (builtIn op  >> return op)
+  biOp :: TokenClasses.PrimToken -> Const -> PT LBuiltIn
+  biOp tok cst = inSpan BuiltIn (token tok >> return cst)
 
 parseExp :: PT LExp
 parseExp =
@@ -523,7 +519,7 @@ parseExp_noPrefix = parseDotExpOf parseExp_noPrefix_NoDot
 parseDotExpOf :: PT LExp -> PT LExp
 parseDotExpOf baseExp = do
   sPos <-getNextPos
-  dotExp <- sepBy1 baseExp $ symbol T_dot
+  dotExp <- sepBy1 baseExp $ token T_dot
   ePos <-getLastPos
   case dotExp of 
      [x] -> return x
@@ -547,11 +543,11 @@ funApplyImplicit = do
 -- this is complicated and meight as well be buggy !
 gtSym :: PT ()
 gtSym = try $ do
-  symbol T_gt
+  token T_gt
   updateState countGt  --we count the occurences of gt-symbols
   next <- testFollows parseExp  -- and accept it only if it is followed by an expression
   case next of
-    Nothing -> fail "Gt Symbol not followed by an expression"
+    Nothing -> fail "Gt token not followed by an expression"
     (Just _) -> do                 --
       mode <- getStates gtMode
       case mode of
@@ -559,7 +555,7 @@ gtSym = try $ do
         (GtLimit x) -> do
           cnt <- getStates gtCounter
           if cnt < x then return ()
-                     else fail "(Gt Symbol belongs to sequence expression)"
+                     else fail "(Gt token belongs to sequence expression)"
 {-
 parse an sequenceexpression <...>
 we have to be carefull not to parse the end of sequence ">"
@@ -567,10 +563,10 @@ as comparision
 -}
 
 token_gt :: PT ()
-token_gt = symbol T_gt
+token_gt = token T_gt
 
 token_lt :: PT ()
-token_lt = symbol T_lt
+token_lt = token T_lt
 
 betweenLtGt :: PT a -> PT a
 betweenLtGt parser = do
@@ -606,11 +602,11 @@ parseWithGtLimit maxGt parser = do
 proc_op_aparallel :: PT (LExp -> LExp -> PT LExp)
 proc_op_aparallel = try $ do
   s <- getNextPos
-  symbol T_openBrack
+  token T_openBrack
   a1<-parseExp_noPrefix
-  symbol T_parallel
+  token T_parallel
   a2<-parseExp_noPrefix
-  symbol T_closeBrack
+  token T_closeBrack
   e<-getLastPos
   return $ (\p1 p2 -> mkLabeledNode (mkSrcSpan s e ) $ ProcAParallel a1 a2 p1 p2 )
 
@@ -627,10 +623,10 @@ procRenaming = do
 
 procOneRenaming :: PT (LExp -> PT LExp )
 procOneRenaming = try $ do
-  symbol T_openBrackBrack
+  token T_openBrackBrack
   ren<-(sepBy parseRename commaSeperator)
   gens <- optionMaybe parseComprehension
-  symbol T_closeBrackBrack
+  token T_closeBrackBrack
   p<-getPos
   case gens of
     Nothing -> return $ (\p1 -> mkLabeledNode p $ ProcRenaming ren p1)
@@ -638,10 +634,10 @@ procOneRenaming = try $ do
 
 parseLinkList :: PT LLinkList
 parseLinkList = withLoc $ do
-  symbol T_openBrack
+  token T_openBrack
   linkList<-(sepBy parseLink commaSeperator)
   gens <- optionMaybe parseComprehension
-  symbol T_closeBrack
+  token T_closeBrack
   case gens of
     Nothing -> return $ LinkList linkList
     Just g -> return $ LinkListComprehension g linkList
@@ -649,14 +645,14 @@ parseLinkList = withLoc $ do
 parseLink :: PT LLink
 parseLink= withLoc $ do
   e1<-parseExp_noPrefix
-  symbol T_leftrightarrow
+  token T_leftrightarrow
   e2<-parseExp_noPrefix
   return $ Link e1 e2
 
 parseRename :: PT LRename
 parseRename= withLoc $ do
   e1<-parseExp_noPrefix
-  symbol T_leftarrow
+  token T_leftarrow
   e2<-parseExp_noPrefix
   return $ Rename e1 e2
 
@@ -671,7 +667,7 @@ parsePattern = let ?innerDot = True in parsePatternAlso
 parsePatternAlso :: (?innerDot::Bool) => PT LPattern
 parsePatternAlso = ( do
   sPos <- getNextPos
-  concList <- sepBy1 parsePatternAppend (symbol T_atat)
+  concList <- sepBy1 parsePatternAppend $ token T_atat
   ePos <- getLastPos
   case concList of 
     [x] -> return x
@@ -682,7 +678,7 @@ parsePatternAlso = ( do
 parsePatternAppend :: (?innerDot::Bool) => PT LPattern
 parsePatternAppend = do
   sPos <- getNextPos
-  concList <- sepBy1 parsePatternDot (symbol T_hat)
+  concList <- sepBy1 parsePatternDot $ token T_hat
   ePos <- getLastPos
   case concList of 
     [x] -> return x
@@ -693,7 +689,7 @@ parsePatternDot = case ?innerDot of
   False -> parsePatternCore
   True -> do
     s <- getNextPos
-    dList <- sepBy1 parsePatternCore (symbol T_dot)
+    dList <- sepBy1 parsePatternCore $ token T_dot
     e <- getLastPos
     case dList of
       [p] -> return p
@@ -702,15 +698,15 @@ parsePatternDot = case ?innerDot of
 parsePatternCore :: (?innerDot::Bool) => PT LPattern
 parsePatternCore =
       nestedPattern
-  <|> withLoc ( builtIn T_true >> return TruePat)
-  <|> withLoc ( builtIn T_false >> return FalsePat)
+  <|> withLoc ( token T_true >> return TruePat)
+  <|> withLoc ( token T_false >> return FalsePat)
   <|> litPat
   <|> varPat
   <|> tuplePatEnum
   <|> listPatEnum
   <|> singleSetPat
   <|> emptySetPat
-  <|> withLoc ( symbol T_underscore >> return WildCard)
+  <|> withLoc ( token T_underscore >> return WildCard)
   <|> blockBuiltIn
   <?> "pattern"
   where
@@ -723,7 +719,7 @@ parsePatternCore =
     singleSetPat = try $ inSpan SingleSetPat $ inBraces parsePattern
 
     emptySetPat :: (?innerDot :: Bool) => PT LPattern
-    emptySetPat = withLoc ( symbol T_openBrace >> symbol T_closeBrace >> return EmptySetPat )
+    emptySetPat = withLoc ( token T_openBrace >> token T_closeBrace >> return EmptySetPat )
 
     listPatEnum :: (?innerDot :: Bool) => PT LPattern
     listPatEnum =  inSpan ListEnumPat $ between token_lt token_gt (sepByComma parsePattern)
@@ -842,20 +838,16 @@ topDeclList = do
     <?> "top-level declaration"   
 
   assertRef = withLoc $ do
-    keyword T_assert
+    token T_assert
     p1<-parseExp
-{- todo:
-fix this according to scattergood
-    op<-     (cspSym "[T=" >> return "[T=" )
-         <|> (cspSym "[F=" >> return "[F=" )
-         <|> (cspSym "[FD=" >> return "[FD=" )
--}
+    op<- token T_Refine
+{- ToDo: fix this -}
     op <- return "k"
     p2<-parseExp
     return $ AssertRef p1 op p2
 
   assertBool = withLoc $ do
-    keyword T_assert
+    token T_assert
     b<-parseExp
     return $ AssertBool b
 
@@ -864,24 +856,24 @@ fix this according to scattergood
 
   parseTransparent :: PT LDecl
   parseTransparent = withLoc $ do
-    keyword T_transparent
+    token T_transparent
     l <- sepBy1Comma ident
     return $ Transparent l
 
   parseSubtype :: PT LDecl
   parseSubtype = withLoc $ do
-    keyword T_subtype
+    token T_subtype
     i <- ident
     token_is
-    conList<-sepBy1 constrDef $ symbol T_mid
+    conList<-sepBy1 constrDef $ token T_mid
     return $ SubType i conList
 
   parseDatatype :: PT LDecl
   parseDatatype = withLoc $ do
-    keyword T_datatype
+    token T_datatype
     i <- ident
     token_is
-    conList<-sepBy1 constrDef $ symbol T_mid
+    conList<-sepBy1 constrDef $ token T_mid
     return $ DataType i conList
 
   constrDef :: PT LConstructor
@@ -890,11 +882,11 @@ fix this according to scattergood
     ty <- optionMaybe constrType
     return $ Constructor i ty
 
-  constrType = try ( symbol T_dot >> typeExp)
+  constrType = try ( token T_dot >> typeExp)
 
   parseNametype :: PT LDecl
   parseNametype = withLoc $ do
-    keyword T_nametype
+    token T_nametype
     i <- ident
     token_is
     t<-typeExp
@@ -902,36 +894,36 @@ fix this according to scattergood
 
   parseChannel :: PT LDecl
   parseChannel = withLoc $ do
-    keyword T_channel
+    token T_channel
     identl<-sepBy1Comma ident
     t<-optionMaybe typeDef
     return $ Channel identl t
 
   
-  typeDef = symbol T_colon >> typeExp
+  typeDef = token T_colon >> typeExp
   typeExp = typeTuple <|> typeDot
 
   typeTuple = inSpan TypeTuple $ inParens $ sepBy1Comma parseExp
 
   typeDot = inSpan TypeDot $
-    sepBy1 parseExpBase (symbol T_dot)
+    sepBy1 parseExpBase $ token T_dot
 
   parsePrint :: PT LDecl
   parsePrint = withLoc $ do
-    keyword T_print
+    token T_print
     e <- parseExp
     return $ Print e
 
 procOpSharing :: PT (LProc -> LProc -> PT LProc)
 procOpSharing = do
   spos <- getNextPos
-  al <- between ( symbol T_openOxBrack) (symbol T_closeOxBrack) parseExp
+  al <- between ( token T_openOxBrack) (token T_closeOxBrack) parseExp
   epos <- getLastPos
   return $ (\a b  -> mkLabeledNode (mkSrcSpan spos epos) $ ProcSharing al a b)
 
 closureExp :: PT LExp
 closureExp = inSpan Closure $
-  between (symbol T_openPBrace ) (symbol T_closePBrace)
+  between (token T_openPBrace ) (token T_closePBrace)
           (sepBy1Comma parseExp )
 
 {- Replicated Expressions in Prefix form -}
@@ -950,30 +942,30 @@ parseProcReplicatedExp = do
   <?> "parseProcReplicatedExp"
   where
   -- todo : refactor all these to using inSpan
-  procRep :: TokenClasses.Symbol -> (LCompGenList -> LProc -> Exp) -> PT LProc
+  procRep :: TokenClasses.PrimToken -> (LCompGenList -> LProc -> Exp) -> PT LProc
   procRep sym fkt = withLoc $ do
-    symbol sym
+    token sym
     l<-comprehensionRep
     body <- parseProcReplicatedExp
     return $ fkt l body
 
   procRepAParallel = withLoc $ do
-    symbol T_parallel
+    token T_parallel
     l<-comprehensionRep
-    symbol T_openBrack
+    token T_openBrack
     alph <- parseExp
-    symbol T_closeBrack
+    token T_closeBrack
     body <- parseProcReplicatedExp
     return $ ProcRepAParallel l alph body
 
   procRepLinkParallel = withLoc $ do
     link <- parseLinkList
-    gen<-comprehensionRep
+    gen <-comprehensionRep
     body <- parseProcReplicatedExp
     return $ ProcRepLinkParallel gen link body
 
   procRepSharing = withLoc $ do
-    al <- between ( symbol T_openOxBrack ) (symbol T_closeOxBrack) parseExp
+    al <- between (token T_openOxBrack ) (token T_closeOxBrack) parseExp
     gen <- comprehensionRep
     body <- parseProcReplicatedExp
     return $ ProcRepSharing gen al body
@@ -998,7 +990,7 @@ parsePrefixExp = withLoc $ do
     channel <- try funCall <|> varExp --maybe permit even more
     updateState $ setLastChannelDir WasOut
     commfields <- many parseCommField
-    symbol T_rightarrow
+    token T_rightarrow
     return (channel,commfields)
 
 
@@ -1010,26 +1002,26 @@ parseCommField :: PT LCommField
 parseCommField = inComm <|> outComm <|> dotComm <?> "communication field"
   where
   inComm = withLoc $ do
-    symbol T_questionmark
+    token T_questionmark
     updateState$ setLastChannelDir WasIn
     inCommCore
 
   inCommCore = do
     pat<-parsePatternNoDot
-    guarD <- optionMaybe (symbol T_colon >> parseExp_noPrefix_NoDot)
+    guarD <- optionMaybe (token T_colon >> parseExp_noPrefix_NoDot)
     case guarD of
       Nothing -> return $ InComm pat
       Just g  -> return $ InCommGuarded pat g
 
   outComm = withLoc $ do
-    symbol T_exclamation
+    token T_exclamation
     updateState $ setLastChannelDir WasOut
     e <- parseExp_noPrefix_NoDot    
     return $ OutComm e
 
 -- repeat the direction of the last CommField
   dotComm = withLoc $ do
-    symbol T_dot
+    token T_dot
     lastDir <- getStates lastChannelDir
     case lastDir of
       WasOut -> do
@@ -1090,7 +1082,7 @@ notFollowedBy' p  = try (do{ p; pzero }
 eof :: PT ()
 eof  = notFollowedBy anyToken <?> "end of input"
 
-mytoken :: ((TokenClass, String) -> Maybe a) -> PT a
+mytoken :: ((PrimToken, String) -> Maybe a) -> PT a
 mytoken test = tokenPrimEx Token.showToken primExUpdatePos (Just primExUpdateState) testToken
   where testToken t@(Token {}) = test (tokenClass t, tokenString t)
 
@@ -1114,4 +1106,4 @@ wrapParseError tl (Left err) = Left $ ParseError {
 
 
 token_is :: PT ()
-token_is = symbol T_is
+token_is = token T_is

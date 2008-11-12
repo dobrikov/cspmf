@@ -23,7 +23,6 @@ module Language.CSPM.AST
 where
 
 import Language.CSPM.Token
-import qualified Language.CSPM.TokenClasses as TokenClasses
 import Language.CSPM.SrcLoc (SrcLoc(..))
 
 import Data.Typeable (Typeable)
@@ -158,7 +157,7 @@ type LRename = Labeled Rename
 data Rename = Rename LExp LExp deriving (Show,Eq,Ord,Typeable, Data)
 
 type LBuiltIn = Labeled BuiltIn
-data BuiltIn = BuiltIn TokenClasses.BuiltIn deriving (Show,Eq,Ord,Typeable, Data)
+data BuiltIn = BuiltIn Const deriving (Show,Eq,Ord,Typeable, Data)
 
  --generators inside a comprehension-expression
 type LCompGen = Labeled CompGen
@@ -246,3 +245,55 @@ unsafeMkLabeledNode i loc node
 class (Monad m) => NodeIdSupply m where
   getNewNodeId :: m NodeId
 
+
+data Const
+  = F_true
+  | F_false
+  | F_not
+  | F_and
+  | F_or
+  | F_union
+  | F_inter
+  | F_diff
+  | F_Union
+  | F_Inter
+  | F_member
+  | F_card
+  | F_empty
+  | F_set
+  | F_Set
+  | F_Seq
+  | F_null
+  | F_head
+  | F_tail
+  | F_concat
+  | F_elem
+  | F_length
+  | F_STOP
+  | F_SKIP
+  | F_Events
+  | F_Int
+  | F_Bool
+  | F_CHAOS
+  | F_Concat
+  | F_Len2
+  | F_Mult
+  | F_Div
+  | F_Mod
+  | F_Add
+  | F_Sub
+  | F_Eq
+  | F_NEq
+  | F_GE
+  | F_LE
+  | F_LT
+  | F_GT
+  | F_Guard
+  | F_Sequential
+  | F_Interrupt
+  | F_ExtChoice
+  | F_Timeout
+  | F_IntChoice
+  | F_Interleave
+  | F_Hiding
+  deriving (Show,Eq,Ord,Typeable, Data)
