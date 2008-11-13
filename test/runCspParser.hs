@@ -49,7 +49,9 @@ main
 
 
   writeFile (fileName ++ ".ast") $ show ast
-  writeFile (fileName ++ ".ast2") $ show astNew
+  writeFile (fileName ++ ".rename.ast") $ show astNew
+  writeFile (fileName ++ ".clean.ast") $ show $ removeSourceLocations astNew
+
   exitWith ExitSuccess
 
 showTime :: Integer -> String

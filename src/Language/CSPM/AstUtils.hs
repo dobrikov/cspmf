@@ -23,15 +23,15 @@ import qualified Language.CSPM.AST as AST
 import qualified Language.CSPM.SrcLoc as SrcLoc
 
 import qualified Data.Generics.Schemes (everywhere)
-import qualified Data.Generics.Aliases (mkT,ext1T)
+import qualified Data.Generics.Aliases (mkT)
 
 -- | 'removeSourceLocations' sets all locationsInfos to 'NoLocation'
 removeSourceLocations :: LModule  -> LModule  
 removeSourceLocations ast 
-  = Data.Generics.Schemes.everywhere (Data.Generics.Aliases.ext1T id patchLabel) ast
+  = Data.Generics.Schemes.everywhere (Data.Generics.Aliases.mkT patchLabel) ast
   where
-    patchLabel :: Labeled t -> Labeled t
-    patchLabel l = l {srcLoc = SrcLoc.NoLocation}
+    patchLabel :: SrcLoc.SrcLoc -> SrcLoc.SrcLoc
+    patchLabel _ = SrcLoc.NoLocation
 
 -- | 'removeParens' removes all occurences of of Parens,i.e. explicit parentheses from the AST
 removeParens :: LModule  -> LModule  
