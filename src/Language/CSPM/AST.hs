@@ -1,4 +1,4 @@
------------------------------------------------------------------------------
+----------------------------------------------------------------------------
 -- |
 -- Module      :  Language.CSPM.AST
 -- Copyright   :  (c) Fontaine 2008
@@ -43,8 +43,7 @@ data Labeled t = Labeled {
     nodeId :: NodeId
    ,unLabel :: t
    ,srcLoc  :: SrcLoc
-   } deriving (Show,Eq,Ord,Typeable, Data)
-
+   } deriving (Eq,Ord,Typeable, Data,Show)
 
 type LIdent = Labeled Ident
 

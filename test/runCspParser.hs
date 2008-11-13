@@ -50,7 +50,8 @@ main
 
   writeFile (fileName ++ ".ast") $ show ast
   writeFile (fileName ++ ".rename.ast") $ show astNew
-  writeFile (fileName ++ ".clean.ast") $ show $ removeSourceLocations astNew
+  let smallAst = removeSourceLocations $ unUniqueIdent $ removeModuleTokens $ astNew
+  writeFile (fileName ++ ".clean.ast") $ show smallAst
 
   exitWith ExitSuccess
 

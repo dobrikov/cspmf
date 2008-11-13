@@ -29,7 +29,11 @@ module Language.CSPM.Frontend
   -- AstUtils
   ,removeSourceLocations
   ,removeParens
+  ,removeModuleTokens
+  ,unUniqueIdent
+  ,showAst
   ,relabelAst
+  --
   ,RenameError(..)
   ,eitherToExc
   ,handleLexError
@@ -42,7 +46,9 @@ import Language.CSPM.Parser (ParseError(..),parse)
 import Language.CSPM.Rename (RenameError(..),getRenaming,applyRenaming)
 import Language.CSPM.Token (Token,LexError(..))
 import Language.CSPM.AST (Labeled(..),LModule,Module(..))
-import Language.CSPM.AstUtils (removeSourceLocations,removeParens,relabelAst)
+import Language.CSPM.AstUtils 
+  (removeSourceLocations,removeModuleTokens,removeParens,relabelAst
+  ,unUniqueIdent,showAst)
 
 import qualified Language.CSPM.LexHelper as Lexer
   (lexInclude,lexPlain,filterIgnoredToken)
