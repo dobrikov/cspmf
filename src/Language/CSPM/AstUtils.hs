@@ -25,7 +25,7 @@ import Language.CSPM.AST hiding (prologMode)
 import qualified Language.CSPM.AST as AST
 import qualified Language.CSPM.SrcLoc as SrcLoc
 
-import Data.Data (Data)
+import Data.Data
 import Data.Generics.Schemes (everywhere)
 import Data.Generics.Aliases (mkT,extQ)
 import Data.Generics.Basics (gmapQ,toConstr,showConstr)
@@ -76,10 +76,13 @@ showAst :: LModule -> String
 showAst ast = gshow ast
   where
     gshow :: Data a => a -> String
-    gshow = ( \t ->
+    gshow = mShow `extQ` (show :: String -> String)
+    mShow t = if (tyConString $ typeRepTyCon $ typeOf t) == "Language.CSPM.AST.Labeled"
+       then gmapQi 1 gshow t
+       else
           "("
        ++ showConstr (toConstr t)
        ++ concat (gmapQ ((++) " " . gshow) t)
        ++ ")"
-       ) 
-       `extQ` (show :: String -> String)
+
+

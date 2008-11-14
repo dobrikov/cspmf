@@ -1,0 +1,1 @@
+(Module ((:) (PatBind (VarPat (Ident "t")) (Fun2 (BuiltIn (F_Add)) (Fun2 (BuiltIn (F_Add)) (IntExp (3)) (IntExp (3))) (IntExp (1)))) ((:) (PatBind (VarPat (Ident "t2")) (AndExp (AndExp (CTrue) (CTrue)) (CTrue))) ([]))) (Nothing))

@@ -1,0 +1,1 @@
+(Module ((:) (Channel ((:) (Ident "coin") ((:) (Ident "choc") ([]))) (Nothing)) ((:) (PatBind (VarPat (Ident "VM")) (PrefixExp (Var (Ident "coin")) ([]) (PrefixExp (Var (Ident "choc")) ([]) (Var (Ident "VM"))))) ([]))) (Nothing))
