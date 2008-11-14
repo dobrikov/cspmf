@@ -941,7 +941,7 @@ parseProcReplicatedExp = do
   procRep sym fkt = withLoc $ do
     token sym
     l<-comprehensionRep
-    body <- parseProcReplicatedExp
+    body <- parseExp
     return $ fkt l body
 
   procRepAParallel = withLoc $ do
@@ -950,19 +950,19 @@ parseProcReplicatedExp = do
     token T_openBrack
     alph <- parseExp
     token T_closeBrack
-    body <- parseProcReplicatedExp
+    body <- parseExp
     return $ ProcRepAParallel l alph body
 
   procRepLinkParallel = withLoc $ do
     link <- parseLinkList
     gen <-comprehensionRep
-    body <- parseProcReplicatedExp
+    body <- parseExp
     return $ ProcRepLinkParallel gen link body
 
   procRepSharing = withLoc $ do
     al <- between (token T_openOxBrack ) (token T_closeOxBrack) parseExp
     gen <- comprehensionRep
-    body <- parseProcReplicatedExp
+    body <- parseExp
     return $ ProcRepSharing gen al body
 
 {-
