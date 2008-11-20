@@ -45,6 +45,9 @@ data Labeled t = Labeled {
    ,srcLoc  :: SrcLoc
    } deriving (Eq,Ord,Typeable, Data,Show)
 
+setNode :: Labeled t -> t -> Labeled t
+setNode l n = l {unLabel = n}
+
 type LIdent = Labeled Ident
 
 data Ident 
