@@ -12,6 +12,7 @@
 -- Rule out multiple recursive bindinggroups.
 -- Reorder bindings for a call by value strategy.
 -- ToDo: think if this is correct.
+-- to be safe, we must also rule out multiple recursive functions ?
 -- ToDo: add support for channel delcs and other top-level decls
 
 module Language.CSPM.ReorderBindings
@@ -81,7 +82,17 @@ defs d = case unLabel d of
     fromPattern _ = Set.empty
 
 -- | Uses is NOT the free names analysis.
--- | We omit everything inside prefix-operations.
+-- | We omit everything inside prefix-operations. (ToDO)
 -- | Todo: think if this is correkt
 uses :: LDecl -> Set UniqueIdent
-uses = error "ueses"
+uses d = case unLabel d of
+  PatBind _ e -> collectVars e
+  FunBind _ cases -> collectVars cases
+  _ -> Set.empty  -- todo : add missing cases for top-level decls
+  where
+    collectVars :: Data t => t -> Set UniqueIdent
+    collectVars = everything Set.union ( Set.empty `mkQ` fromExpr)
+-- | We omit everything inside prefix-operations. (ToDO)
+    fromExpr :: Exp -> Set UniqueIdent
+    fromExpr (Var i) = Set.singleton $ unUIdent $ unLabel i
+    fromExpr _ = Set.empty
