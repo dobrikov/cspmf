@@ -44,4 +44,5 @@ library
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper
     Language.CSPM.LexHelper
+    Language.CSPM.PrettyPrinter
     Text.ParserCombinators.Parsec.ExprM
