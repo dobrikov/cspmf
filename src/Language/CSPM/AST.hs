@@ -161,6 +161,10 @@ data Rename = Rename LExp LExp deriving (Show,Eq,Ord,Typeable, Data)
 type LBuiltIn = Labeled BuiltIn
 data BuiltIn = BuiltIn Const deriving (Show,Eq,Ord,Typeable, Data)
 
+lBuiltInToConst :: LBuiltIn -> Const
+lBuiltInToConst = h . unLabel where
+  h (BuiltIn c) = c
+
  --generators inside a comprehension-expression
 type LCompGen = Labeled CompGen
 data CompGen
