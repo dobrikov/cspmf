@@ -11,13 +11,6 @@
 -- This Module defines an Abstract Syntax Tree for CSPM.
 -- This is the AST that is computed by the parser.
 -- For historycal reasons, it is rather unstructured
-{-
-todo
-  * use a datatype for build-ins / operators
-  * remove all "unparsed" strings
-  * remove indirection for tokens, include token or srcPositions
-     directly in the SrcLoc datatype
--}
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 module Language.CSPM.AST
 where
@@ -54,6 +47,9 @@ data Ident
   = Ident  {unIdent :: String}
   | UIdent {unUIdent :: UniqueIdent}
   deriving (Show,Eq,Ord,Typeable, Data)
+
+identId :: LIdent -> Int
+identId = uniqueIdentId . unUIdent . unLabel
 
 data UniqueIdent = UniqueIdent
   {
