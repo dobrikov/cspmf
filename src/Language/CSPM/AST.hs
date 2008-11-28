@@ -38,6 +38,15 @@ data Labeled t = Labeled {
    ,srcLoc  :: SrcLoc
    } deriving (Eq,Ord,Typeable, Data,Show)
 
+
+-- | wrap a node with a dummyLabel
+labeled :: t -> Labeled t
+labeled t = Labeled {
+  nodeId  = error "unknow nodeId"
+ ,unLabel = t
+ ,srcLoc  = NoLocation
+ }
+
 setNode :: Labeled t -> t -> Labeled t
 setNode l n = l {unLabel = n}
 
