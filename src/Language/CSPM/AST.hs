@@ -84,7 +84,6 @@ data Module = Module {
   ,moduleTokens :: Maybe [Token]
   } deriving (Show,Eq,Ord,Typeable, Data)
 
---type ListDecl = [LDecl]
 
 {-
 LProc is just a typealias for better readablility
@@ -96,51 +95,51 @@ type LProc = LExp
 type LExp = Labeled Exp
 
 data Exp
-  = Var LIdent --
-  | IntExp Integer --
-  | SetEnum [LExp] --
-  | ListEnum [LExp] --
-  | SetOpen LExp -- ?
-  | ListOpen LExp -- ?
-  | SetClose (LExp,LExp) -- 
-  | ListClose (LExp,LExp) -- 
-  | SetComprehension ([LExp],[LCompGen]) 
+  = Var LIdent
+  | IntExp Integer
+  | SetEnum [LExp]
+  | ListEnum [LExp]
+  | SetOpen LExp
+  | ListOpen LExp
+  | SetClose (LExp,LExp)
+  | ListClose (LExp,LExp)
+  | SetComprehension ([LExp],[LCompGen])
   | ListComprehension ([LExp],[LCompGen])
   | ClosureComprehension ([LExp],[LCompGen])
-  | Let [LDecl] LExp --
-  | Ifte LExp LExp LExp --
-  | CallFunction LExp [[LExp]] --
-  | CallBuiltIn LBuiltIn [[LExp]] --
-  | Lambda [LPattern] LExp --
-  | Stop -- 
-  | Skip --
-  | CTrue --
-  | CFalse --
-  | Events -- 
-  | BoolSet -- 
-  | IntSet -- 
-  | TupleExp [LExp] -- ?
+  | Let [LDecl] LExp
+  | Ifte LExp LExp LExp
+  | CallFunction LExp [[LExp]]
+  | CallBuiltIn LBuiltIn [[LExp]]
+  | Lambda [LPattern] LExp
+  | Stop
+  | Skip
+  | CTrue
+  | CFalse
+  | Events
+  | BoolSet
+  | IntSet
+  | TupleExp [LExp]
   | Parens LExp
-  | AndExp LExp LExp --
-  | OrExp LExp LExp --
-  | NotExp LExp --
-  | Fun1 LBuiltIn LExp --
-  | Fun2 LBuiltIn LExp LExp --
-  | DotTuple [LExp] -- 
-  | Closure [LExp] --
-  | ProcSharing LExp LProc LProc --
-  | ProcAParallel LExp LExp LExp LExp -- ?
-  | ProcLinkParallel LLinkList LProc LProc --
-  | ProcRenaming [LRename] LProc -- ?
-  | ProcRenamingComprehension [LRename] [LCompGen] LProc -- ?
-  | ProcRepSequence LCompGenList LProc -- ?
-  | ProcRepInternalChoice LCompGenList LProc -- ?
+  | AndExp LExp LExp
+  | OrExp LExp LExp
+  | NotExp LExp
+  | Fun1 LBuiltIn LExp
+  | Fun2 LBuiltIn LExp LExp
+  | DotTuple [LExp]
+  | Closure [LExp]
+  | ProcSharing LExp LProc LProc
+  | ProcAParallel LExp LExp LExp LExp
+  | ProcLinkParallel LLinkList LProc LProc
+  | ProcRenaming [LRename] LProc
+  | ProcRenamingComprehension [LRename] [LCompGen] LProc
+  | ProcRepSequence LCompGenList LProc
+  | ProcRepInternalChoice LCompGenList LProc
   | ProcRepInterleave LCompGenList LProc
   | ProcRepChoice LCompGenList LProc
   | ProcRepAParallel LCompGenList LExp LProc
   | ProcRepLinkParallel LCompGenList LLinkList LProc
   | ProcRepSharing LCompGenList LExp LProc
-  | PrefixExp LExp [LCommField] LProc --
+  | PrefixExp LExp [LCommField] LProc
   deriving (Show,Eq,Ord,Typeable, Data)
 
 type LCompGenList = Labeled [LCompGen]
@@ -181,32 +180,32 @@ data CompGen
 
 type LPattern = Labeled Pattern
 data Pattern
-  = IntPat Integer --
+  = IntPat Integer
   | TruePat
   | FalsePat
   | WildCard
 {-  ConstrPat    -}
-  | VarPat LIdent --
+  | VarPat LIdent
   | Also [LPattern]
   | Append [LPattern]
   | DotPat [LPattern]
   | SingleSetPat LPattern
-  | EmptySetPat --
+  | EmptySetPat
   | ListEnumPat [LPattern]
   | TuplePat [LPattern]
   deriving (Show,Eq,Ord,Typeable, Data)
 
 type LDecl = Labeled Decl
 data Decl
-  = PatBind LPattern LExp --
-  | FunBind LIdent [FunCase] -- todo : uses Labeled -- ?
-  | AssertRef LExp String LExp --
-  | AssertBool LExp --
+  = PatBind LPattern LExp
+  | FunBind LIdent [FunCase] -- todo : uses Labeled
+  | AssertRef LExp String LExp
+  | AssertBool LExp
   | Transparent [LIdent]
   | SubType LIdent [LConstructor]
-  | DataType LIdent [LConstructor] --
+  | DataType LIdent [LConstructor]
   | NameType LIdent LTypeDef
-  | Channel [LIdent] (Maybe LTypeDef) --
+  | Channel [LIdent] (Maybe LTypeDef)
   | Print LExp
   deriving (Show,Eq,Ord,Typeable, Data)
 
