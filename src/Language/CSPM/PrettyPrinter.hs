@@ -8,19 +8,16 @@
 -- Stability   :  experimental
 -- Portability :  GHC-only
 --
-module Language.CSPM.PrettyPrinter
+module PrettyPrinter
 where
 
 import Text.PrettyPrint as PrettyPrint hiding (char)
 import qualified Text.PrettyPrint as PrettyPrint
 import Language.CSPM.AST
+import Language.CSPM.Frontend
 
 import Data.Maybe
-import Data.Typeable (Typeable)
-import Data.Generics.Basics (Data)
-import Data.Generics.Instances ()
-import Data.Ix
-import Data.IntMap (IntMap)
+
 
 class PP x where pp :: x-> Doc
 
@@ -29,17 +26,17 @@ instance (PP x) => PP (Labeled x) where
 
 instance PP Ident where pp = text . unIdent
 
-instance PP BuiltIn where 
-  pp (BuiltIn fun) =  text $ show fun   
+--instance PP BuiltIn where 
+--  pp (BuiltIn fun) =  text $ show fun   
 
 instance PP Exp where 
      pp (Var x) = pp x
      pp (IntExp x) = integer x
      pp (SetEnum x) = lbrace <> (hcat $ punctuate (comma <+> empty) $ map pp x) <> rbrace 
-     pp (ListEnum x) = lbrack <> (hcat $ punctuate (comma <+> empty) $ map pp x) <> rbrack
+     pp (ListEnum x) = text "<" <> (hcat $ punctuate (comma <+> empty) $ map pp x) <> text ">"
 --     pp (SetOpen x) 
 --     pp (ListOpen x)
---     pp SetComprehension ([LExp],[LCompGen]) =
+--     pp SetComprehension ([LExp],[LCompGen]) = (hcat $ punctuate (<+>) $ map pp x) <+> text "@" <+> rparen
      pp (SetClose (x,y)) = lbrace <> pp x <> text ".." <> pp y <> rbrace
      pp (ListClose (x,y)) = lbrack <> pp x <> text ".." <> pp y <> rbrack
      pp BoolSet = text "Bool"
@@ -59,17 +56,25 @@ instance PP Exp where
      pp (Fun1 x y) = pp x <> pp y
      pp (Fun2 fun x y) =  pp x <+> pp fun <+> pp y
      pp (Lambda patt x) = text "\\" <+> (hcat $ punctuate (comma <+> empty) $ map pp patt) <+> text "@" <+> pp x
-     pp (PrefixExp x l_comm_field y) = pp x <>  (vcat $ map pp l_comm_field) <+> text "->" <+> pp y 
+     pp (PrefixExp x l_comm_field y) = pp x <> (vcat $ map pp l_comm_field) <+> text "->" <+> pp y 
      pp (ProcSharing x_middle x_left x_right) = pp x_left <> text "[|" <> pp x_middle <> text "|]" <> pp x_right
      pp (Let decl x) = text "let" $$ (vcat $ map pp decl) $$ text "within" <+> pp x
      pp (CallFunction x [[y]]) = pp x <> lparen <> pp y <> rparen
      pp (ProcLinkParallel list x y) = pp x <+> pp list <+> pp y
---     pp (ProcRepInternalChoice [comp_gen] x) = pp comp_gen_list <+> text "@" <+> pp x
-
+--     pp (ProcRepInternalChoice list x) = pp list  <+> text "@" <+> pp x
 
 
 instance PP CompGen where
-     pp (Generator pattern x) = pp x <> text ":" <> pp pattern
+     pp (Generator patt x) = pp patt <> text ":" <> pp x
+
+comp_gen_list :: [LCompGen] -> Doc
+comp_gen_list l = hcat $ punctuate empty (map pp l)
+
+instance PP BuiltIn where
+     pp (BuiltIn const) = pp const  
+
+--instance PP CompGen where
+--     pp (Generator pattern x) = pp x <> text ":" <> pp pattern
 --   pp (Guard x)
 
 instance PP Decl where
@@ -115,4 +120,29 @@ instance PP CommField where
      pp (InComm x) = text "?" <> pp x
      pp (OutComm x) = text "!" <> pp x 
 
+instance PP Const where
+     pp F_true = text "true"
+     pp F_false = text "false"
+     pp F_not = text "not"
+     pp F_and = text "and"
+     pp F_or = text "or"
+     pp F_STOP = text "STOP"
+     pp F_SKIP = text "SKIP"
+     pp F_Mult = text "*"
+     pp F_Div = text ":"
+     pp F_Add = text "+"
+     pp F_Sub = text "-"
+     pp F_Eq = text "=="
+     pp F_NEq = text "!=" 
+     pp F_ExtChoice = text "[]"
+
+to_PString :: LModule -> String
+to_PString mod = render (pp mod) 
+
+
+runPretty :: FilePath -> IO String 
+runPretty fname = 
+  do 
+   mod <- parseFile fname
+   return (to_PString mod) --(render (pp mod))  
 
