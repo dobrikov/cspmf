@@ -1,5 +1,4 @@
-{-# OPTIONS_GHC
-    -XTypeSynonymInstances #-}
+{-# LANGUAGE TypeSynonymInstances #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Language.CSPM.PrettyPrinter
