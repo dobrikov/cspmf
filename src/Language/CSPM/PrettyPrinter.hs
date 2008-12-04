@@ -1,4 +1,5 @@
-{-# LANGUAGE TypeSynonymInstances #-}
+{-# OPTIONS_GHC
+    -XTypeSynonymInstances #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Language.CSPM.PrettyPrinter
@@ -9,12 +10,13 @@
 -- Stability   :  experimental
 -- Portability :  GHC-only
 --
-module Language.CSPM.PrettyPrinter
+module {-Language.CSPM.-}Language.CSPM.PrettyPrinter
 where
 
 import Text.PrettyPrint as PrettyPrint hiding (char)
 import qualified Text.PrettyPrint as PrettyPrint
 import Language.CSPM.AST
+import Language.CSPM.Frontend
 
 import Data.Maybe
 
@@ -96,7 +98,7 @@ instance PP BuiltIn where
      pp (BuiltIn const) = pp const  
 
 instance PP LCompGenList where
-     pp list = (vcat $ punctuate (comma) (map pp $ unLabel list))
+     pp (Labeled s list v) = (vcat $ punctuate (comma) (map pp list))
 
 --instance PP CompGen where
 --     pp (Generator pattern x) = pp x <> colon <> pp pattern
@@ -209,10 +211,10 @@ instance PP Const where
 to_PString :: LModule -> String
 to_PString mod = render (pp mod) 
 
-{-
+
 runPretty :: FilePath -> IO String 
 runPretty fname = 
   do 
    mod <- parseFile fname
    return (to_PString mod) --(render (pp mod))  
--}
+
