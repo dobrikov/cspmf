@@ -39,7 +39,6 @@ import Control.Monad.Error
 import Control.Monad.State
 import Data.Set (Set)
 import qualified Data.Set as Set
-import Data.Map (Map)
 import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
 
@@ -50,15 +49,14 @@ import qualified Data.IntMap as IntMap
 -- identifiers or illegal redefinitions.
 getRenaming ::
      LModule 
-  -> Either RenameError (AstAnnotation UniqueIdent,AstAnnotation UniqueIdent)
+  -> Either RenameError (Bindings,AstAnnotation UniqueIdent,AstAnnotation UniqueIdent)
 getRenaming m
   = case execStateT (rnModule m) initialRState of
-      Right state -> Right (identDefinition state, identUse state)
+      Right state -> Right (visible state,identDefinition state, identUse state)
       Left e -> Left e
 
 type RM x = StateT RState (Either RenameError) x
 
-type Bindings = Map String UniqueIdent
 type UniqueName = Int
 
 data RState = RState
@@ -412,10 +410,10 @@ rnTypeDef t = case unLabel t of
 -- It is an error if the 'Module' contains occurences of 'Ident' that are not covered by
 -- the 'AstAnnotation's.
 applyRenaming ::
-     (AstAnnotation UniqueIdent,AstAnnotation UniqueIdent)
+     (Bindings,AstAnnotation UniqueIdent,AstAnnotation UniqueIdent)
   -> LModule 
   -> LModule
-applyRenaming (defIdent,usedIdent) ast
+applyRenaming (_,defIdent,usedIdent) ast
   = Data.Generics.Schemes.everywhere (Data.Generics.Aliases.mkT patchIdent) ast
   where
     patchIdent :: LIdent -> LIdent

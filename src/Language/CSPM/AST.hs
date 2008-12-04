@@ -23,8 +23,10 @@ import Data.Generics.Basics (Data)
 import Data.Generics.Instances ()
 import Data.Ix
 import Data.IntMap (IntMap)
+import Data.Map (Map)
 
 type AstAnnotation x = IntMap x
+type Bindings = Map String UniqueIdent
 
 newtype NodeId = NodeId {unNodeId :: Int}
   deriving (Show,Eq,Ord,Enum,Ix, Typeable, Data)
