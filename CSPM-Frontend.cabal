@@ -39,10 +39,10 @@ library
     Language.CSPM.SrcLoc
     Language.CSPM.AstUtils
     Language.CSPM.TokenClasses
+    Language.CSPM.PrettyPrinter
   Other-modules:
     Language.CSPM.Version
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper
     Language.CSPM.LexHelper
-    Language.CSPM.PrettyPrinter
     Text.ParserCombinators.Parsec.ExprM
