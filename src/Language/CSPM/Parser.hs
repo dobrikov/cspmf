@@ -977,20 +977,17 @@ exp <-(parsePrefixExp <|> parseExpBase ) <?> "rhs of prefix operation"
 -}
 parsePrefixExp :: PT LExp
 parsePrefixExp = withLoc $ do
-  (channel,comm,arrLoc) <- try parsePrefix
+  (channel,comm) <- try parsePrefix
   exp <- parseProcReplicatedExp <?> "rhs of prefix operation"
-{- dirty Hack: specialcase for Valencia-Slicer : hide the sourcelocation of the
-  arrow token in the prefix proc -}
-  let expValencia = exp {srcLoc = srcLoc arrLoc}
-  return $ PrefixExp channel comm expValencia
+  return $ PrefixExp channel comm exp
   where 
-  parsePrefix :: PT (LExp,[LCommField],Labeled ())
+  parsePrefix :: PT (LExp,[LCommField])
   parsePrefix = do
     channel <- try funCall <|> varExp --maybe permit even more
     updateState $ setLastChannelDir WasOut
     commfields <- many parseCommField
-    arrowLocation <- withLoc $ token T_rightarrow
-    return (channel,commfields,arrowLocation)
+    token T_rightarrow
+    return (channel,commfields)
 
 
 {-
