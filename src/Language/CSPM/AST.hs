@@ -195,7 +195,24 @@ data Pattern
   | EmptySetPat
   | ListEnumPat [LPattern]
   | TuplePat [LPattern]
+  | SelectorList {origPat :: LPattern , selectorList :: [(Maybe LIdent,Selector)] }
+      -- this the result of pattern-match-compilation, inefficient, but simple
   deriving (Show,Eq,Ord,Typeable, Data)
+
+{- a Selector is a path in a Pattern/Expression -}
+data Selector
+  = IntSel Integer
+  | TrueSel
+  | FalseSel
+  | SelectThis
+  | DotSel Int Int Selector
+  | SingleSetSel Selector
+  | EmptySetSel
+  | ListLengthSel Int Selector
+  | ListIthSel Int Selector
+  | TupleLengthSel Int Selector
+  | TupleIthSel Int Selector
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 type LDecl = Labeled Decl
 data Decl
