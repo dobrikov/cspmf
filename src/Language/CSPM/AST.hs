@@ -196,8 +196,10 @@ data Pattern
   | EmptySetPat
   | ListEnumPat [LPattern]
   | TuplePat [LPattern]
-  | SelectorList {origPat :: LPattern , selectorList :: Array Int Selector , identList :: Array Int LIdent }
-      -- this the result of pattern-match-compilation, inefficient, but simple
+-- this the result of pattern-match-compilation
+  | Selectors {origPat :: LPattern, selectors :: Array Int Selector
+               ,idents :: Array Int (Maybe LIdent)}
+  | Selector LPattern Selector (Maybe LIdent)
   deriving (Show,Eq,Ord,Typeable, Data)
 
 {- a Selector is a path in a Pattern/Expression -}
