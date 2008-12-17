@@ -24,6 +24,7 @@ import Data.Generics.Instances ()
 import Data.Ix
 import Data.IntMap (IntMap)
 import Data.Map (Map)
+import Data.Array.IArray
 
 type AstAnnotation x = IntMap x
 type Bindings = Map String UniqueIdent
@@ -195,7 +196,7 @@ data Pattern
   | EmptySetPat
   | ListEnumPat [LPattern]
   | TuplePat [LPattern]
-  | SelectorList {origPat :: LPattern , selectorList :: [(Maybe LIdent,Selector)] }
+  | SelectorList {origPat :: LPattern , selectorList :: Array Int Selector , identList :: Array Int LIdent }
       -- this the result of pattern-match-compilation, inefficient, but simple
   deriving (Show,Eq,Ord,Typeable, Data)
 

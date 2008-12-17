@@ -24,6 +24,7 @@ import qualified Language.CSPM.AST as AST
 import Control.Monad
 import Data.Generics.Schemes (everywhere)
 import Data.Generics.Aliases (mkT)
+import Data.Array.IArray
 
 -- | replace all pattern in the module with list of linear Selectors
 compilePattern :: LModule -> LModule
@@ -34,8 +35,12 @@ compilePattern ast
     compPat pat
       = setNode pat $ SelectorList {
         origPat = pat
-       ,selectorList = cp id pat
+-- todo : checkthis
+       ,selectorList = array (0,length sels) $ zip (map snd sels) [0..] 
+       ,identList = array (0,length sels) $ zip (map fst sels) [0..] 
        }
+    sels :: [(Maybe LIdent,Selector)]
+    sels = cp id pat
     cp :: (Selector -> Selector ) -> LPattern -> [(Maybe LIdent,Selector)]
     cp path pat = case unLabel pat of
       IntPat i -> return (Nothing, path $ IntSel i)
