@@ -30,7 +30,8 @@ import Data.Array.IArray
 -- | replace all pattern in the module with list of linear Selectors
 compilePattern :: LModule -> LModule
 compilePattern ast 
-  = Data.Generics.Schemes.everywhere' (Data.Generics.Aliases.mkT compPat) ast
+  = Data.Generics.Schemes.everywhere' (Data.Generics.Aliases.mkT compPat)
+      $ replaceFunCase ast -- temporay patch
   where
     compPat :: LPattern -> LPattern
     compPat pat = let
@@ -73,3 +74,17 @@ compilePattern ast
         msum $ map
           (\(x,i) -> cp (path . TupleLengthSel len . TupleIthSel i) x)
           (zip l [0..])
+
+
+{- replaceFunCase with funCaseNew -}
+replaceFunCase :: LModule -> LModule
+replaceFunCase ast
+  = Data.Generics.Schemes.everywhere' (Data.Generics.Aliases.mkT compFC) ast
+  where
+    compFC :: FunCase -> FunCase
+    compFC (FunCase args expr) = FunCaseNew flatArgs expr
+      where
+        flatArgs = map wrapTuple args
+        wrapTuple [a] = a  -- one-element lists are not Tuples ?
+        wrapTuple x   =(AST.labeled . TuplePat) x
+    compFC (FunCaseNew _ _) = error "Parser does not generate FunCaseNew"

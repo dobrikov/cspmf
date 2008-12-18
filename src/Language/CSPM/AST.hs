@@ -21,7 +21,6 @@ import Language.CSPM.SrcLoc (SrcLoc(..))
 import Data.Typeable (Typeable)
 import Data.Generics.Basics (Data)
 import Data.Generics.Instances ()
-import Data.Ix
 import Data.IntMap (IntMap)
 import Data.Map (Map)
 import Data.Array.IArray
@@ -198,7 +197,7 @@ data Pattern
   | TuplePat [LPattern]
 -- this the result of pattern-match-compilation
   | Selectors {origPat :: LPattern, selectors :: Array Int Selector
-               ,idents :: Array Int (Maybe LIdent)}
+               ,idents :: Array Int (Maybe LIdent) }
   | Selector LPattern Selector (Maybe LIdent)
   deriving (Show,Eq,Ord,Typeable, Data)
 
@@ -231,8 +230,20 @@ data Decl
   | Print LExp
   deriving (Show,Eq,Ord,Typeable, Data)
 
+{-
+We want to use                1) type FunArgs = [LPattern]
+it is not clear why we used   2) type FunArgs = [[LPattern]]
+
+If 1) works in the interpreter, we will refactor
+Renaming , and prolog-interface to 1)
+
+For now we just patch the AST Just before PatternCompilation
+-}
 type FunArgs = [[LPattern]] -- CSPM confusion of currying/tuples
-data FunCase = FunCase FunArgs LExp   deriving (Show,Eq,Ord,Typeable, Data)
+data FunCase 
+  = FunCase FunArgs LExp     -- osolete version
+  | FunCaseNew [LPattern] LExp   -- newVersion for interpreter
+  deriving (Show,Eq,Ord,Typeable, Data)
 
 type LTypeDef = Labeled TypeDef
 data TypeDef
