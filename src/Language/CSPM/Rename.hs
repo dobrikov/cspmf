@@ -26,7 +26,7 @@ module Language.CSPM.Rename
   )
 where
 
-import Language.CSPM.AST hiding (prologMode)
+import Language.CSPM.AST hiding (prologMode,bindType)
 import qualified Language.CSPM.AST as AST
 import qualified Language.CSPM.SrcLoc as SrcLoc
 
@@ -69,6 +69,7 @@ data RState = RState
    ,identUse  :: AstAnnotation UniqueIdent 
    ,usedNames :: Set String
    ,prologMode :: PrologMode
+   ,bindType   :: BindType
   } deriving Show
 
 initialRState :: RState
@@ -81,6 +82,7 @@ initialRState = RState
    ,identUse        = IntMap.empty
    ,usedNames       = Set.empty
    ,prologMode      = PrologVariable
+   ,bindType        = NotLetBound
   }
 
 data RenameError
@@ -152,6 +154,7 @@ bindNewUniqueIdent iType lIdent = do
     
       (nameNew,unique) <- nextUniqueName origName
       plMode <- gets prologMode
+      bType  <- gets bindType
       let uIdent = UniqueIdent {
          uniqueIdentId = unique
         ,bindingSide = nodeID
@@ -159,7 +162,8 @@ bindNewUniqueIdent iType lIdent = do
         ,idType = iType
         ,realName = origName
         ,newName = nameNew
-        ,AST.prologMode = plMode }
+        ,AST.prologMode = plMode
+        ,AST.bindType   = bType  }
       modify $ \s -> s 
         { localBindings = Map.insert origName uIdent $ localBindings s
         , visible       = Map.insert origName uIdent $ visible s }
@@ -345,9 +349,11 @@ rnLinkList = rnLink2 . unLabel
 -- rename a recursive binding group
 rnDeclList :: [LDecl] -> RM ()
 rnDeclList declList = do
-  modify $ \s -> s {prologMode = PrologGround }
+  modify $ \s -> s {prologMode = PrologGround
+                   ,bindType   = LetBound}
   forM_ declList declLHS
-  modify $ \s -> s {prologMode = PrologVariable }
+  modify $ \s -> s {prologMode = PrologVariable
+                   ,bindType   = NotLetBound}
   forM_ declList declRHS
 
 declLHS :: LDecl -> RM ()

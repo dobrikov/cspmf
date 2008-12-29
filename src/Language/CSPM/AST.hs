@@ -71,6 +71,7 @@ data UniqueIdent = UniqueIdent
   ,realName    :: String
   ,newName     :: String
   ,prologMode  :: PrologMode
+  ,bindType    :: BindType
   } deriving (Show,Eq,Ord,Typeable, Data)
 
 data IDType 
@@ -78,7 +79,15 @@ data IDType
   | ConstrID String | DataTypeID | TransparentID
   deriving (Show,Eq,Ord,Typeable, Data)
 
-data PrologMode = PrologGround | PrologVariable deriving (Show,Eq,Ord,Typeable, Data)
+{- actually BindType and PrologMode are semantically aquivalent -}
+data BindType = LetBound | NotLetBound
+  deriving (Show,Eq,Ord,Typeable, Data)
+
+isLetBound :: BindType -> Bool
+isLetBound x = x==LetBound
+
+data PrologMode = PrologGround | PrologVariable
+  deriving (Show,Eq,Ord,Typeable, Data)
 
 type LModule = Labeled Module
 data Module = Module {
