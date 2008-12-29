@@ -44,8 +44,9 @@ compilePattern ast
       in 
 --todo special case len==1
       setNode pat $ Selectors {
-        origPat = pat
-       ,selectors = lToArr sels
+ -- fixme this creates an infinite tree with SYB everywehre'
+--        origPat = pat
+        selectors = lToArr sels
        ,idents = lToArr ids
        }
    

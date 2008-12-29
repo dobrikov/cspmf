@@ -205,7 +205,9 @@ data Pattern
   | ListEnumPat [LPattern]
   | TuplePat [LPattern]
 -- this the result of pattern-match-compilation
-  | Selectors {origPat :: LPattern, selectors :: Array Int Selector
+ -- fixme this creates an infinite tree with SYB everywehre'
+  | Selectors { --origPat :: LPattern
+                selectors :: Array Int Selector
                ,idents :: Array Int (Maybe LIdent) }
   | Selector LPattern Selector (Maybe LIdent)
   deriving (Show,Eq,Ord,Typeable, Data)
