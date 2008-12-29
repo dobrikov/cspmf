@@ -38,8 +38,13 @@ data Labeled t = Labeled {
     nodeId :: NodeId
    ,unLabel :: t
    ,srcLoc  :: SrcLoc
-   } deriving (Eq,Ord,Typeable, Data,Show)
+   } deriving (Typeable, Data,Show)
 
+instance Eq (Labeled t) where
+  (==) a b = (nodeId a) == (nodeId b)
+
+instance Ord (Labeled t) where
+  compare a b = compare (nodeId a) (nodeId b)
 
 -- | wrap a node with a dummyLabel
 labeled :: t -> Labeled t
