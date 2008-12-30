@@ -106,7 +106,13 @@ compilePattern ast
     mkListVariablePat path (Just (l,r,pat)) = cp (path . SliceSel l r) pat
 
 
-{- replaceFunCase with funCaseNew -}
+{-
+replaceFunCase with funCaseNew 
+this is a quickfix
+in CSPM we have tree cases:
+fun(x)(y) fun(x,y) and fun((x,y))
+we want to map them to fun x y and fun (x,y)
+-}
 replaceFunCase :: LModule -> LModule
 replaceFunCase ast
   = Data.Generics.Schemes.everywhere' (Data.Generics.Aliases.mkT compFC) ast
@@ -114,7 +120,9 @@ replaceFunCase ast
     compFC :: FunCase -> FunCase
     compFC (FunCase args expr) = FunCaseNew flatArgs expr
       where
-        flatArgs = map wrapTuple args
+        flatArgs = case args of
+          [x] -> x
+          _     -> map wrapTuple args
         wrapTuple [a] = a  -- one-element lists are not Tuples ?
         wrapTuple x   =(AST.labeled . TuplePat) x
     compFC (FunCaseNew _ _) = error "Did not expect FunCaseNew in parse Result"
