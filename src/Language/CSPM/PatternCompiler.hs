@@ -12,6 +12,7 @@
 -- todo : benchmark if it pays off to introduce 
 -- helperbindings and only atomic bindings (unlikely)
 -- todo : add testcases
+{-# LANGUAGE ViewPatterns #-}
 
 module Language.CSPM.PatternCompiler
   (
@@ -58,9 +59,13 @@ compilePattern ast
       FalsePat -> return (Nothing, path FalseSel )
       WildCard -> return (Nothing, path SelectThis )
       VarPat x -> return (Just x , path SelectThis )
-{-      | Also [LPattern]
-      | Append [LPattern]
-      | DotPat [LPattern] -}
+{-      Also l ->  -}
+      Append l -> do
+        let (prefix,suffix,variable) = analyzeAppendPattern l
+        msum [ concatMap (mkListPrefixPat path) prefix
+             , mkListVariablePat path variable
+             , concatMap (mkListSuffixPat path) suffix ]
+{-      | DotPat [LPattern] -}
       SingleSetPat p -> cp (path . SingleSetSel) p
       EmptySetPat -> return (Nothing, path EmptySetSel)
       ListEnumPat [] -> return (Nothing, path $ ListLengthSel 0 $ SelectThis )
@@ -76,6 +81,30 @@ compilePattern ast
           (\(x,i) -> cp (path . TupleLengthSel len . TupleIthSel i) x)
           (zip l [0..])
 
+    mkListPrefixPat 
+      :: (Selector -> Selector ) 
+          -> (Offset,Len,LPattern)
+          -> [(Maybe LIdent,Selector)]
+    mkListPrefixPat path l = case l of
+      (0,1,pat) -> let (unLabel -> ListEnumPat [r]) = pat
+                   in cp (path . HeadSel) r
+      (0,n,pat) -> cp (path . HeadNSel n) pat
+      (o,l,pat) -> cp (path . PrefixSel o l) pat
+
+    mkListSuffixPat 
+      :: (Selector -> Selector ) 
+          -> (Offset,Len,LPattern)
+          -> [(Maybe LIdent,Selector)]
+    mkListSuffixPat path (o,l,pat)
+      = cp (path . SuffixSel o l) pat
+
+    mkListVariablePat
+      :: (Selector -> Selector ) 
+          -> Maybe (Offset,Offset,LPattern)
+          -> [(Maybe LIdent,Selector)]
+    mkListVariablePat path Nothing = []
+    mkListVariablePat path (Just (l,r,pat)) = cp (path . SliceSel l r) pat
+
 
 {- replaceFunCase with funCaseNew -}
 replaceFunCase :: LModule -> LModule
@@ -88,4 +117,58 @@ replaceFunCase ast
         flatArgs = map wrapTuple args
         wrapTuple [a] = a  -- one-element lists are not Tuples ?
         wrapTuple x   =(AST.labeled . TuplePat) x
-    compFC (FunCaseNew _ _) = error "Parser does not generate FunCaseNew"
+    compFC (FunCaseNew _ _) = error "Did not expect FunCaseNew in parse Result"
+
+type Offset = Int
+type Len    = Int
+analyzeAppendPattern :: 
+  [LPattern] ->
+    ([(Offset,Len,LPattern)] -- | prefixpattern
+    ,[(Offset,Len,LPattern)] -- | suffixpattern
+    ,Maybe (Offset,Offset,LPattern)
+    )
+analyzeAppendPattern pl
+  = let
+    taggedPatList = zip pl $ map lengthOfListPattern pl
+    prefixPat = computePrefixPattern taggedPatList
+    suffixPat = computeSuffixPattern taggedPatList
+    lenPrefix = sum $ map (\(_,l,_)-> l) prefixPat
+    lenSuffix = sum $ map (\(_,l,_)-> l) suffixPat
+    varPat = case filter (\(_,len) -> len == Nothing) taggedPatList of
+              [] -> Nothing
+              [(pat,_)] -> Just (lenPrefix,lenSuffix,pat)
+              l -> error $ "PatternCompiler.hs : alsopattern contains multiple "
+                   ++ "variable length pattern "
+                   ++ show l
+  in 
+    (prefixPat,suffixPat,varPat)
+  where
+{-  compute the length of a list pattern
+    Just Int -> fixed length pattern
+    Nothing -> variable length pattern -}
+
+    lengthOfListPattern :: LPattern -> Maybe Len
+    lengthOfListPattern p = case unLabel p of
+      ListEnumPat l -> return $ length l
+      Append pl -> do
+        l <- mapM lengthOfListPattern pl
+        return $ sum l
+      VarPat _ -> Nothing
+      Also pl -> do
+        let l = map lengthOfListPattern pl
+        error "PatternCompiler.hs: lengthOfListPat : alsopattern: todo"
+      p -> error $ "PatternCompiler.hs: lengthOfListPat : no list pattern "
+                    ++ show p
+
+-- | PrefixPattern are fixed-length pattern with a fixed offset from the front
+-- | return when the first variable length pattern occurs
+
+    computePrefixPattern :: [(LPattern,Maybe Len)] -> [(Offset,Len,LPattern)]
+    computePrefixPattern l = worker 0 l where
+      worker _      [] = []
+      worker _      ((_ ,Nothing ) : _) = [] 
+      worker offset ((pat,Just len): rest) 
+        = (offset,len,pat) : worker (offset+len) rest
+
+    computeSuffixPattern :: [(LPattern,Maybe Len)] -> [(Offset,Len,LPattern)]
+    computeSuffixPattern = computePrefixPattern . reverse

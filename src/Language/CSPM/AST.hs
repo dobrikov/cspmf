@@ -49,7 +49,7 @@ instance Ord (Labeled t) where
 -- | wrap a node with a dummyLabel
 labeled :: t -> Labeled t
 labeled t = Labeled {
-  nodeId  = error "unknow nodeId"
+  nodeId  = NodeId (-1) --error "unknown nodeId"
  ,unLabel = t
  ,srcLoc  = NoLocation
  }
@@ -226,10 +226,16 @@ data Selector
   | DotSel Int Int Selector
   | SingleSetSel Selector
   | EmptySetSel
-  | ListLengthSel Int Selector
-  | ListIthSel Int Selector
   | TupleLengthSel Int Selector
   | TupleIthSel Int Selector
+  | ListLengthSel Int Selector
+  | ListIthSel Int Selector
+  | HeadSel Selector
+  | HeadNSel Int Selector
+  | PrefixSel Int Int Selector
+  | TailSel Selector
+  | SliceSel Int Int Selector
+  | SuffixSel Int Int Selector
   deriving (Show, Eq, Ord, Typeable, Data)
 
 type LDecl = Labeled Decl
@@ -326,7 +332,7 @@ data Const
   | F_null
   | F_head
   | F_tail
-  | F_concat
+  | F_concat -- fix confusing F_Concat
   | F_elem
   | F_length
   | F_STOP
@@ -335,7 +341,7 @@ data Const
   | F_Int
   | F_Bool
   | F_CHAOS
-  | F_Concat
+  | F_Concat -- fix confusing F_concat
   | F_Len2
   | F_Mult
   | F_Div

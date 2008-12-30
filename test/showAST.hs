@@ -28,8 +28,9 @@ main
   renaming <- eitherToExc $ getRenaming ast
   let astNew = applyRenaming renaming ast
   let smallAst = removeSourceLocations $ unUniqueIdent $ removeModuleTokens $ astNew
-  putStrLn $ showAst smallAst
-
+--  putStrLn $ showAst smallAst
+--  putStrLn $ showAst $ compilePattern $ astNew
+  putStrLn $ show $ compilePattern $ smallAst
   exitWith ExitSuccess
 
 showTime :: Integer -> String
@@ -52,10 +53,3 @@ renameErrorHandler err = do
   putStrLn "RenamingError : "
   putStrLn $ show err
   exitFailure
-
-{-
-to build all ASTs for the testcases do
-
-cd cspm
-for i in $(ls *.csp *.fdr2) ; do ../runCspParser.hs $i ; done
--}
