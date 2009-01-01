@@ -18,6 +18,7 @@ module Language.CSPM.AstUtils
   ,unUniqueIdent
   ,showAst
   ,relabelAst
+  ,computeFreeNames
   )
 where
 
@@ -25,8 +26,10 @@ import Language.CSPM.AST hiding (prologMode)
 import qualified Language.CSPM.AST as AST
 import qualified Language.CSPM.SrcLoc as SrcLoc
 
+import Data.IntMap (IntMap)
+import qualified Data.IntMap as IntMap
 import Data.Data
-import Data.Generics.Schemes (everywhere)
+import Data.Generics.Schemes (everywhere,listify)
 import Data.Generics.Aliases (mkT,extQ)
 import Data.Generics.Basics (gmapQ,toConstr,showConstr)
 
@@ -86,3 +89,25 @@ showAst ast = gshow ast
        ++ ")"
 
 
+
+-- | Compute the "FreeNames" of an Expression.
+-- | This function does only work after renaming has been done.
+-- | This implementation is inefficient.
+computeFreeNames :: LExp -> FreeNames
+computeFreeNames expr
+  = IntMap.difference (toIntMap used) (toIntMap def)
+  where
+    toIntMap :: [UniqueIdent] -> IntMap UniqueIdent
+    toIntMap
+      = IntMap.fromList . map (\x -> (uniqueIdentId x,x))
+    used :: [UniqueIdent]
+    used = map (\(Var x) -> unUIdent $ unLabel x) $ listify isUse expr
+    def :: [UniqueIdent]
+    def  = map (\(VarPat x) -> unUIdent $ unLabel x) $ listify isDef expr
+    isUse :: Exp -> Bool
+    isUse (Var {}) = True
+    isUse _ = False
+
+    isDef :: Pattern -> Bool
+    isDef (VarPat {}) = True
+    isDef _ = False

@@ -31,8 +31,7 @@ import Data.Array.IArray
 -- | replace all pattern in the module with list of linear Selectors
 compilePattern :: LModule -> LModule
 compilePattern ast 
-  = Data.Generics.Schemes.everywhere' (Data.Generics.Aliases.mkT compPat)
-      $ replaceFunCase ast -- temporay patch
+  = Data.Generics.Schemes.everywhere' (Data.Generics.Aliases.mkT compPat) ast
   where
     compPat :: LPattern -> LPattern
     compPat pat = let
@@ -104,28 +103,6 @@ compilePattern ast
           -> [(Maybe LIdent,Selector)]
     mkListVariablePat path Nothing = []
     mkListVariablePat path (Just (l,r,pat)) = cp (path . SliceSel l r) pat
-
-
-{-
-replaceFunCase with funCaseNew 
-this is a quickfix
-in CSPM we have tree cases:
-fun(x)(y) fun(x,y) and fun((x,y))
-we want to map them to fun x y and fun (x,y)
--}
-replaceFunCase :: LModule -> LModule
-replaceFunCase ast
-  = Data.Generics.Schemes.everywhere' (Data.Generics.Aliases.mkT compFC) ast
-  where
-    compFC :: FunCase -> FunCase
-    compFC (FunCase args expr) = FunCaseNew flatArgs expr
-      where
-        flatArgs = case args of
-          [x] -> x
-          _     -> map wrapTuple args
-        wrapTuple [a] = a  -- one-element lists are not Tuples ?
-        wrapTuple x   =(AST.labeled . TuplePat) x
-    compFC (FunCaseNew _ _) = error "Did not expect FunCaseNew in parse Result"
 
 type Offset = Int
 type Len    = Int

@@ -27,6 +27,7 @@ import Data.Array.IArray
 
 type AstAnnotation x = IntMap x
 type Bindings = Map String UniqueIdent
+type FreeNames = IntMap UniqueIdent
 
 newtype NodeId = NodeId {unNodeId :: Int}
   deriving (Show,Eq,Ord,Enum,Ix, Typeable, Data)
@@ -47,6 +48,8 @@ instance Ord (Labeled t) where
   compare a b = compare (nodeId a) (nodeId b)
 
 -- | wrap a node with a dummyLabel
+-- | todo: redo we need a specal case in DataConstructor Labeled
+-- | also rename to unLabeled
 labeled :: t -> Labeled t
 labeled t = Labeled {
   nodeId  = NodeId (-1) --error "unknown nodeId"
@@ -144,7 +147,7 @@ data Exp
   | DotTuple [LExp]
   | Closure [LExp]
   | ProcSharing LExp LProc LProc
-  | ProcAParallel LExp LExp LExp LExp
+  | ProcAParallel LExp LExp LProc LProc
   | ProcLinkParallel LLinkList LProc LProc
   | ProcRenaming [LRename] LProc
   | ProcRenamingComprehension [LRename] [LCompGen] LProc
@@ -156,6 +159,8 @@ data Exp
   | ProcRepLinkParallel LCompGenList LLinkList LProc
   | ProcRepSharing LCompGenList LExp LProc
   | PrefixExp LExp [LCommField] LProc
+-- only used in later stages
+  | ExpWithFreeNames FreeNames LExp
   deriving (Show,Eq,Ord,Typeable, Data)
 
 type LCompGenList = Labeled [LCompGen]
@@ -264,7 +269,7 @@ For now we just patch the AST Just before PatternCompilation
 type FunArgs = [[LPattern]] -- CSPM confusion of currying/tuples
 data FunCase 
   = FunCase FunArgs LExp     -- osolete version
-  | FunCaseNew [LPattern] LExp   -- newVersion for interpreter
+  | FunCaseNew [LPattern] FreeNames LExp   -- newVersion for interpreter
   deriving (Show,Eq,Ord,Typeable, Data)
 
 type LTypeDef = Labeled TypeDef
