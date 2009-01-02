@@ -34,6 +34,7 @@ module Language.CSPM.Frontend
   ,unUniqueIdent
   ,showAst
   ,relabelAst
+  ,computeFreeNames
   --
   ,RenameError(..)
   ,eitherToExc
@@ -52,7 +53,7 @@ import Language.CSPM.Token (Token,LexError(..))
 import Language.CSPM.AST (Labeled(..),LModule,Module(..),Bindings)
 import Language.CSPM.AstUtils 
   (removeSourceLocations,removeModuleTokens,removeParens,relabelAst
-  ,unUniqueIdent,showAst)
+  ,unUniqueIdent,showAst,computeFreeNames)
 
 import qualified Language.CSPM.LexHelper as Lexer
   (lexInclude,lexPlain,filterIgnoredToken)

@@ -93,17 +93,17 @@ showAst ast = gshow ast
 -- | Compute the "FreeNames" of an Expression.
 -- | This function does only work after renaming has been done.
 -- | This implementation is inefficient.
-computeFreeNames :: LExp -> FreeNames
-computeFreeNames expr
+computeFreeNames :: Data a => a -> FreeNames
+computeFreeNames syntax
   = IntMap.difference (toIntMap used) (toIntMap def)
   where
     toIntMap :: [UniqueIdent] -> IntMap UniqueIdent
     toIntMap
       = IntMap.fromList . map (\x -> (uniqueIdentId x,x))
     used :: [UniqueIdent]
-    used = map (\(Var x) -> unUIdent $ unLabel x) $ listify isUse expr
+    used = map (\(Var x) -> unUIdent $ unLabel x) $ listify isUse syntax
     def :: [UniqueIdent]
-    def  = map (\(VarPat x) -> unUIdent $ unLabel x) $ listify isDef expr
+    def  = map (\(VarPat x) -> unUIdent $ unLabel x) $ listify isDef syntax
     isUse :: Exp -> Bool
     isUse (Var {}) = True
     isUse _ = False

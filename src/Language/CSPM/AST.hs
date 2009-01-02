@@ -57,7 +57,7 @@ labeled t = Labeled {
  ,srcLoc  = NoLocation
  }
 
-setNode :: Labeled t -> t -> Labeled t
+setNode :: Labeled t -> y -> Labeled y
 setNode l n = l {unLabel = n}
 
 type LIdent = Labeled Ident
@@ -160,7 +160,9 @@ data Exp
   | ProcRepSharing LCompGenList LExp LProc
   | PrefixExp LExp [LCommField] LProc
 -- only used in later stages
-  | ExpWithFreeNames FreeNames LExp
+  | PrefixExpI FreeNames LExp [LCommField] LProc
+  | LambdaI FreeNames [LPattern] LExp
+  | ExprWithFreeNames FreeNames LExp
   deriving (Show,Eq,Ord,Typeable, Data)
 
 type LCompGenList = Labeled [LCompGen]
@@ -246,7 +248,7 @@ data Selector
 type LDecl = Labeled Decl
 data Decl
   = PatBind LPattern LExp
-  | FunBind LIdent [FunCase] -- todo : uses Labeled
+  | FunBind LIdent [FunCase]
   | AssertRef LExp String LExp
   | AssertBool LExp
   | Transparent [LIdent]
@@ -255,6 +257,7 @@ data Decl
   | NameType LIdent LTypeDef
   | Channel [LIdent] (Maybe LTypeDef)
   | Print LExp
+  | FunBindI LIdent FreeNames [FunCase]
   deriving (Show,Eq,Ord,Typeable, Data)
 
 {-
@@ -269,7 +272,7 @@ For now we just patch the AST Just before PatternCompilation
 type FunArgs = [[LPattern]] -- CSPM confusion of currying/tuples
 data FunCase 
   = FunCase FunArgs LExp     -- osolete version
-  | FunCaseNew [LPattern] FreeNames LExp   -- newVersion for interpreter
+  | FunCaseI [LPattern] LExp   -- newVersion for interpreter
   deriving (Show,Eq,Ord,Typeable, Data)
 
 type LTypeDef = Labeled TypeDef
