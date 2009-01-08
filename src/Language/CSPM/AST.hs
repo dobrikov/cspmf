@@ -160,7 +160,8 @@ data Exp
   | ProcRepSharing LCompGenList LExp LProc
   | PrefixExp LExp [LCommField] LProc
 -- only used in later stages
-  | PrefixExpI FreeNames LExp [LCommField] LProc
+  | PrefixChan FreeNames LExp LProc
+  | PrefixI FreeNames LCommField LProc
   | LambdaI FreeNames [LPattern] LExp
   | ExprWithFreeNames FreeNames LExp
   deriving (Show,Eq,Ord,Typeable, Data)
@@ -207,7 +208,7 @@ data Pattern
   | TruePat
   | FalsePat
   | WildCard
-{-  ConstrPat    -}
+  | ConstrPat LIdent
   | VarPat LIdent
   | Also [LPattern]
   | Append [LPattern]
@@ -230,6 +231,7 @@ data Selector
   | TrueSel
   | FalseSel
   | SelectThis
+  | ConstSel UniqueIdent  
   | DotSel Int Int Selector
   | SingleSetSel Selector
   | EmptySetSel

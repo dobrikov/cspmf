@@ -30,8 +30,8 @@ import Language.CSPM.AST hiding (prologMode,bindType)
 import qualified Language.CSPM.AST as AST
 import qualified Language.CSPM.SrcLoc as SrcLoc
 
-import qualified Data.Generics.Schemes (everywhere)
-import qualified Data.Generics.Aliases (mkT)
+import Data.Generics.Schemes (everywhere)
+import Data.Generics.Aliases (mkT)
 import Data.Typeable (Typeable)
 import Control.Exception (Exception)
 
@@ -413,6 +413,7 @@ rnTypeDef t = case unLabel t of
 
 -- | 'applyRenaming' uses SYB to replace turn every 'Ident' in the 'Module' into to the
 -- 'UIdent' version, i.e. set the 'UniqueIdent'.
+-- At the same time, we also replace VarPat x with ConstrPat x if x an toplevel constant
 -- It is an error if the 'Module' contains occurences of 'Ident' that are not covered by
 -- the 'AstAnnotation's.
 applyRenaming ::
@@ -420,7 +421,7 @@ applyRenaming ::
   -> LModule 
   -> LModule
 applyRenaming (_,defIdent,usedIdent) ast
-  = Data.Generics.Schemes.everywhere (Data.Generics.Aliases.mkT patchIdent) ast
+  = everywhere (mkT patchVarPat . mkT patchIdent) ast
   where
     patchIdent :: LIdent -> LIdent
     patchIdent l =
@@ -430,3 +431,9 @@ applyRenaming (_,defIdent,usedIdent) ast
         Nothing -> case IntMap.lookup nodeID defIdent of
           Just d -> l { unLabel = UIdent d}
           Nothing -> error $ "internal error: patchIdent nodeId :" ++ show nodeID
+
+    patchVarPat :: Pattern -> Pattern
+    patchVarPat p@(VarPat x) = case idType $ unUIdent $ unLabel x of
+        VarID -> p
+        _ -> ConstrPat x
+    patchVarPat x = x

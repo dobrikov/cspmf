@@ -57,7 +57,8 @@ compilePattern ast
       TruePat  -> return (Nothing, path TrueSel )
       FalsePat -> return (Nothing, path FalseSel )
       WildCard -> return (Nothing, path SelectThis )
-      VarPat x -> return (Just x , path SelectThis )
+      VarPat x -> return (Just x , path SelectThis ) 
+      ConstrPat x -> return (Nothing, path $ ConstSel $ unUIdent $ unLabel x)
 {-      Also l ->  -}
       Append l -> do
         let (prefix,suffix,variable) = analyzeAppendPattern l
