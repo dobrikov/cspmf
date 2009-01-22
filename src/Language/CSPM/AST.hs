@@ -52,7 +52,8 @@ instance Ord (Labeled t) where
 -- | also rename to unLabeled
 labeled :: t -> Labeled t
 labeled t = Labeled {
-  nodeId  = NodeId (-1) --error "unknown nodeId"
+  --error use hashfunction here 
+ nodeId  = NodeId (-1)   --error "unknown nodeId"
  ,unLabel = t
  ,srcLoc  = NoLocation
  }
@@ -209,7 +210,6 @@ data Pattern
   | FalsePat
   | WildCard
   | ConstrPat LIdent
-  | VarPat LIdent
   | Also [LPattern]
   | Append [LPattern]
   | DotPat [LPattern]
@@ -218,11 +218,12 @@ data Pattern
   | ListEnumPat [LPattern]
   | TuplePat [LPattern]
 -- this the result of pattern-match-compilation
- -- fixme this creates an infinite tree with SYB everywehre'
+  | VarPat LIdent
   | Selectors { --origPat :: LPattern
+ -- fixme this creates an infinite tree with SYB everywehre'
                 selectors :: Array Int Selector
                ,idents :: Array Int (Maybe LIdent) }
-  | Selector LPattern Selector (Maybe LIdent)
+  | Selector Selector (Maybe LIdent)
   deriving (Show,Eq,Ord,Typeable, Data)
 
 {- a Selector is a path in a Pattern/Expression -}

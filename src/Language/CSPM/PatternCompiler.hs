@@ -33,23 +33,19 @@ compilePattern :: LModule -> LModule
 compilePattern ast 
   = Data.Generics.Schemes.everywhere' (Data.Generics.Aliases.mkT compPat) ast
   where
+-- pattern that consist only of a variable match remain unchanged
     compPat :: LPattern -> LPattern
-    compPat pat = let
-       p :: [(Maybe LIdent,Selector)]
-       p = cp id pat
-       len = length sels
-       sels = map snd p
-       ids  = map fst p
-       lToArr l = array (0,len-1) $ zip [0..] l
-      in 
---todo special case len==1
-      setNode pat $ Selectors {
- -- fixme this creates an infinite tree with SYB everywehre'
+    compPat x@(unLabel -> VarPat {}) = x
+    compPat pat = case cp id pat of
+       [(i,s)] -> setNode pat $ Selector s i
+       x -> setNode pat $ Selectors {
 --        origPat = pat
-        selectors = lToArr sels
-       ,idents = lToArr ids
-       }
-   
+                    selectors = listToArr $ map snd x
+                   ,idents = listToArr $ map fst x
+                   }
+
+    listToArr :: [a] -> Array Int a
+    listToArr l = array (0,length l -1) $ zip [0..] l
 
     cp :: (Selector -> Selector ) -> LPattern -> [(Maybe LIdent,Selector)]
     cp path pat = case unLabel pat of
@@ -80,6 +76,8 @@ compilePattern ast
         msum $ map
           (\(x,i) -> cp (path . TupleLengthSel len . TupleIthSel i) x)
           (zip l [0..])
+      Selector {} -> error "PatternCompiler.hs : didn't expect Selector"
+      Selectors {} -> error "PatternCompiler.hs : didn't expect Selectors"
 
     mkListPrefixPat 
       :: (Selector -> Selector ) 
@@ -89,7 +87,7 @@ compilePattern ast
       (0,1,pat) -> let (unLabel -> ListEnumPat [r]) = pat
                    in cp (path . HeadSel) r
       (0,n,pat) -> cp (path . HeadNSel n) pat
-      (o,l,pat) -> cp (path . PrefixSel o l) pat
+      (o,s,pat) -> cp (path . PrefixSel o s) pat
 
     mkListSuffixPat 
       :: (Selector -> Selector ) 
@@ -102,7 +100,7 @@ compilePattern ast
       :: (Selector -> Selector ) 
           -> Maybe (Offset,Offset,LPattern)
           -> [(Maybe LIdent,Selector)]
-    mkListVariablePat path Nothing = []
+    mkListVariablePat _path Nothing = []
     mkListVariablePat path (Just (l,r,pat)) = cp (path . SliceSel l r) pat
 
 type Offset = Int
@@ -136,14 +134,14 @@ analyzeAppendPattern pl
     lengthOfListPattern :: LPattern -> Maybe Len
     lengthOfListPattern p = case unLabel p of
       ListEnumPat l -> return $ length l
-      Append pl -> do
-        l <- mapM lengthOfListPattern pl
+      Append patl -> do
+        l <- mapM lengthOfListPattern patl
         return $ sum l
       VarPat _ -> Nothing
-      Also pl -> do
-        let l = map lengthOfListPattern pl
+      Also patl -> do
+        let l = map lengthOfListPattern patl
         error "PatternCompiler.hs: lengthOfListPat : alsopattern: todo"
-      p -> error $ "PatternCompiler.hs: lengthOfListPat : no list pattern "
+      _ -> error $ "PatternCompiler.hs: lengthOfListPat : no list pattern "
                     ++ show p
 
 -- | PrefixPattern are fixed-length pattern with a fixed offset from the front
