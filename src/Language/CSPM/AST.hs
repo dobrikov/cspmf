@@ -161,6 +161,7 @@ data Exp
   | ProcRepSharing LCompGenList LExp LProc
   | PrefixExp LExp [LCommField] LProc
 -- only used in later stages
+  | LetI [LDecl] FreeNames LExp -- freenames of all localBound names
   | PrefixChan FreeNames LExp LProc
   | PrefixI FreeNames LCommField LProc
   | LambdaI FreeNames [LPattern] LExp
@@ -260,7 +261,7 @@ data Decl
   | NameType LIdent LTypeDef
   | Channel [LIdent] (Maybe LTypeDef)
   | Print LExp
-  | FunBindI LIdent FreeNames [FunCase]
+--  | FunBindI LIdent FreeNames [FunCase]
   deriving (Show,Eq,Ord,Typeable, Data)
 
 {-
