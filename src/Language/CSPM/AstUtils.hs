@@ -75,7 +75,7 @@ relabelAst ::
 relabelAst = error "relabel not yet implemented (TODO)"
 
 -- | 'a show function that omits the node labeles
-showAst :: LModule -> String
+showAst :: Data a => Labeled a -> String
 showAst ast = gshow ast
   where
     gshow :: Data a => a -> String

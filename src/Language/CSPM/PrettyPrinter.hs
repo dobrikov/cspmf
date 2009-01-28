@@ -96,7 +96,7 @@ instance PP BuiltIn where
      pp (BuiltIn const) = pp const  
 
 instance PP LCompGenList where
-     pp (Labeled s list v) = (vcat $ punctuate (comma) (map pp list))
+     pp list = (vcat $ punctuate (comma) (map pp $ unLabel list))
 
 --instance PP CompGen where
 --     pp (Generator pattern x) = pp x <> colon <> pp pattern

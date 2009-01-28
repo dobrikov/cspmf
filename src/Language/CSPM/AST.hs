@@ -37,8 +37,8 @@ mkNodeId = NodeId
 
 data Labeled t = Labeled {
     nodeId :: NodeId
-   ,unLabel :: t
    ,srcLoc  :: SrcLoc
+   ,unLabel :: t
    } deriving (Typeable, Data,Show)
 
 instance Eq (Labeled t) where
