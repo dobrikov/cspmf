@@ -59,6 +59,8 @@ import qualified Language.CSPM.LexHelper as Lexer
   (lexInclude,lexPlain,filterIgnoredToken)
 import Language.CSPM.Version
 
+import Language.CSPM.PrettyPrinter (pp)
+
 import Control.Exception as Exception
 import System.CPUTime
 

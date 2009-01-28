@@ -9,13 +9,12 @@
 -- Stability   :  experimental
 -- Portability :  GHC-only
 --
-module {-Language.CSPM.-}Language.CSPM.PrettyPrinter
+module Language.CSPM.PrettyPrinter
 where
 
 import Text.PrettyPrint as PrettyPrint hiding (char)
 import qualified Text.PrettyPrint as PrettyPrint
 import Language.CSPM.AST
-import Language.CSPM.Frontend
 
 import Data.Maybe
 
@@ -210,10 +209,10 @@ instance PP Const where
 to_PString :: LModule -> String
 to_PString mod = render (pp mod) 
 
-
+{-
 runPretty :: FilePath -> IO String 
 runPretty fname = 
   do 
    mod <- parseFile fname
    return (to_PString mod) --(render (pp mod))  
-
+-}
