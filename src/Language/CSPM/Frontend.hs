@@ -43,6 +43,7 @@ module Language.CSPM.Frontend
   ,handleRenameError
   ,compilePattern
   ,version
+  ,pp
 )
 where
 
