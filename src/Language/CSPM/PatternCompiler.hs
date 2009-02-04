@@ -107,8 +107,8 @@ type Offset = Int
 type Len    = Int
 analyzeAppendPattern :: 
   [LPattern] ->
-    ([(Offset,Len,LPattern)] -- | prefixpattern
-    ,[(Offset,Len,LPattern)] -- | suffixpattern
+    ([(Offset,Len,LPattern)] --  prefixpattern
+    ,[(Offset,Len,LPattern)] --  suffixpattern
     ,Maybe (Offset,Offset,LPattern)
     )
 analyzeAppendPattern pl
@@ -143,10 +143,10 @@ analyzeAppendPattern pl
         error "PatternCompiler.hs: lengthOfListPat : alsopattern: todo"
       _ -> error $ "PatternCompiler.hs: lengthOfListPat : no list pattern "
                     ++ show p
-
--- | PrefixPattern are fixed-length pattern with a fixed offset from the front
--- | return when the first variable length pattern occurs
-
+{-
+PrefixPattern are fixed-length pattern with a fixed offset from the front
+return when the first variable length pattern occurs
+-}
     computePrefixPattern :: [(LPattern,Maybe Len)] -> [(Offset,Len,LPattern)]
     computePrefixPattern l = worker 0 l where
       worker _      [] = []
