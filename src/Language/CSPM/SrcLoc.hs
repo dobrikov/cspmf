@@ -17,11 +17,11 @@ where
 import Language.CSPM.Token as Token
 
 import Data.List
-import Control.Monad
 import Data.Typeable (Typeable)
 import Data.Generics.Basics (Data)
 import Data.Generics.Instances ()
 
+{-  todo : simplify this -}
 data SrcLoc
   = TokIdPos TokenId
   | TokIdSpan TokenId TokenId
@@ -29,6 +29,16 @@ data SrcLoc
                         -- single token with token x :: TokSpan x x
   | TokPos Token
   | NoLocation
+  | FixedLoc {
+      fixedStartLine   :: !Int
+     ,fixedStartCol    :: !Int
+     ,fixedStartOffset :: !Int
+     ,fixedLen         :: !Int
+     ,fixedEndLine     :: !Int
+     ,fixedEndCol      :: !Int
+     ,fixedEndOffset   :: !Int
+   }
+
   deriving (Show,Eq,Ord,Typeable, Data)
 
 type SrcLine = Int
@@ -36,43 +46,56 @@ type SrcCol  = Int
 type SrcOffset  = Int
 
 getStartLine :: SrcLoc -> SrcLine
-getStartLine (TokSpan s _e) = alexLine $ tokenStart s
-getStartLine (TokPos t) = alexLine $ tokenStart t
-getStartLine _ = error "no SrcLine Availabel"
+getStartLine x = case x of
+  TokSpan s _e -> alexLine $ tokenStart s
+  TokPos t     -> alexLine $ tokenStart t
+  FixedLoc {}  -> fixedStartLine x
+  _ -> error "no SrcLine Availabel"
 
 getStartCol :: SrcLoc -> SrcCol
-getStartCol (TokSpan s _e) = alexCol $ tokenStart s
-getStartCol (TokPos t) = alexCol $ tokenStart t
-getStartCol _ = error "no SrcCol Availabel"
+getStartCol x = case x of
+  TokSpan s _e -> alexCol $ tokenStart s
+  TokPos t     -> alexCol $ tokenStart t
+  FixedLoc {}  -> fixedStartCol x
+  _ -> error "no SrcCol Availabel"
 
 getStartOffset :: SrcLoc -> SrcOffset
-getStartOffset (TokSpan s _e) = alexPos $ tokenStart s
-getStartOffset (TokPos t) = alexPos $ tokenStart t
-getStartOffset _ =  error "no SrcOffset Availabel"
+getStartOffset x = case x of
+  TokSpan s _e -> alexPos $ tokenStart s
+  TokPos t     -> alexPos $ tokenStart t
+  FixedLoc {}  -> fixedStartOffset x
+  _ ->  error "no SrcOffset Availabel"
 
 getTokenLen :: SrcLoc -> SrcOffset
-getTokenLen (TokPos t) = tokenLen t
-getTokenLen (TokSpan s e)
-  = (alexPos $ tokenStart e) - (alexPos $ tokenStart s) + tokenLen e
-getTokenLen _ = error "getTokenLen : info not Available"
+getTokenLen x = case x of
+  TokPos t -> tokenLen t
+  TokSpan s e -> (alexPos $ tokenStart e) - (alexPos $ tokenStart s) + tokenLen e
+  FixedLoc {}  -> fixedLen x
+  _ -> error "getTokenLen : info not Available"
 
 getEndLine :: SrcLoc -> SrcLine
-getEndLine (TokSpan _s e) = alexLine $ computeEndPos e
-getEndLine (TokPos t) = alexLine $ computeEndPos t
-getEndLine _ =  error "no SrcLine Availabel"
+getEndLine x = case x of
+  TokSpan _s e -> alexLine $ computeEndPos e
+  TokPos t -> alexLine $ computeEndPos t
+  FixedLoc {}  -> fixedEndLine x
+  _ ->   error "no SrcLine Availabel"
 
 getEndCol :: SrcLoc -> SrcCol
-getEndCol (TokSpan _s e) = alexCol $ computeEndPos e
-getEndCol (TokPos t) = alexCol $ computeEndPos t
-getEndCol _ =  error "no SrcCol Availabel"
+getEndCol x = case x of
+  TokSpan _s e -> alexCol $ computeEndPos e
+  TokPos t -> alexCol $ computeEndPos t
+  FixedLoc {}  -> fixedEndCol x
+  _ ->  error "no SrcCol Availabel"
+
+getEndOffset :: SrcLoc -> SrcOffset
+getEndOffset x = case x of
+  TokSpan _s e -> (alexPos $ tokenStart e) + tokenLen e
+  TokPos t -> (alexPos $ tokenStart t) + tokenLen t
+  FixedLoc {}  -> fixedEndOffset x
+  _ ->  error "no SrcOffset Availabel"
 
 computeEndPos :: Token -> AlexPosn
 computeEndPos t = foldl' alexMove (tokenStart t) (tokenString t)
-
-getEndOffset :: SrcLoc -> SrcOffset
-getEndOffset (TokSpan _s e) = (alexPos $ tokenStart e) + tokenLen e
-getEndOffset (TokPos t) = (alexPos $ tokenStart t) + tokenLen t
-getEndOffset _ =  error "no SrcOffset Availabel"
 
 getTokenId :: SrcLoc -> TokenId
 getTokenId (TokIdPos x) = x
@@ -81,43 +104,30 @@ getTokenId (TokSpan x _ ) = Token.tokenId x
 getTokenId (TokPos x) = Token.tokenId x
 getTokenId _ = error "no SrcOffset Availabel"
 
+{-# DEPRECATED srcLocFromTo "sourceLoc arithemtics is not reliable" #-}
+srcLocFromTo :: SrcLoc -> SrcLoc -> SrcLoc
+srcLocFromTo s e = FixedLoc {
+   fixedStartLine   = getStartLine s
+  ,fixedStartCol    = getStartCol s
+  ,fixedStartOffset = getStartOffset s
+  ,fixedLen         = getStartOffset e
+                       - getStartOffset s
+                       - getTokenLen s
+  ,fixedEndLine     = getEndLine e
+  ,fixedEndCol      = getEndCol e
+  ,fixedEndOffset   = getEndOffset e
+   }
 
-{-
-getStartLine :: (MonadPlus m) => SrcLoc -> SrcLine
-getStartLine (TokSpan s _e) = return $ alexLine $ tokenStart s
-getStartLine (TokPos t) = return $ alexLine $ tokenStart t
-getStartLine _ = mzero
-
-getStartCol :: (MonadPlus m) => SrcLoc -> SrcCol
-getStartCol (TokSpan s _e) = return $ alexCol $ tokenStart s
-getStartCol (TokPos t) = return $ alexCol $ tokenStart t
-getStartCol _ = mzero
-
-getStartOffset :: (MonadPlus m) => SrcLoc -> SrcOffset
-getStartOffset (TokSpan s _e) = return $ alexPos $ tokenStart s
-getStartOffset (TokPos t) = return $ alexPos $ tokenStart t
-getStartOffset _ = mzero
-
-getEndLine :: (MonadPlus m) => SrcLoc -> SrcLine
-getEndLine (TokSpan _s e) = return $ alexLine $ tokenEnd e
-getEndLine (TokPos t) = return $ alexLine $ tokenEnd t
-getEndLine _ = mzero
-
-getEndCol :: (MonadPlus m) => SrcLoc -> SrcCol
-getEndCol (TokSpan _s e) = return $ alexCol $ tokenEnd e
-getEndCol (TokPos t) = return $ alexCol $ tokenEnd t
-getEndCol _ = mzero
-
-getEndOffset :: (MonadPlus m) => SrcLoc -> SrcOffset
-getEndOffset (TokSpan _s e) = return $ alexPos $ tokenEnd e
-getEndOffset (TokPos t) = return $ alexPos $ tokenEnd t
-getEndOffset _ = mzero
--}
-class Monad m => HaveTokenList m where
-  getToken :: TokenId -> m Token
-
-{-
-getEnd
-getEndCol
-getEndOffset
--}
+{-# DEPRECATED srcLocBetween "sourceLoc arithemtics is not reliable" #-}
+srcLocBetween :: SrcLoc -> SrcLoc -> SrcLoc
+srcLocBetween s e = FixedLoc {
+   fixedStartLine   = getEndLine s
+  ,fixedStartCol    = getEndCol s + 1     -- maybe wrong when token at end of Line
+  ,fixedStartOffset = getStartOffset s + getTokenLen e
+  ,fixedLen         = getStartOffset e
+                      - getStartOffset s
+                      - getTokenLen s
+  ,fixedEndLine     = getStartLine e
+  ,fixedEndCol      = getStartCol e -1    -- maybe wrong when startCol = 0
+  ,fixedEndOffset   = getStartOffset e
+   }

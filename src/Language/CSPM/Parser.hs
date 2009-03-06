@@ -124,6 +124,7 @@ getPos = do
 mkSrcSpan :: Token -> Token -> SrcLoc
 mkSrcSpan b e= TokSpan b e
 
+{-# DEPRECATED mkSrcPos "simplify alternatives for sourcelocations" #-}
 mkSrcPos :: Token -> SrcLoc
 mkSrcPos l = TokPos l
 
