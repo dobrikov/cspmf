@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 -----------------------------------------------------------------------------
 -- |
@@ -38,8 +39,13 @@ data SrcLoc
      ,fixedEndCol      :: !Int
      ,fixedEndOffset   :: !Int
    }
-
   deriving (Show,Eq,Ord,Typeable, Data)
+
+mkTokSpan :: Token -> Token -> SrcLoc
+mkTokSpan = TokSpan
+
+mkTokPos :: Token -> SrcLoc
+mkTokPos = TokPos
 
 type SrcLine = Int
 type SrcCol  = Int
@@ -64,69 +70,78 @@ getStartOffset x = case x of
   TokSpan s _e -> alexPos $ tokenStart s
   TokPos t     -> alexPos $ tokenStart t
   FixedLoc {}  -> fixedStartOffset x
-  _ ->  error "no SrcOffset Availabel"
+  _ ->  error "no SrcOffset available"
 
 getTokenLen :: SrcLoc -> SrcOffset
 getTokenLen x = case x of
   TokPos t -> tokenLen t
   TokSpan s e -> (alexPos $ tokenStart e) - (alexPos $ tokenStart s) + tokenLen e
   FixedLoc {}  -> fixedLen x
-  _ -> error "getTokenLen : info not Available"
+  _ -> error "getTokenLen : info not available"
 
 getEndLine :: SrcLoc -> SrcLine
 getEndLine x = case x of
   TokSpan _s e -> alexLine $ computeEndPos e
   TokPos t -> alexLine $ computeEndPos t
   FixedLoc {}  -> fixedEndLine x
-  _ ->   error "no SrcLine Availabel"
+  _ ->   error "no SrcLine available"
 
 getEndCol :: SrcLoc -> SrcCol
 getEndCol x = case x of
   TokSpan _s e -> alexCol $ computeEndPos e
   TokPos t -> alexCol $ computeEndPos t
   FixedLoc {}  -> fixedEndCol x
-  _ ->  error "no SrcCol Availabel"
+  _ ->  error "no SrcCol available"
 
 getEndOffset :: SrcLoc -> SrcOffset
 getEndOffset x = case x of
   TokSpan _s e -> (alexPos $ tokenStart e) + tokenLen e
   TokPos t -> (alexPos $ tokenStart t) + tokenLen t
   FixedLoc {}  -> fixedEndOffset x
-  _ ->  error "no SrcOffset Availabel"
+  _ ->  error "no SrcOffset available"
 
 computeEndPos :: Token -> AlexPosn
 computeEndPos t = foldl' alexMove (tokenStart t) (tokenString t)
 
-getTokenId :: SrcLoc -> TokenId
-getTokenId (TokIdPos x) = x
-getTokenId (TokIdSpan x _) = x
-getTokenId (TokSpan x _ ) = Token.tokenId x
-getTokenId (TokPos x) = Token.tokenId x
-getTokenId _ = error "no SrcOffset Availabel"
+getStartTokenId :: SrcLoc -> TokenId
+getStartTokenId s = case s of
+  TokIdPos x -> x
+  TokIdSpan x _ -> x
+  TokSpan x _ -> Token.tokenId x
+  TokPos x -> Token.tokenId x
+  _ -> error "no startTokenId available"
 
-{-# DEPRECATED srcLocFromTo "sourceLoc arithemtics is not reliable" #-}
+getEndTokenId :: SrcLoc -> TokenId
+getEndTokenId s = case s of
+  TokIdPos x -> x
+  TokIdSpan _ x -> x
+  TokSpan _ x -> Token.tokenId x
+  TokPos x -> Token.tokenId x
+  _ -> error "no endTokenId available"
+
+
+{-# DEPRECATED srcLocFromTo "sourceLoc arithmetics is not reliable" #-}
+-- this is the closed Interval between s and e
 srcLocFromTo :: SrcLoc -> SrcLoc -> SrcLoc
+srcLocFromTo (TokSpan s _) (TokSpan _ e) = TokSpan s e
 srcLocFromTo s e = FixedLoc {
    fixedStartLine   = getStartLine s
   ,fixedStartCol    = getStartCol s
   ,fixedStartOffset = getStartOffset s
-  ,fixedLen         = getStartOffset e
-                       - getStartOffset s
-                       - getTokenLen s
+  ,fixedLen         = getEndOffset e - getStartOffset s
   ,fixedEndLine     = getEndLine e
   ,fixedEndCol      = getEndCol e
   ,fixedEndOffset   = getEndOffset e
    }
 
-{-# DEPRECATED srcLocBetween "sourceLoc arithemtics is not reliable" #-}
+{-# DEPRECATED srcLocBetween "sourceLoc arithmetics is not reliable" #-}
+-- this is the open Interval between s and e
 srcLocBetween :: SrcLoc -> SrcLoc -> SrcLoc
 srcLocBetween s e = FixedLoc {
    fixedStartLine   = getEndLine s
   ,fixedStartCol    = getEndCol s + 1     -- maybe wrong when token at end of Line
-  ,fixedStartOffset = getStartOffset s + getTokenLen e
-  ,fixedLen         = getStartOffset e
-                      - getStartOffset s
-                      - getTokenLen s
+  ,fixedStartOffset = getStartOffset s + getTokenLen s
+  ,fixedLen         = getEndOffset e - getStartOffset s
   ,fixedEndLine     = getStartLine e
   ,fixedEndCol      = getStartCol e -1    -- maybe wrong when startCol = 0
   ,fixedEndOffset   = getStartOffset e

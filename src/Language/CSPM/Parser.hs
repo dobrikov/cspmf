@@ -28,9 +28,8 @@ import Language.CSPM.Token (Token(..),AlexPosn)
 import Language.CSPM.TokenClasses as TokenClasses
 import qualified Language.CSPM.Token as Token
 
-import Language.CSPM.SrcLoc (SrcLoc(..))
 import qualified Language.CSPM.SrcLoc as SrcLoc
-
+import Language.CSPM.SrcLoc (SrcLoc)
 
 import Language.CSPM.LexHelper (filterIgnoredToken)
 import Text.ParserCombinators.Parsec.ExprM
@@ -122,11 +121,11 @@ getPos = do
   return $ mkSrcPos t
 
 mkSrcSpan :: Token -> Token -> SrcLoc
-mkSrcSpan b e= TokSpan b e
+mkSrcSpan b e= SrcLoc.mkTokSpan b e
 
 {-# DEPRECATED mkSrcPos "simplify alternatives for sourcelocations" #-}
 mkSrcPos :: Token -> SrcLoc
-mkSrcPos l = TokPos l
+mkSrcPos l = SrcLoc.mkTokPos l
 
 withLoc :: PT a -> PT (Labeled a)
 withLoc a = do
@@ -452,10 +451,11 @@ opTable =
      ,infixM (nfun2 T_le      F_LE ) AssocLeft
      ,infixM (nfun2 T_lt      F_LT ) AssocLeft
      ,infixM (do
+        s <- getNextPos
         gtSym
-        op <- mkLabeledNode NoLocation (BuiltIn F_GT)  -- ToDo : fix this
-        pos <- getPos
-        return $ (\a b-> mkLabeledNode pos $ Fun2 op a b)
+        e <- getLastPos
+        op <- mkLabeledNode (mkSrcSpan s e) (BuiltIn F_GT)
+        return $ (\a b-> mkLabeledNode (posFromTo a b) $ Fun2 op a b)
       ) AssocLeft
     ]
    ,[ prefixM ( token T_not >> unOp NotExp )]
@@ -483,14 +483,11 @@ opTable =
 
   nfun2 :: TokenClasses.PrimToken -> Const -> PT (LExp -> LExp -> PT LExp)
   nfun2 tok cst = do
-    pos<-getPos
     fkt <- biOp tok cst
-    return $ (\a b -> mkLabeledNode pos $ Fun2 fkt a b)
+    return $ \a b -> mkLabeledNode (posFromTo a b) $ Fun2 fkt a b
 
   binOp :: (LExp -> LExp -> Exp) -> PT (LExp -> LExp -> PT LExp)
-  binOp op = do
-    pos<-getLastPos
-    return $ (\a b-> mkLabeledNode (mkSrcPos pos) $ op a b)
+  binOp op = return $ \a b -> mkLabeledNode (posFromTo a b) $ op a b
 
   unOp :: (LExp -> Exp) -> PT (LExp -> PT LExp )
   unOp op = do
@@ -499,6 +496,9 @@ opTable =
 
   biOp :: TokenClasses.PrimToken -> Const -> PT LBuiltIn
   biOp tok cst = inSpan BuiltIn (token tok >> return cst)
+
+  posFromTo :: LExp -> LExp -> SrcLoc.SrcLoc
+  posFromTo a b = SrcLoc.srcLocFromTo (srcLoc a) (srcLoc b)
 
 parseExp :: PT LExp
 parseExp =

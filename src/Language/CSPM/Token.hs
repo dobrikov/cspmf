@@ -70,9 +70,6 @@ tokenSentinel = Token
   , tokenClass  =error "CSPLexer.x illegal access tokenSentinel"
   , tokenString =error "CSPLexer.x illegal access tokenSentinel"}
 
-
-
-
 showPosn :: AlexPosn -> String
 showPosn (AlexPn _ line col) = show line ++ ':': show col
 
