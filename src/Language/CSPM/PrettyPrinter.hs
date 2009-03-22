@@ -1,5 +1,13 @@
+
+{-# LANGUAGE TypeSynonymInstances #-}
+
 {-# OPTIONS_GHC
-    -XTypeSynonymInstances #-}
+    -XTypeSynonymInstances
+    -XScopedTypeVariables #-}
+
+
+
+
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Language.CSPM.PrettyPrinter
@@ -10,7 +18,7 @@
 -- Stability   :  experimental
 -- Portability :  GHC-only
 --
-module {-Language.CSPM.-}Language.CSPM.PrettyPrinter
+module Language.CSPM.PrettyPrinter
 where
 
 import Text.PrettyPrint as PrettyPrint hiding (char)
@@ -28,22 +36,19 @@ instance (PP x) => PP (Labeled x) where
 
 instance PP Ident where pp = text . unIdent
 
---instance PP BuiltIn where 
---  pp (BuiltIn fun) =  text $ show fun   
-
 instance PP Exp where 
      pp (Var x) = pp x
      pp (IntExp x) = integer x
-     pp (SetEnum x) = lbrace <> (hcat $ punctuate (comma <+> empty) $ map pp x) <> rbrace 
+     pp (SetEnum x) = braces (vcat $ punctuate (comma <+> empty) $ map pp x) -- <> rbrace 
      pp (ListEnum x) = text "<" <> (hcat $ punctuate (comma <+> empty) $ map pp x) <> text ">"
-     pp (SetOpen x) = lbrace <> pp x <> text ".." <> rbrace
+     pp (SetOpen x) = braces (pp x <> text "..")
      pp (ListOpen x) = text "<" <> pp x <> text ".." <> text ">"
-     pp (SetComprehension (x{-[LExp]-},l{-[LCompGen]-})) = lbrace <+> (hcat $ punctuate (comma) $ map pp x) <+> text "|" <+> (hcat $ punctuate (comma) $ map pp l) <+> rbrace
+     pp (SetComprehension (x{-[LExp]-},l{-[LCompGen]-})) = braces ((hcat $ punctuate (comma) $ map pp x) <+> text "|" <+> (hcat $ punctuate (comma) $ map pp l))
      pp (ListComprehension (x,l)) = text "<" <+> (hcat $ punctuate (comma) $ map pp x) <+> text "|" <+> (hcat $ punctuate (comma) $ map pp l) <+> text ">"
      pp (ClosureComprehension (x,l)) = text "{|" <+> (hcat $ punctuate (comma) $ map pp x) <+> text "|" <+> (hcat $ punctuate (comma) $ map pp l) <+> text "|}"
-     pp (SetClose (x,y)) = lbrace <> pp x <> text ".." <> pp y <> rbrace
+     pp (SetClose (x,y)) = braces (pp x <> text ".." <> pp y)
      pp (ListClose (x,y)) = text "<" <> pp x <> text ".." <> pp y <> text ">"
-     pp (Parens x) = lparen <> pp x <> rparen
+     pp (Parens x) = parens (pp x)
      pp BoolSet = text "Bool"
      pp IntSet = text "Int"
      pp Events = text "Events"
@@ -51,10 +56,10 @@ instance PP Exp where
      pp Skip = text "SKIP"
      pp CTrue = text "true"
      pp CFalse = text "false"
-     pp (TupleExp xlist) = lparen <> (vcat $ punctuate (comma) (map pp xlist)) <> rparen
+     pp (TupleExp xlist) = parens (hcat $ punctuate (comma) (map pp xlist))
      pp (DotTuple x) = hcat $ punctuate (text ".") $ map pp x
      pp (Closure x) = text "{|" <+> (hcat $ punctuate (comma <+> empty) $ map pp x) <+> text "|}"
-     pp (CallBuiltIn x [list]) = pp x <> lparen <> (hcat $ punctuate (comma) $ map pp list) <> rparen
+     pp (CallBuiltIn x [list]) = pp x <> parens (hcat $ punctuate (comma) $ map pp list)
      pp (Ifte x y z) = text "if" <+> pp x <+> text "then" $$ pp y $$ text "else" <+> pp z
      pp (AndExp x y) = pp x <+> text "and" <+> pp y
      pp (OrExp x y) = pp x <+> text "or" <+> pp y
@@ -63,33 +68,27 @@ instance PP Exp where
      pp (Fun2 fun x y) =  pp x <+> pp fun <+> pp y
      pp (Lambda patt x) = text "\\" <+> (hcat $ punctuate (comma <+> empty) $ map pp patt) <+> text "@" <+> pp x
      pp (PrefixExp x l_comm_field y) = pp x <> (hcat $ map pp l_comm_field) <+> text "->" <+> pp y 
-     pp (ProcSharing x_middle x_left x_right) = pp x_left <+> text "[|" <> pp x_middle <+> text "|]" <> pp x_right
+     pp (ProcSharing x_middle x_left x_right) = pp x_left <+> text "[|" <+> pp x_middle <+> text "|]" <> pp x_right
      pp (Let decl x) = text "let" $$ (vcat $ map pp decl) $$ text "within" <+> pp x
--- TODO CallFUnction: produce not the correct output in file: protocol.fix.csp
-     pp (CallFunction x [list]) = pp x <> lparen <> (hcat $ punctuate (comma <+> empty) $ map pp list) <> rparen
+-- TODO CallFunction: produce not the correct output in file: protocol.fix.csp
+     pp (CallFunction x [list]) = pp x <> parens (hcat $ punctuate (comma <+> empty) $ map pp list)
      pp (ProcLinkParallel list x y) = pp x <+> pp list <+> pp y
-     pp (ProcAParallel x1 x2 x3 x4) = pp x3 <+> lbrack <+> pp x1 <+> text "||" <+> pp x2 <+> rbrack <+> pp x4
---     pp (ProcRepSharing list x x_proc) = pp x <> text "[|" <> comp_gen_list list <> text "|]" <> pp x_proc 
---     pp (ProcRenamingComprehension rlist lcomp proc) = 
+     pp (ProcAParallel x1 x2 x3 x4) = pp x3 <+> brackets (pp x1 <+> text "||" <+> pp x2) <+> pp x4
+     pp (ProcRepInterleave (Labeled _ list _ :: (Labeled [LCompGen])) proc) = text "|||" <+> (hcat $ punctuate (space <> colon <> space) $ map pp list) <+> text "@" <+> pp proc
+     pp (ProcRepChoice (Labeled _ list _ :: (Labeled [LCompGen])) proc) = text "[]" <+> (hcat $ punctuate (space <> colon <> space) $ map pp list) <+> text "@" <+> pp proc
+--     pp (ProcRepSharing list x x_proc) = pp x <> text "[|" <> comp_gen_list list <> text "|]" <> pp x_proc -- nicht in die Beispiele vorhanden
+     pp (ProcRenaming rlist proc) =  pp proc <+> text "[[" <+> (hsep $ punctuate (space <> comma <> space) $ map pp rlist) <+> text "]]"
+     pp (ProcRenamingComprehension rlist lcomp proc) = pp proc <+> text "[[" <+> (hsep $ punctuate (space <> comma <> space) $ map pp rlist) <+> text "|" <+> (hsep $ punctuate (space <> comma <> space) $ map pp lcomp) <+> text "]]"
+     pp (ProcRepAParallel (Labeled _ list _ :: (Labeled [LCompGen])) alph body) = text "||" <+>  (hsep $ punctuate (space <> comma <> space) $ map pp list) <+> text "@" <+> brackets (pp alph) <+> pp body 
 --     pp (ProcRepSharing (Labeled s list v) x proc) = 
---     pp (ProcRepInternalChoice list x) = comp_gen_list list <+> text "@" <+> pp x
+     pp (ProcRepInternalChoice (Labeled _ list _ :: (Labeled [LCompGen])) proc) = text "|~|" <+> (hsep $ punctuate (space <> comma <> space) $ map pp list) <+> text "@" <+> pp proc
 
---instance Rename where
---     pp 
+instance PP Rename where
+     pp (Rename x y) = pp x <> text "<-" <> pp y
 
 instance PP CompGen where
-     pp (Generator patt x) = pp patt <> colon <> pp x
---     pp (Guard x) = 
-
---data List
---      =  LExp | LCompGen | LDecl | LPattern
---        | LRename | LLink | {-FunCase |-} LConstructor
---        | LIdent 
-
---instance PP List where
---     pp list = pp list
---fun_punctuate_list :: Doc -> [List] -> [Doc]
---fun_punctuate_list fun list = punctuate fun $ map pp list 
+     pp (Generator patt x) = pp patt <> {-text "<-"-}colon <> pp x
+     pp (Guard x) = space <> pp x
 
 comp_gen_list :: [LCompGen] -> Doc
 comp_gen_list l = hcat $ punctuate empty (map pp l)
@@ -97,12 +96,10 @@ comp_gen_list l = hcat $ punctuate empty (map pp l)
 instance PP BuiltIn where
      pp (BuiltIn const) = pp const  
 
-instance PP LCompGenList where
-     pp (Labeled s list v) = (vcat $ punctuate (comma) (map pp list))
+--type LCompGenList = Labeled [LCompGen]
 
---instance PP CompGen where
---     pp (Generator pattern x) = pp x <> colon <> pp pattern
---   pp (Guard x)
+--instance  PP LCompGenList => (Labeled [LCompGen]) where
+--     pp list = list . unLabel
 
 instance PP Decl where
      pp (PatBind x y) = pp x <+> equals <+> pp y
@@ -112,7 +109,7 @@ instance PP Decl where
      pp (Channel list_x ty_ref) = text "channel" <+> (hcat $ punctuate (comma <> space) $ map pp list_x) <> if isEmpty (pp ty_ref) 
                                                                                                                then empty 
                                                                                                                else space <> colon <> space <> pp ty_ref
-     pp (FunBind ident list) = pp ident <> text "(" <> (hcat $ punctuate (comma) $ map pp list)
+     pp (FunBind ident list) = {-pp ident {-<> text "("-} <>-} (vcat $ punctuate empty $ map (pp ident <>) (map pp list)) --TODO
      pp (SubType ident list_constr) = text "subtype" <+> pp ident <+> equals <+> (hcat $ punctuate (space <> text "|" <> space) $ map pp list_constr)
      pp (NameType ident ty_ref) = text "nametype" <+> pp ident <+> equals <+> pp ty_ref
      pp (Transparent list) = text "transparent" <+> (hcat $ punctuate (comma <> space) $ map pp list)
@@ -122,10 +119,10 @@ instance PP Module where
      pp m= vcat $ map pp (moduleDecls m)
 
 instance PP FunCase where
-     pp (FunCase [l_fun_args] x) = (hcat $ punctuate (comma <+> empty) $ map pp l_fun_args ) <> text ")" <+> equals <+> pp x 
+     pp (FunCase [l_fun_args] x) = text "(" <> (hcat $ punctuate (comma <+> empty) $ map pp l_fun_args ) <> text ")" <+> equals <+> pp x 
 
 instance PP LinkList where
-     pp (LinkList list_link) = lbrack <> (hcat $ punctuate (comma <+> empty) $ map pp list_link) <> rbrack
+     pp (LinkList list_link) = brackets (hcat $ punctuate (comma <+> empty) $ map pp list_link)
 
 instance PP Link where
      pp (Link x y) =  pp x <> text "<->" <> pp y
@@ -133,7 +130,7 @@ instance PP Link where
 instance PP Constructor where
      pp (Constructor ident ty_ref) = pp ident <> if isEmpty (pp ty_ref) 
                                                     then empty 
-                                                    else text "." <> pp ty_ref
+                                                    else {-text "." <>-} pp ty_ref
 
 instance (PP x) => PP (Maybe x) where
      pp (Just x) = pp x
@@ -143,21 +140,23 @@ instance (PP x) => PP (Maybe x) where
 --     pp (Funcase [[arg]] x) = text "(" <>  <> text ")"  <+> equals <+> pp x
 
 instance PP TypeDef where 
---     pp (TypeTuple [x]) = 
+     pp (TypeTuple x) = text "." <> parens (hcat $ punctuate comma $ map pp x)
      pp (TypeDot x) = (hcat $ punctuate (text ".") $ map pp x)
 
 instance PP Pattern where
      pp (IntPat x) = integer x
      pp (VarPat x) = pp x
-     pp EmptySetPat = lbrace <> rbrace 
+     pp EmptySetPat = braces empty
      pp WildCard = text "_"
-     pp (SingleSetPat patt) = lbrace <> pp patt <> rbrace
+     pp (SingleSetPat patt) = brackets (pp patt)
      pp (ListEnumPat list) = text "<" <> (hcat $ (punctuate (comma) $ map pp list)) <> text ">"
+     pp (TuplePat list) = parens (hcat $ (punctuate (comma) $ map pp list))
+     pp (DotPat list) = hcat $ punctuate (text ".") $ map pp list
 
 instance PP CommField where
-     pp (InComm x) = text "?" <> pp x
-     pp (OutComm x) = text "!" <> pp x 
-     pp (InCommGuarded pattern x {-LPattern LExp-}) = text "?" <> pp pattern <> colon <> pp x
+     pp (InComm x) = space <> text "?" <+> pp x
+     pp (OutComm x) = empty <> text "."{-"!"-} <> pp x 
+     pp (InCommGuarded pattern x {-LPattern LExp-}) = space <> text "?" <+> pp pattern <+> colon <+> pp x
 
 instance PP Const where
      pp F_true = text "true"
@@ -206,15 +205,42 @@ instance PP Const where
      pp F_Timeout = text "[>"
      pp F_IntChoice = text "|~|"
      pp F_Interleave = text "|||"
-     pp F_Hiding = text "Hiding"
+     pp F_Hiding = text "\\"
+     pp F_length = text "length"
+     pp F_Mod = text "%"
 
 to_PString :: LModule -> String
-to_PString mod = render (pp mod) 
+to_PString my_mod = render (pp my_mod) 
 
 
 runPretty :: FilePath -> IO String 
 runPretty fname = 
   do 
-   mod <- parseFile fname
-   return (to_PString mod) --(render (pp mod))  
+   my_mod <- parseFile fname
+   return (to_PString my_mod) --(render (pp mod))  
+
+compareTrees :: FilePath -> IO Bool
+compareTrees file = 
+  do 
+    parsedFile <- parseFile file
+    let prettyFile = to_PString parsedFile
+    writeFile (file ++ ".pp") prettyFile
+    secondPFile <- parseFile file
+    if (parsedFile == secondPFile)
+       then 
+          return True
+       else 
+          return False 
+
+simpleCompare :: FilePath -> FilePath -> IO Bool
+simpleCompare file1 file2 = 
+  do 
+    tree1 <- readFile file1
+    tree2 <- readFile file2
+    if (tree1 == tree2)
+       then 
+          return True
+       else 
+          return False 
+
 
