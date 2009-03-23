@@ -163,7 +163,7 @@ data Exp
 -- only used in later stages
   | LetI [LDecl] FreeNames LExp -- freenames of all localBound names
   | PrefixChan FreeNames LExp LProc
-  | PrefixI FreeNames LCommField LProc
+--  | PrefixI FreeNames LCommField LProc
   | LambdaI FreeNames [LPattern] LExp
   | ExprWithFreeNames FreeNames LExp
   deriving (Show,Eq,Ord,Typeable, Data)

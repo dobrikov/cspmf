@@ -1,5 +1,5 @@
 Name:                CSPM-Frontend
-Version:             0.2.7.5
+Version:             0.2.7.6
 
 Description:
   This Package contains functions for lexing, parsing and renaming
@@ -32,6 +32,7 @@ library
   Hs-Source-Dirs:       src
   Exposed-modules:
     Language.CSPM.Frontend
+    Language.CSPM.Utils
     Language.CSPM.AST
     Language.CSPM.Parser
     Language.CSPM.Rename
