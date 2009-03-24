@@ -112,6 +112,7 @@ instance PP CompGen where
 comp_gen_list :: [LCompGen] -> Doc
 comp_gen_list l = hcat $ punctuate empty (map pp l)
 
+
 instance PP BuiltIn where
      pp (BuiltIn const) = pp const  
 
