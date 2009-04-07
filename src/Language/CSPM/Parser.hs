@@ -484,7 +484,9 @@ opTable =
   nfun2 :: TokenClasses.PrimToken -> Const -> PT (LExp -> LExp -> PT LExp)
   nfun2 tok cst = do
     fkt <- biOp tok cst
-    return $ \a b -> mkLabeledNode (posFromTo a b) $ Fun2 fkt a b
+    pos<-getLastPos 
+--   return $ \a b -> mkLabeledNode (posFromTo a b) $ Fun2 fkt a b
+    return $ \a b -> mkLabeledNode (mkSrcPos pos) $ Fun2 fkt a b
 
   binOp :: (LExp -> LExp -> Exp) -> PT (LExp -> LExp -> PT LExp)
   binOp op = return $ \a b -> mkLabeledNode (posFromTo a b) $ op a b
