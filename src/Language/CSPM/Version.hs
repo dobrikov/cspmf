@@ -16,6 +16,8 @@ module Language.CSPM.Version
  version
 )
 where
+
+import qualified Paths_CSPM_Frontend as Paths
 import Language.Haskell.TH
 import System.Time
 import System.Info
@@ -32,6 +34,7 @@ version = return $( let
 --  hn <- getHostName
       let sysInfo = concat $ intersperse " " [
            "CSPM-Fronted"
+           ,show Paths.version
            ,"\nCompiled at",show timeDate
 --         ,"\non",hn
            ,"\n(",os,arch,compilerName,showVersion compilerVersion ,")"
