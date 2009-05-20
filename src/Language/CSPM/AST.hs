@@ -143,6 +143,7 @@ data Exp
   | AndExp LExp LExp
   | OrExp LExp LExp
   | NotExp LExp
+  | UMinus LExp
   | Fun1 LBuiltIn LExp
   | Fun2 LBuiltIn LExp LExp
   | DotTuple [LExp]

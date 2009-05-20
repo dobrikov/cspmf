@@ -29,7 +29,7 @@ library
 
   GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s -Wall
   Extensions: DeriveDataTypeable, GeneralizedNewtypeDeriving
-  Hs-Source-Dirs:       src
+  Hs-Source-Dirs:       src,dist/build/autogen
   Exposed-modules:
     Language.CSPM.Frontend
     Language.CSPM.Utils
