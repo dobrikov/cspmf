@@ -5,6 +5,7 @@ Description:
   This Package contains functions for lexing, parsing and renaming
   specifications of concurrent systems in CSPM-syntax.
   CSPM is the machine-readable syntax of concurrent sequential processes.
+
 License:             OtherLicense
 category:            Language
 License-File:        License
