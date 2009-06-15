@@ -843,8 +843,7 @@ topDeclList = do
   assertRef = withLoc $ do
     token T_assert
     p1<-parseExp
-    op<- token T_Refine
-{- ToDo: fix this -}
+    op<- token T_Refine {- ToDo: fix this -}
     p2<-parseExp
     return $ AssertRef p1 "k" p2
 
@@ -940,9 +939,16 @@ parseProcReplicatedExp = do
   <|> procRepLinkParallel
   <|> procRepSharing
   <|> parsePrefixExp
+  <|> parseUnaryMinus   -- todo move this somewhere else
   <|> parseExpBase
   <?> "parseProcReplicatedExp"
   where
+  parseUnaryMinus :: PT LExp
+  parseUnaryMinus = withLoc $ do
+    token T_minus
+    body <- parseExp
+    return $ NegExp body
+
   -- todo : refactor all these to using inSpan
   procRep :: TokenClasses.PrimToken -> (LCompGenList -> LProc -> Exp) -> PT LProc
   procRep sym fkt = withLoc $ do

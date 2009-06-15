@@ -1,1 +1,1 @@
-(Module ((:) (PatBind (VarPat (Ident "f2")) (Lambda ((:) (VarPat (Ident "x")) ((:) (VarPat (Ident "y")) ((:) (VarPat (Ident "z")) ([])))) (Fun2 (BuiltIn (F_Add)) (Fun2 (BuiltIn (F_Add)) (Var (Ident "x")) (Var (Ident "y"))) (Var (Ident "z"))))) ([])) (Nothing))
+(NoLocation)

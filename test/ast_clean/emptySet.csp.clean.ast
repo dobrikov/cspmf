@@ -1,1 +1,1 @@
-(Module ((:) (FunBind (Ident "Q") ((:) (FunCase ((:) ((:) (EmptySetPat) ([])) ([])) (Stop)) ([]))) ([])) (Nothing))
+(NoLocation)
