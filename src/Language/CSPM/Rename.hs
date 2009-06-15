@@ -243,6 +243,7 @@ rnExp expression = case unLabel expression of
   AndExp a b -> rnExp a >> rnExp b
   OrExp a b -> rnExp a >> rnExp b
   NotExp a -> rnExp a
+  NegExp a -> rnExp a
   Fun1 _ a -> rnExp a
   Fun2 _ a b -> rnExp a >> rnExp b
   DotTuple l -> rnExpList l
