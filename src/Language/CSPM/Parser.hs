@@ -410,7 +410,7 @@ parseExpBase =
 
 
 {-
---maybe need a Ast-node for parenExp for prettyPrint-Printing
+maybe need a Ast-node for parenExp for prettyPrint-Printing
 parenExps are now a special case of TupleExps
 -}
 
@@ -423,8 +423,10 @@ parenExpOrTupleEnum = withLoc $ do
     _ -> return  $ TupleExp body
 
 
--- Warning : postfixM and Prefix may not be nested
--- "not not true" does not parse !!
+{-
+Warning : postfixM and Prefix may not be nested
+ "not not true" does not parse !!
+-}
 opTable :: [[Text.ParserCombinators.Parsec.ExprM.Operator
                                            Token PState LExp]]
 opTable =
@@ -583,10 +585,11 @@ betweenLtGt parser = do
       s <- parseWithGtLimit (cnt) parser
       token_gt
       return s
-
---parse an expression which contains as most count Greater-symbols (">"
---used to leave the last ">" as end of sequence
---attention: this can be nested !!
+{-
+parse an expression which contains as most count Greater-symbols (">"
+used to leave the last ">" as end of sequence
+attention: this can be nested !!
+-}
 
 parseWithGtLimit :: Int -> PT a -> PT a
 parseWithGtLimit maxGt parser = do
@@ -657,7 +660,7 @@ parseRename= withLoc $ do
   return $ Rename e1 e2
 
 
--- here start the parser for pattern
+-- here starts the parser for pattern
 parsePatternNoDot :: PT LPattern
 parsePatternNoDot = let ?innerDot = False in parsePatternAlso
 
@@ -1034,7 +1037,7 @@ parseCommField = inComm <|> outComm <|> dotComm <?> "communication field"
 {-
 Helper routines for connecting the Token with the parser
 and general Helper routines
-Te following is not related to CSPM-Syntax
+The following is not related to CSPM-Syntax
 -}
 
 
