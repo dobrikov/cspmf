@@ -316,9 +316,7 @@ intLit =
 
 negateExp :: PT LExp
 negateExp = withLoc $ do
-  error "negate negateExp2"
   token T_minus
-
   body <- parseExp
   return $ NegExp body
 
@@ -401,8 +399,8 @@ parseExpBase =
      <|> withLoc ( token T_Int >> return IntSet)
      <|> ifteExp
      <|> letExp
-     <|> try litExp       -- -10 is a negative integer 
-     <|> negateExp        -- -(10) is NegExp(10)
+     <|> try litExp       -- -10 is Integer(-10) 
+     <|> negateExp        -- -(10) is NegExp(Integer(10))
      <|> varExp
      <|> lambdaExp
      <|> try closureComprehension
