@@ -304,6 +304,7 @@ closureComprehension = inSpan  ClosureComprehension
 -- todo check in csp-m doku size of Int
 intLit :: PT Integer
 intLit =
+   -- " - {-comment-} 10 " is parsed as Integer(-10) "
       (token T_minus >> linteger >>= return . negate)
   <|> linteger
   where 
@@ -312,6 +313,14 @@ intLit =
     testToken t = if tokenClass t == L_Integer
       then Just $ read $ tokenString t
       else Nothing 
+
+negateExp :: PT LExp
+negateExp = withLoc $ do
+  error "negate negateExp2"
+  token T_minus
+
+  body <- parseExp
+  return $ NegExp body
 
 litExp :: PT LExp
 litExp = inSpan IntExp intLit
@@ -392,7 +401,8 @@ parseExpBase =
      <|> withLoc ( token T_Int >> return IntSet)
      <|> ifteExp
      <|> letExp
-     <|> litExp
+     <|> try litExp       -- -10 is a negative integer 
+     <|> negateExp        -- -(10) is NegExp(10)
      <|> varExp
      <|> lambdaExp
      <|> try closureComprehension
@@ -939,16 +949,9 @@ parseProcReplicatedExp = do
   <|> procRepLinkParallel
   <|> procRepSharing
   <|> parsePrefixExp
-  <|> parseUnaryMinus   -- todo move this somewhere else
   <|> parseExpBase
   <?> "parseProcReplicatedExp"
   where
-  parseUnaryMinus :: PT LExp
-  parseUnaryMinus = withLoc $ do
-    token T_minus
-    body <- parseExp
-    return $ NegExp body
-
   -- todo : refactor all these to using inSpan
   procRep :: TokenClasses.PrimToken -> (LCompGenList -> LProc -> Exp) -> PT LProc
   procRep sym fkt = withLoc $ do
