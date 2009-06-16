@@ -74,14 +74,15 @@ relabelAst ::
   -> LModule
 relabelAst = error "relabel not yet implemented (TODO)"
 
--- | 'a show function that omits the node labeles
+-- | 'a show function that omits the node labeles.
+-- | TODO : fix this is very buggy.
 showAst :: Data a => Labeled a -> String
 showAst ast = gshow ast
   where
     gshow :: Data a => a -> String
     gshow = mShow `extQ` (show :: String -> String)
     mShow t = if (tyConString $ typeRepTyCon $ typeOf t) == "Language.CSPM.AST.Labeled"
-       then gmapQi 1 gshow t
+       then gmapQi 2 gshow t
        else
           "("
        ++ showConstr (toConstr t)
