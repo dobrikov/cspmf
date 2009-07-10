@@ -2,14 +2,17 @@ Name:                CSPM-Frontend
 Version:             0.2.8.0
 
 Description:
-  This Package contains functions for lexing, parsing and renaming
-  specifications of concurrent systems in CSPM-syntax.
-  CSPM is the machine-readable syntax of concurrent sequential processes.
+  CSPM is the machine readable syntax of CSP (concurrent sequential processes) as used by
+  the formal methods tools FDR, Prob and ProB.
+  This Package contains functions for lexing, parsing, renaming and pretty-printing
+  CSPM-specifications.
+  The parser is (almost) 100% compatible with the original FDR-parser.
+  
 
-License:             OtherLicense
+License:             BSD3
 category:            Language
-License-File:        License
-Author:              2006-2008 Marc Fontaine
+License-File:        LICENSE
+Author:              2006-2009 Marc Fontaine
 Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>
 cabal-Version:       >= 1.6
 build-type: Simple
