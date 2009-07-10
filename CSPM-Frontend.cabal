@@ -1,21 +1,26 @@
 Name:                CSPM-Frontend
 Version:             0.2.8.0
 
-Synopsis:            A CSP-M parser almost 100% compatible with the parser used by FDR
+Synopsis:            A CSP-M parser compatible with FDR-2.83
 
 Description:
   CSP-M is the machine readable syntax of CSP (concurrent sequential processes) as used by
   the formal methods tools FDR, Prob and ProB.
   This Package contains functions for lexing, parsing, renaming and pretty-printing
   CSP-M specifications.
-  The parser is (almost) 100% compatible with the FDR2.83 parser.
+  The parser is (almost) 100% compatible with the FDR-2.83 parser.
+  This package is also used as the CSP-M frontend of the ProB animator and model checker.
+
   
 
 License:             BSD3
-category:            Language
+category:            Language,Formal Methods,Concurrency
 License-File:        LICENSE
-Author:              2006-2009 Marc Fontaine
+Author:              Marc Fontaine
 Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>
+Stability:           unstable
+Tested-With:         GHC ==6.10.3
+
 cabal-Version:       >= 1.6
 build-type: Simple
 Extra-source-files:
@@ -31,7 +36,7 @@ library
     buildable: False
   }
 
-  Build-Depends:       base >= 4.0 ,containers,array,parsec >=2.1.0.0 && < 3.0 ,old-time,template-haskell, pretty,mtl,haskell98,syb
+  Build-Depends:       base >=4.0 && < 5.0, containers,array,parsec >=2.1.0.0 && < 3.0 ,old-time,template-haskell, pretty,mtl,haskell98,syb
 
   GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s -Wall
   Extensions: DeriveDataTypeable, GeneralizedNewtypeDeriving
