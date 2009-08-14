@@ -19,7 +19,7 @@ License-File:        LICENSE
 Author:              Marc Fontaine
 Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>
 Stability:           unstable
-Tested-With:         GHC ==6.10.3
+Tested-With:         GHC ==6.10
 
 cabal-Version:       >= 1.6
 build-type: Simple

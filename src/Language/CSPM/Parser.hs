@@ -21,6 +21,7 @@ module Language.CSPM.Parser
 (
   parse
  ,ParseError(..)
+ ,PState() -- need to export this to satisfy haddock
 )
 where
 import Language.CSPM.AST

@@ -9,8 +9,8 @@
 -- Portability :  GHC-only
 --
 -- Use Template Haskell to gather some info a compile-time.
-
-{-# LANGUAGE TemplateHaskell #-} 
+-- (Template-Haskell makes problems with haddock)
+{-# LANGUAGE TemplateHaskell #-}
 module Language.CSPM.Version
 (
  version
