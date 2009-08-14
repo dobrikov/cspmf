@@ -267,10 +267,13 @@ rnExp expression = case unLabel expression of
     rnExp chan
     mapM_ rnCommField fields
     rnExp proc
-{- to make the match total : (these may only appear in later stages) -}
+{-
+Catch these cases to make the match total.
+These Constructors may only appear in later stages.
+-}
   ExprWithFreeNames {} -> error "Rename.hs : no match for ExprWithFreeNames"
   LambdaI {} -> error "Rename.hs : no match for LambdaI"
-  PrefixChan {} -> error "Rename.hs : no match for PrefixChan"
+  PrefixI {} -> error "Rename.hs : no match for PrefixChan"
   LetI {} -> error "Rename.hs : no match for LetI"
 
   where 

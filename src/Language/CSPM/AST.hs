@@ -47,7 +47,7 @@ instance Eq (Labeled t) where
 instance Ord (Labeled t) where
   compare a b = compare (nodeId a) (nodeId b)
 
--- | wrap a node with a dummyLabel
+-- | Wrap a node with a dummyLabel
 -- | todo: redo we need a specal case in DataConstructor Labeled
 -- | also rename to unLabeled
 labeled :: t -> Labeled t
@@ -163,10 +163,20 @@ data Exp
   | PrefixExp LExp [LCommField] LProc
 -- only used in later stages
   | LetI [LDecl] FreeNames LExp -- freenames of all localBound names
-  | PrefixChan FreeNames LExp LProc
---  | PrefixI FreeNames LCommField LProc
+  | PrefixI MiniPrefix
   | LambdaI FreeNames [LPattern] LExp
   | ExprWithFreeNames FreeNames LExp
+  deriving (Show,Eq,Ord,Typeable, Data)
+
+{-
+Preprocessor rewrites (PrefixExp LExp [LCommField] LProc) to an linked List of
+MiniPrefixes.
+-}
+
+data MiniPrefix
+  = MiniChan FreeNames LExp MiniPrefix
+  | MiniField FreeNames LCommField MiniPrefix
+  | MiniFinished LProc
   deriving (Show,Eq,Ord,Typeable, Data)
 
 type LCompGenList = Labeled [LCompGen]
