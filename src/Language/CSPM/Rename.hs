@@ -273,7 +273,6 @@ These Constructors may only appear in later stages.
 -}
   ExprWithFreeNames {} -> error "Rename.hs : no match for ExprWithFreeNames"
   LambdaI {} -> error "Rename.hs : no match for LambdaI"
-  PrefixI {} -> error "Rename.hs : no match for PrefixChan"
   LetI {} -> error "Rename.hs : no match for LetI"
 
   where 
