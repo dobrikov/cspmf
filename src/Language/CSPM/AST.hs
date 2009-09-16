@@ -162,6 +162,7 @@ data Exp
   | ProcRepSharing LCompGenList LExp LProc
   | PrefixExp LExp [LCommField] LProc
 -- only used in later stages
+  | PrefixI FreeNames LExp [LCommField] LProc
   | LetI [LDecl] FreeNames LExp -- freenames of all localBound names
   | LambdaI FreeNames [LPattern] LExp
   | ExprWithFreeNames FreeNames LExp
