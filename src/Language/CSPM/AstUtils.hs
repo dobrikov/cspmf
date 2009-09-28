@@ -76,6 +76,7 @@ relabelAst = error "relabel not yet implemented (TODO)"
 
 -- | 'a show function that omits the node labeles.
 -- | TODO : fix this is very buggy.
+-- | this does not work for Compiles pattern / Arrays
 showAst :: Data a => Labeled a -> String
 showAst ast = gshow ast
   where

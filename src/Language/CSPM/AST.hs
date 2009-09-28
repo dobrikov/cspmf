@@ -233,7 +233,7 @@ data Selector
   | TrueSel
   | FalseSel
   | SelectThis
-  | ConstSel UniqueIdent  
+  | ConstrSel UniqueIdent  
   | DotSel Int Int Selector
   | SingleSetSel Selector
   | EmptySetSel
