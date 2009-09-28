@@ -55,7 +55,7 @@ compilePattern ast
       WildCard -> return (Nothing, path SelectThis )
       VarPat x -> return (Just x , path SelectThis ) 
       ConstrPat x -> return (Nothing, path $ ConstrSel $ unUIdent $ unLabel x)
-{-      Also l ->  -}
+      Also l -> concatMap (cp path) l
       Append l -> do
         let (prefix,suffix,variable) = analyzeAppendPattern l
         msum [ concatMap (mkListPrefixPat path) prefix
