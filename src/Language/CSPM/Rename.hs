@@ -258,7 +258,7 @@ rnExp expression = case unLabel expression of
   ProcRepSequence a p -> inCompGenL a (rnExp p)
   ProcRepInternalChoice a p -> inCompGenL a (rnExp p)
   ProcRepInterleave a p -> inCompGenL a (rnExp p)
-  ProcRepChoice  a p -> inCompGenL a (rnExp p)
+  ProcRepExternalChoice  a p -> inCompGenL a (rnExp p)
   ProcRepAParallel comp a p -> inCompGenL comp (rnExp a >> rnExp p)
   ProcRepLinkParallel comp l p
     -> rnLinkList l >> inCompGenL comp (rnExp p)

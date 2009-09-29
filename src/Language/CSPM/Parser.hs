@@ -942,8 +942,8 @@ parseProcReplicatedExp :: PT LProc
 parseProcReplicatedExp = do
       procRep T_semicolon   ProcRepSequence
   <|> procRep T_sqcap ProcRepInternalChoice
+  <|> procRep T_box   ProcRepExternalChoice
   <|> procRep T_interleave ProcRepInterleave
-  <|> procRep T_box  ProcRepChoice
   <|> procRepAParallel
   <|> procRepLinkParallel
   <|> procRepSharing

@@ -155,8 +155,8 @@ data Exp
   | ProcRenamingComprehension [LRename] [LCompGen] LProc
   | ProcRepSequence LCompGenList LProc
   | ProcRepInternalChoice LCompGenList LProc
+  | ProcRepExternalChoice LCompGenList LProc
   | ProcRepInterleave LCompGenList LProc
-  | ProcRepChoice LCompGenList LProc
   | ProcRepAParallel LCompGenList LExp LProc
   | ProcRepLinkParallel LCompGenList LLinkList LProc
   | ProcRepSharing LCompGenList LExp LProc
@@ -370,8 +370,8 @@ data Const
   | F_Sequential
   | F_Interrupt
   | F_ExtChoice
-  | F_Timeout
   | F_IntChoice
-  | F_Interleave
   | F_Hiding
+  | F_Timeout
+  | F_Interleave
   deriving (Show,Eq,Ord,Typeable, Data)
