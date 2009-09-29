@@ -61,7 +61,9 @@ compilePattern ast
         msum [ concatMap (mkListPrefixPat path) prefix
              , mkListVariablePat path variable
              , concatMap (mkListSuffixPat path) suffix ]
-{-      | DotPat [LPattern] -}
+      DotPat l -> msum $ map
+          (\(x,i) -> cp (path . DotSel i) x)
+          (zip l [0..])
       SingleSetPat p -> cp (path . SingleSetSel) p
       EmptySetPat -> return (Nothing, path EmptySetSel)
       ListEnumPat [] -> return (Nothing, path $ ListLengthSel 0 $ SelectThis )

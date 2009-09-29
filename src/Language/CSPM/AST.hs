@@ -234,7 +234,7 @@ data Selector
   | FalseSel
   | SelectThis
   | ConstrSel UniqueIdent  
-  | DotSel Int Int Selector
+  | DotSel Int Selector
   | SingleSetSel Selector
   | EmptySetSel
   | TupleLengthSel Int Selector
