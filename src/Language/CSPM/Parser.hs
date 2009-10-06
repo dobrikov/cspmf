@@ -637,12 +637,10 @@ procOneRenaming = try $ do
   s <- getNextPos
   token T_openBrackBrack
   ren<-(sepBy parseRename commaSeperator)
-  gens <- optionMaybe parseComprehension
+  gens <- optionMaybe $ withLoc parseComprehension
   token T_closeBrackBrack
   e<-getLastPos
-  case gens of
-    Nothing -> return $ (\p1 -> mkLabeledNode (mkSrcSpan s e ) $ ProcRenaming ren p1)
-    Just g -> return $ (\p1 -> mkLabeledNode (mkSrcSpan s e ) $ ProcRenamingComprehension ren g p1 )
+  return $ (\p1 -> mkLabeledNode (mkSrcSpan s e ) $ ProcRenaming ren gens p1 )
 
 parseLinkList :: PT LLinkList
 parseLinkList = withLoc $ do

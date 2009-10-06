@@ -85,9 +85,9 @@ prettyExp x = case x of
 --  ProcRepInterleave (Labeled _ list _ :: (Labeled [LCompGen])) proc -> text "|||" <+> (hcat $ punctuate (space <> colon <> space) $ map pp list) <+> text "@" <+> pp proc
 --  ProcRepChoice (Labeled _ list _ :: (Labeled [LCompGen])) proc -> text "[]" <+> (hcat $ punctuate (space <> colon <> space) $ map pp list) <+> text "@" <+> pp proc
 --     pp (ProcRepSharing list x x_proc) = pp x <> text "[|" <> comp_gen_list list <> text "|]" <> pp x_proc -- nicht in die Beispiele vorhanden
-  ProcRenaming rlist proc -> pp proc <+> text "[[" <+> (hsep $ punctuate (space <> comma <> space) $ map pp rlist) <+> text "]]"
-  ProcRenamingComprehension rlist lcomp proc
-    -> pp proc <+> text "[[" <+> (hsep $ punctuate (space <> comma <> space) $ map pp rlist) <+> text "|" <+> (hsep $ punctuate (space <> comma <> space) $ map pp lcomp) <+> text "]]"
+  ProcRenaming rlist Nothing proc -> pp proc <+> text "[[" <+> (hsep $ punctuate (space <> comma <> space) $ map pp rlist) <+> text "]]"
+  ProcRenaming rlist (Just lcomp) proc
+    -> pp proc <+> text "[[" <+> (hsep $ punctuate (space <> comma <> space) $ map pp rlist) <+> text "|" <+> (hsep $ punctuate (space <> comma <> space) $ map pp $ unLabel lcomp) <+> text "]]"
 --  ProcRepAParallel (Labeled _ list _ :: (Labeled [LCompGen])) alph body
 --    -> text "||" <+>  (hsep $ punctuate (space <> comma <> space) $ map pp list) <+> text "@" <+> brackets (pp alph) <+> pp body 
 --     pp (ProcRepSharing (Labeled s list v) x proc) = 

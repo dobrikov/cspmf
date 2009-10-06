@@ -251,10 +251,9 @@ rnExp expression = case unLabel expression of
   ProcSharing al p1 p2 -> rnExp al >> rnExp p1 >> rnExp p2
   ProcAParallel a b c d -> rnExp a >> rnExp b >> rnExp c >> rnExp d
   ProcLinkParallel l e1 e2 -> rnLinkList l >> rnExp e1 >> rnExp e2
-  ProcRenaming rlist e -> mapM_ reRename rlist >> rnExp e
-{- scopingrules for LCompGen as found in FDR -} 
-  ProcRenamingComprehension re comp proc
-     -> inCompGen comp (mapM_ reRename re) >> rnExp proc
+  ProcRenaming rlist gen proc -> case gen of
+    Nothing -> mapM_ reRename rlist >> rnExp proc
+    Just comp -> inCompGenL comp (mapM_ reRename rlist) >> rnExp proc
   ProcRepSequence a p -> inCompGenL a (rnExp p)
   ProcRepInternalChoice a p -> inCompGenL a (rnExp p)
   ProcRepInterleave a p -> inCompGenL a (rnExp p)
