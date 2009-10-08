@@ -105,7 +105,8 @@ computeFreeNames syntax
     used :: [UniqueIdent]
     used = map (\(Var x) -> unUIdent $ unLabel x) $ listify isUse syntax
     def :: [UniqueIdent]
-    def  = map (\(VarPat x) -> unUIdent $ unLabel x) $ listify isDef syntax
+    def  = (map (\(VarPat x) -> unUIdent $ unLabel x) $ listify isDef syntax)
+         ++(map (\(FunBind x _) -> unUIdent $ unLabel x) $ listify isFunDef syntax)
     isUse :: Exp -> Bool
     isUse (Var {}) = True
     isUse _ = False
@@ -113,3 +114,7 @@ computeFreeNames syntax
     isDef :: Pattern -> Bool
     isDef (VarPat {}) = True
     isDef _ = False
+   
+    isFunDef :: Decl -> Bool
+    isFunDef (FunBind {}) = True
+    isFunDef _ = False
