@@ -25,6 +25,7 @@ module Language.CSPM.Frontend
   ,LModule
   ,Labeled(..)
   ,Bindings
+  ,SrcLoc (..)
   ,getRenaming
   ,applyRenaming
   -- AstUtils
@@ -52,6 +53,7 @@ import Language.CSPM.Rename (RenameError(..),getRenaming,applyRenaming)
 import Language.CSPM.PatternCompiler (compilePattern)
 import Language.CSPM.Token (Token,LexError(..))
 import Language.CSPM.AST (Labeled(..),LModule,Module(..),Bindings)
+import Language.CSPM.SrcLoc (SrcLoc(..))
 import Language.CSPM.AstUtils 
   (removeSourceLocations,removeModuleTokens,removeParens,relabelAst
   ,unUniqueIdent,showAst,computeFreeNames)
