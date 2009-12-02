@@ -16,7 +16,6 @@
 * add wrappers for functions that throw dynamic exceptions
 -}
 {-# OPTIONS_GHC -fglasgow-exts #-}
-{-# LANGUAGE ImplicitParams #-}
 module Language.CSPM.Parser
 (
   parse
@@ -69,7 +68,6 @@ instance Exception ParseError
 data PState
  = PState {
   lastTok        :: Token
- ,lastChannelDir :: LastChannelDir
  ,gtCounter      :: Int
  ,gtMode         :: GtMode
  ,nodeIdSupply   :: NodeId
@@ -78,14 +76,10 @@ data PState
 initialPState :: PState
 initialPState = PState {
    lastTok = Token.tokenSentinel 
-  ,lastChannelDir = WasOut
   ,gtCounter = 0
   ,gtMode = GtNoLimit
   ,nodeIdSupply = mkNodeId 0
   }
-
-setLastChannelDir :: LastChannelDir -> PState -> PState 
-setLastChannelDir dir env = env {lastChannelDir=dir}
 
 setGtMode :: GtMode-> PState -> PState
 setGtMode mode env = env {gtMode = mode}
@@ -93,7 +87,6 @@ setGtMode mode env = env {gtMode = mode}
 countGt :: PState -> PState
 countGt env = env {gtCounter = gtCounter env +1 }
 
-data LastChannelDir = WasIn | WasOut deriving Show
 data GtMode=GtNoLimit | GtLimit Int deriving Show
 
 instance NodeIdSupply (GenParser Token PState) where
@@ -668,24 +661,17 @@ parseRename= withLoc $ do
 
 
 -- here starts the parser for pattern
-parsePatternNoDot :: PT LPattern
-parsePatternNoDot = let ?innerDot = False in parsePatternAlso
 
 parsePattern :: PT LPattern
-parsePattern = let ?innerDot = True in parsePatternAlso
-
-parsePatternAlso :: (?innerDot::Bool) => PT LPattern
-parsePatternAlso = ( do
+parsePattern = (<?> "pattern")  $ do
   sPos <- getNextPos
   concList <- sepBy1 parsePatternAppend $ token T_atat
   ePos <- getLastPos
   case concList of 
     [x] -> return x
     l -> mkLabeledNode  (mkSrcSpan sPos ePos) $ Also l
-  ) 
-  <?> "pattern"
 
-parsePatternAppend :: (?innerDot::Bool) => PT LPattern
+parsePatternAppend :: PT LPattern
 parsePatternAppend = do
   sPos <- getNextPos
   concList <- sepBy1 parsePatternDot $ token T_hat
@@ -694,18 +680,16 @@ parsePatternAppend = do
     [x] -> return x
     l -> mkLabeledNode (mkSrcSpan sPos ePos) $ Append l
 
-parsePatternDot :: (?innerDot::Bool) => PT LPattern
-parsePatternDot = case ?innerDot of
-  False -> parsePatternCore
-  True -> do
-    s <- getNextPos
-    dList <- sepBy1 parsePatternCore $ token T_dot
-    e <- getLastPos
-    case dList of
+parsePatternDot :: PT LPattern
+parsePatternDot = do
+  s <- getNextPos
+  dList <- sepBy1 parsePatternCore $ token T_dot
+  e <- getLastPos
+  case dList of
       [p] -> return p
       l -> mkLabeledNode (mkSrcSpan s e) $ DotPat l
 
-parsePatternCore :: (?innerDot::Bool) => PT LPattern
+parsePatternCore :: PT LPattern
 parsePatternCore =
       nestedPattern
   <|> withLoc ( token T_true >> return TruePat)
@@ -721,20 +705,10 @@ parsePatternCore =
   <?> "pattern"
   where
     nestedPattern = try $ inParens parsePattern
-
-    varPat :: (?innerDot :: Bool) => PT LPattern
     varPat = inSpan VarPat ident
-
-    singleSetPat :: (?innerDot :: Bool) => PT LPattern
     singleSetPat = try $ inSpan SingleSetPat $ inBraces parsePattern
-
-    emptySetPat :: (?innerDot :: Bool) => PT LPattern
     emptySetPat = withLoc ( token T_openBrace >> token T_closeBrace >> return EmptySetPat )
-
-    listPatEnum :: (?innerDot :: Bool) => PT LPattern
     listPatEnum =  inSpan ListEnumPat $ between token_lt token_gt (sepByComma parsePattern)
-
-    tuplePatEnum :: (?innerDot :: Bool) => PT LPattern
     tuplePatEnum = inSpan TuplePat $ inParens (sepByComma parsePattern)
 
 
@@ -995,8 +969,8 @@ parsePrefixExp = withLoc $ do
   where 
   parsePrefix :: PT (LExp,[LCommField])
   parsePrefix = do
-    channel <- try funCall <|> varExp --maybe permit even more
-    updateState $ setLastChannelDir WasOut
+    channel <- parseDotExpOf parseExpBase
+--    channel <- try funCall <|> varExp
     commfields <- many parseCommField
     token T_rightarrow
     return (channel,commfields)
@@ -1007,37 +981,20 @@ this is not what fdr really does
 fdr parese ch?x.y:a as ch?((x.y):a)
 -}
 parseCommField :: PT LCommField
-parseCommField = inComm <|> outComm <|> dotComm <?> "communication field"
+parseCommField = inComm <|> outComm <?> "communication field"
   where
   inComm = withLoc $ do
     token T_questionmark
-    updateState$ setLastChannelDir WasIn
-    inCommCore
-
-  inCommCore = do
-    pat<-parsePatternNoDot
-    guarD <- optionMaybe (token T_colon >> parseExp_noPrefix_NoDot)
-    case guarD of
+    pat<-parsePattern
+    mguard <- optionMaybe (token T_colon >> parseExp_noPrefix_NoDot)
+    case mguard of
       Nothing -> return $ InComm pat
       Just g  -> return $ InCommGuarded pat g
 
   outComm = withLoc $ do
     token T_exclamation
-    updateState $ setLastChannelDir WasOut
-    e <- parseExp_noPrefix_NoDot    
+    e <- parseExp_noPrefix    
     return $ OutComm e
-
--- repeat the direction of the last CommField
-  dotComm = withLoc $ do
-    token T_dot
-    lastDir <- getStates lastChannelDir
-    case lastDir of
-      WasOut -> do
-         com<-parseExp_noPrefix_NoDot
-         return $ OutComm com
-      WasIn -> inCommCore
-
-
 
 
 {-

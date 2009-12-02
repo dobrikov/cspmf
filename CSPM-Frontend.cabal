@@ -1,5 +1,5 @@
 Name:                CSPM-Frontend
-Version:             0.2.10.1
+Version:             0.3.0.0
 
 Synopsis:            A CSP-M parser compatible with FDR-2.83
 
@@ -9,8 +9,8 @@ Description:
   This Package contains functions for lexing, parsing, renaming and pretty-printing
   CSP-M specifications.
   The parser is (almost) 100% compatible with the FDR-2.83 parser.
-  This package is also used as the CSP-M frontend of the ProB animator and model checker.
-
+  This package is also used as the CSP-M frontend of ProB
+  and our Haskell-based CSPM-animator and model checker
   
 
 License:             BSD3
@@ -18,8 +18,10 @@ category:            Language,Formal Methods,Concurrency
 License-File:        LICENSE
 Author:              Marc Fontaine
 Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>
+Homepage:            http://www.stups.uni-duesseldorf.de/~fontaine/csp
+Bug-reports:         http://asap0.cs.uni-duesseldorf.de/trac/prob/newticket
 Stability:           unstable
-Tested-With:         GHC ==6.10
+Tested-With:         GHC == 6.10
 
 cabal-Version:       >= 1.6
 build-type: Simple
