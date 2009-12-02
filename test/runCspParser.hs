@@ -36,19 +36,22 @@ main
   ast <- eitherToExc $ parse fileName tokenList
   time_have_ast <- getCPUTime
 
+  putStrLn $ "Parsing OK"
+  putStrLn $ "lextime : " ++ showTime (time_have_tokens - startTime)
+  putStrLn $ "parsetime : " ++ showTime(time_have_ast - time_have_tokens)
+  writeFile (fileName ++ ".ast") $ show ast
+  let smallAst = removeSourceLocations $ removeModuleTokens $ ast
+  writeFile (fileName ++ ".clean.ast") $ showAst smallAst
+  
+  time_start_renaming <- getCPUTime
   renaming <- eitherToExc $ getRenaming ast
   let astNew = applyRenaming renaming ast
   case astNew of Labeled {} -> return () -- force astNew ?
   time_have_renaming <- getCPUTime
-
-  putStrLn $ "Parsing OK"
-  putStrLn $ "lextime : " ++ showTime (time_have_tokens - startTime)
-  putStrLn $ "parsetime : " ++ showTime(time_have_ast - time_have_tokens)
-  putStrLn $ "renamingtime : " ++ showTime (time_have_renaming - time_have_ast)
+  putStrLn $ "renamingtime : " ++ showTime (time_have_renaming - time_start_renaming)
   putStrLn $ "total : " ++ showTime(time_have_ast - startTime)
 
 
-  writeFile (fileName ++ ".ast") $ show ast
   writeFile (fileName ++ ".rename.ast") $ show astNew
   let smallAst = removeSourceLocations $ unUniqueIdent $ removeModuleTokens $ astNew
   writeFile (fileName ++ ".clean.ast") $ showAst smallAst

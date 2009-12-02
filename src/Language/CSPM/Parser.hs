@@ -426,12 +426,17 @@ parenExpOrTupleEnum = withLoc $ do
 
 
 {-
-Warning : postfixM and Prefix may not be nested
+Warning :
+the expression parser does not accept nested Postfix and Prefix expressions
  "not not true" does not parse !!
 -}
-opTable :: [[Text.ParserCombinators.Parsec.ExprM.Operator
-                                           Token PState LExp]]
-opTable =
+type OpTable = [[Text.ParserCombinators.Parsec.ExprM.Operator Token PState LExp]]
+opTable :: OpTable
+opTable = baseTable ++ procTable
+
+baseTable :: OpTable
+procTable :: OpTable
+(baseTable, procTable) = (
    [
 --   [ infixM ( cspSym "." >> binOp mkDotPair) AssocRight ]
 --   ,
@@ -465,7 +470,8 @@ opTable =
    ,[ prefixM ( token T_not >> unOp NotExp )]
    ,[ infixM ( token T_and >> binOp AndExp) AssocLeft ]
    ,[ infixM ( token T_or >> binOp OrExp) AssocLeft ]
-   ,[ infixM proc_op_aparallel AssocLeft ]
+   ],
+   [[ infixM proc_op_aparallel AssocLeft ]
    ,[ infixM proc_op_lparallel AssocLeft ]
 
    ,[infixM procOpSharing AssocLeft ]
@@ -477,7 +483,8 @@ opTable =
    ,[infixM (nfun2 T_sqcap      F_IntChoice  ) AssocLeft]
    ,[infixM (nfun2 T_interleave F_Interleave ) AssocLeft]
    ,[infixM (nfun2 T_backslash  F_Hiding     ) AssocLeft]
-  ] 
+  ]
+  )
   where
   nfun1 :: TokenClasses.PrimToken -> Const -> PT (LExp -> PT LExp)
   nfun1 tok cst = do
@@ -513,11 +520,18 @@ parseExp =
   )
   <?> "expression"
 
-parseExp_noPrefix_NoDot :: PT LExp
-parseExp_noPrefix_NoDot = buildExpressionParser opTable parseExpBase
 
+-- todo : check if we need parseExp_noPrefix or if we can use parseExp_noProc
 parseExp_noPrefix :: PT LExp
 parseExp_noPrefix = parseDotExpOf parseExp_noPrefix_NoDot
+   where
+     parseExp_noPrefix_NoDot :: PT LExp
+     parseExp_noPrefix_NoDot = buildExpressionParser opTable parseExpBase
+
+-- todo :: parseExpBase does include STOP and SKIP 
+parseExp_noProc :: PT LExp
+parseExp_noProc
+  = parseDotExpOf $ buildExpressionParser baseTable parseExpBase
 
 parseDotExpOf :: PT LExp -> PT LExp
 parseDotExpOf baseExp = do
@@ -969,7 +983,8 @@ parsePrefixExp = withLoc $ do
   where 
   parsePrefix :: PT (LExp,[LCommField])
   parsePrefix = do
-    channel <- parseDotExpOf parseExpBase
+    channel <-  parseExp_noProc
+--    channel <- parseDotExpOf parseExpBase
 --    channel <- try funCall <|> varExp
     commfields <- many parseCommField
     token T_rightarrow
@@ -986,14 +1001,15 @@ parseCommField = inComm <|> outComm <?> "communication field"
   inComm = withLoc $ do
     token T_questionmark
     pat<-parsePattern
-    mguard <- optionMaybe (token T_colon >> parseExp_noPrefix_NoDot)
+    mguard <- optionMaybe (token T_colon >> parseExp_noProc)
+--    mguard <- optionMaybe (token T_colon >> parseExp_noPrefix_NoDot)
     case mguard of
       Nothing -> return $ InComm pat
       Just g  -> return $ InCommGuarded pat g
 
   outComm = withLoc $ do
     token T_exclamation
-    e <- parseExp_noPrefix    
+    e <- parseExp_noProc
     return $ OutComm e
 
 
