@@ -1,5 +1,5 @@
 Name:                CSPM-Frontend
-Version:             0.3.0.2
+Version:             0.3.0.3
 
 Synopsis:            A CSP-M parser compatible with FDR-2.83
 
@@ -9,9 +9,6 @@ Description:
   This Package contains functions for lexing, parsing, renaming and pretty-printing
   CSP-M specifications.
   The parser is (almost) 100% compatible with the FDR-2.83 parser.
-  This package is also used as the CSP-M frontend of ProB
-  and our Haskell-based CSPM-animator and model checker
-  
 
 License:             BSD3
 category:            Language,Formal Methods,Concurrency
@@ -21,7 +18,7 @@ Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>
 Homepage:            http://www.stups.uni-duesseldorf.de/~fontaine/csp
 Bug-reports:         http://asap0.cs.uni-duesseldorf.de/trac/prob/newticket
 Stability:           unstable
-Tested-With:         GHC == 6.10
+Tested-With:         GHC == 6.12.2
 
 cabal-Version:       >= 1.6
 build-type: Simple
@@ -38,7 +35,17 @@ library
     buildable: False
   }
 
-  Build-Depends:       base >=4.0 && < 5.0, containers,array,parsec >=2.1.0.0 && < 3.0 ,old-time,template-haskell, pretty,mtl,haskell98,syb
+  Build-Depends:
+    base >=4.0 && < 5.0
+    ,containers >= 0.3 && < 0.4
+    ,array >= 0.3 && < 0.4
+    ,parsec >= 2.1.0.0 && < 3.0
+    ,old-time >= 1.0  && < 1.1
+    ,template-haskell >= 2.4 && < 2.5
+    ,pretty >= 1.0 && < 1.1
+    ,mtl >= 1.1 && < 1.2
+    ,haskell98 >= 1.0 &&  < 1.1
+    ,syb >= 0.1 && < 0.2
 
   GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s -Wall
   Extensions: DeriveDataTypeable, GeneralizedNewtypeDeriving
