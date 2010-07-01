@@ -20,8 +20,7 @@ module Language.CSPM.PatternCompiler
   )
 where
 
-import Language.CSPM.AST hiding (prologMode)
-import qualified Language.CSPM.AST as AST
+import Language.CSPM.AST as AST
 
 import Control.Monad
 import Data.Generics.Schemes (everywhere')
@@ -142,7 +141,8 @@ analyzeAppendPattern pl
       VarPat _ -> Nothing
       Also patl -> do
         let l = map lengthOfListPattern patl
-        error "PatternCompiler.hs: lengthOfListPat : alsopattern: todo"
+        -- todo: check that all length are equal:
+        error "PatternCompiler.hs: lengthOfListPat : also pattern: todo"
       _ -> error $ "PatternCompiler.hs: lengthOfListPat : no list pattern "
                     ++ show p
 {-

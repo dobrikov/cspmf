@@ -402,7 +402,8 @@ declRHS d = case unLabel d of
   Print e -> rnExp e
   where
     rnFunCase c = case c of  --todo:uses Labeled version
-      (FunCase pat e) -> localScope (mapM_ rnPatList pat >> rnExp e)
+      FunCase pat e -> localScope (mapM_ rnPatList pat >> rnExp e)
+      FunCaseI {} -> error "Rename.hs : no match for FunCaseI"
     rnConstructorRHS :: LConstructor -> RM ()
     rnConstructorRHS = rc . unLabel where
       rc (Constructor _ Nothing ) = nop

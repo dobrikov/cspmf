@@ -128,7 +128,7 @@ withLoc a = do
   e <- getLastPos
   mkLabeledNode (mkSrcSpan s e) av
 
-inSpan :: (a -> b ) -> PT a -> PT (Labeled b) 
+inSpan :: (a -> b) -> PT a -> PT (Labeled b) 
 inSpan constr exp = do
   s <- getNextPos
   l <- exp
@@ -586,7 +586,7 @@ betweenLtGt parser = do
       token_gt
       return body   -- gtSym could make distinction between endOfSequence and GtSym
     Nothing -> do  -- last comparision expression was indeed end of sequence
-      setParserState st --backtrack
+      _ <- setParserState st --backtrack
       s <- parseWithGtLimit (cnt) parser
       token_gt
       return s
@@ -1014,8 +1014,8 @@ The following is not related to CSPM-Syntax
 testFollows :: PT x -> PT (Maybe x)
 testFollows p = do
   oldState <- getParserState
-  res<-optionMaybe p
-  setParserState oldState
+  res <-optionMaybe p
+  _ <- setParserState oldState
   return res
 
 getStates :: (PState -> x) -> PT x
@@ -1039,16 +1039,15 @@ improve this
 anyToken :: PT Token
 anyToken = tokenPrimEx Token.showToken primExUpdatePos (Just primExUpdateState) Just
 
-notFollowedBy :: PT Token -> PT ()
-notFollowedBy p  = try (do{ c <- p; unexpected $ Token.showToken c }
-                       <|> return ()
-                       )
+notFollowedBy p 
+  = try (do{ c <- p; unexpected $ Token.showToken c }
+         <|> return ()
+        )
 
-notFollowedBy' :: PT x -> PT ()
-notFollowedBy' p  = try (do{ p; pzero }
-                       <|> return ()
-                       )
-
+notFollowedBy' p
+  = try (do{ p; pzero }
+         <|> return ()
+        )
 eof :: PT ()
 eof  = notFollowedBy anyToken <?> "end of input"
 

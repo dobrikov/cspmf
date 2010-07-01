@@ -21,7 +21,6 @@ import Data.Typeable (Typeable)
 import Data.Generics.Basics (Data)
 import Data.Generics.Instances ()
 import Data.Ix
-import Data.Char
 import Control.Exception (Exception)
 
 newtype TokenId = TokenId {unTokenId :: Int}

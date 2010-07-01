@@ -20,13 +20,8 @@ where
 
 import Language.CSPM.Parser (ParseError(..),parse)
 import Language.CSPM.Rename (RenameError(..),getRenaming,applyRenaming)
-import Language.CSPM.PatternCompiler (compilePattern)
-import Language.CSPM.Token (Token,LexError(..))
-import Language.CSPM.AST (Labeled(..),LModule,Module(..),Bindings)
-import Language.CSPM.AstUtils 
-  (removeSourceLocations,removeModuleTokens,removeParens,relabelAst
-  ,unUniqueIdent,showAst,computeFreeNames)
-
+import Language.CSPM.Token (Token, LexError(..))
+import Language.CSPM.AST (LModule)
 import qualified Language.CSPM.LexHelper as Lexer
   (lexInclude,lexPlain,filterIgnoredToken)
 
