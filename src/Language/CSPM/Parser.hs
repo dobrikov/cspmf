@@ -215,18 +215,24 @@ sepByComma a = sepBy a commaSeperator
 sepBy1Comma :: PT x -> PT [x]
 sepBy1Comma a = sepBy1 a commaSeperator
 
-rangeCloseExp :: PT (LExp,LExp)
-rangeCloseExp = do
-  s<-parseExp_noPrefix
-  token T_dotdot
-  e<- parseExp_noPrefix
-  return (s,e)
 
-rangeOpenExp :: PT LExp
-rangeOpenExp = do
-  s <- parseExp_noPrefix
-  token T_dotdot
-  return s
+parseRangeExp :: PT LRange
+parseRangeExp = withLoc (rangeClosed <|> rangeOpen <|> rangeEnum)
+  where
+    rangeEnum = liftM RangeEnum $ sepByComma parseExp_noPrefix
+
+    rangeClosed :: PT Range
+    rangeClosed = try $ do
+      s <-parseExp_noPrefix
+      token T_dotdot
+      e <- parseExp_noPrefix
+      return $ RangeClosed s e
+
+    rangeOpen :: PT Range
+    rangeOpen = try $ do
+      s <- parseExp_noPrefix
+      token T_dotdot
+      return $ RangeOpen s
 
 comprehensionExp :: PT ([LExp],[LCompGen])
 comprehensionExp = do
@@ -267,29 +273,18 @@ inBraces = between (token T_openBrace) (token T_closeBrace)
 inParens :: PT x -> PT x
 inParens = between (token T_openParen) (token T_closeParen)
 
-setExpEnum :: PT LExp
-setExpEnum =   inSpan SetEnum $ inBraces  (sepByComma parseExp) 
+setExp :: PT LExp
+setExp = withLoc $ inBraces $ do
+  (range,comp) <- lsBody
+  return $ SetExp range comp
 
-listExpEnum :: PT LExp
-listExpEnum =  inSpan ListEnum $ betweenLtGt (sepByComma parseExp_noPrefix)
+listExp :: PT LExp
+listExp = withLoc $ betweenLtGt $ do
+  (range,comp) <- lsBody
+  return $ ListExp range comp
 
-setExpOpen :: PT LExp
-setExpOpen  =  inSpan SetOpen  $ inBraces rangeOpenExp 
-
-listExpOpen :: PT LExp
-listExpOpen =  inSpan ListOpen $ betweenLtGt rangeOpenExp
-
-setExpClose :: PT LExp
-setExpClose =  inSpan SetClose $ inBraces rangeCloseExp
-
-listExpClose :: PT LExp
-listExpClose =  inSpan ListClose $ betweenLtGt rangeCloseExp 
-
-setComprehension :: PT LExp
-setComprehension =  inSpan SetComprehension $ inBraces comprehensionExp
-
-listComprehension :: PT LExp
-listComprehension =  inSpan  ListComprehension $ betweenLtGt comprehensionExp
+lsBody :: PT (LRange, Maybe [LCompGen])
+lsBody = liftM2 (,) parseRangeExp (optionMaybe parseComprehension)
 
 closureComprehension :: PT LExp
 closureComprehension = inSpan  ClosureComprehension
@@ -399,14 +394,8 @@ parseExpBase =
      <|> lambdaExp
      <|> try closureComprehension
      <|> closureExp
-     <|> try listComprehension
-     <|> try setComprehension
-     <|> try listExpEnum
-     <|> try setExpEnum
-     <|> try setExpClose
-     <|> try listExpClose
-     <|> try setExpOpen
-     <|> try listExpOpen
+     <|> try listExp
+     <|> try setExp
      <|> blockBuiltIn
      <?> "core-expression" 
 

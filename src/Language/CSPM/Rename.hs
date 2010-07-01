@@ -195,13 +195,31 @@ localScope h = do
     ,localBindings = localBind }
   return res
 
+useIdent :: (Maybe IDType) -> LIdent -> RM ()
+useIdent expectedType lIdent = do
+  let (Ident origName) = unLabel lIdent
+      nodeID = nodeId lIdent
+  vis <- gets visible
+  case Map.lookup origName vis of
+    Nothing -> throwError $ RenameError {
+       renameErrorMsg = "Unbound Identifier :" ++ origName
+       ,renameErrorLoc = srcLoc lIdent }
+    Just uniqueIdent -> do   -- todo check idType
+       case expectedType of
+         Nothing -> return ()
+         Just t  -> when (t /= idType uniqueIdent) $ do
+           throwError $ RenameError {
+              renameErrorMsg = "Typeerror :" ++ origName
+             ,renameErrorLoc = srcLoc lIdent }
+       modify $ \s -> s
+         { identUse =  IntMap.insert 
+             (unNodeId nodeID) uniqueIdent $ identUse s }
+       return ()
 
 {-
 rn just walks through the AST, without modifing it.
 The actual renamings are stored in a sepearte AstAnnotation inside the RM-Monad
 -}
-
-
 
 nop :: RM ()
 nop = return ()
@@ -217,14 +235,10 @@ rnExp :: LExp -> RM ()
 rnExp expression = case unLabel expression of
   Var ident -> useIdent Nothing ident
   IntExp _ -> nop
-  SetEnum a -> rnExpList a
-  ListEnum a -> rnExpList a
-  SetOpen a -> rnExp a
-  ListOpen a -> rnExp a
-  SetClose (a,b) -> rnExp a >> rnExp b
-  ListClose (a,b) -> rnExp a >> rnExp b
-  SetComprehension (a,b) -> inCompGen b (rnExpList a)
-  ListComprehension (a,b) -> inCompGen b (rnExpList a)
+  SetExp a Nothing -> rnRange a
+  SetExp a (Just comp) -> inCompGen comp (rnRange a)
+  ListExp a Nothing -> rnRange a
+  ListExp a (Just comp) -> inCompGen comp (rnRange a)
   ClosureComprehension (a,b) -> inCompGen b (rnExpList a)
   Let decls e -> localScope (rnDeclList decls >> rnExp e)
   Ifte a b c -> rnExp a >> rnExp b >> rnExp c
@@ -273,35 +287,13 @@ These Constructors may only appear in later stages.
   ExprWithFreeNames {} -> error "Rename.hs : no match for ExprWithFreeNames"
   LambdaI {} -> error "Rename.hs : no match for LambdaI"
   LetI {} -> error "Rename.hs : no match for LetI"
+  PrefixI {} -> error "Rename.hs : no match for PrefixI"
 
-  where 
-    {- 
-    called from VarExp
-    we can bind lIdent to any Identifier that is in scope
-    (ConstID,FunID ..)
-    -}
-
-useIdent :: (Maybe IDType) -> LIdent -> RM ()
-useIdent expectedType lIdent = do
-  let (Ident origName) = unLabel lIdent
-      nodeID = nodeId lIdent
-  vis <- gets visible
-  case Map.lookup origName vis of
-    Nothing -> throwError $ RenameError {
-       renameErrorMsg = "Unbound Identifier :" ++ origName
-       ,renameErrorLoc = srcLoc lIdent }
-    Just uniqueIdent -> do   -- todo check idType
-       case expectedType of
-         Nothing -> return ()
-         Just t  -> when (t /= idType uniqueIdent) $ do
-           throwError $ RenameError {
-              renameErrorMsg = "Typeerror :" ++ origName
-             ,renameErrorLoc = srcLoc lIdent }
-       modify $ \s -> s
-         { identUse =  IntMap.insert 
-             (unNodeId nodeID) uniqueIdent $ identUse s }
-       return ()
-
+rnRange :: LRange -> RM ()
+rnRange r = case unLabel r of
+  RangeEnum l -> rnExpList l
+  RangeOpen a -> rnExp a
+  RangeClosed a b -> rnExp a >> rnExp b
 
 rnPatList :: [LPattern] -> RM ()
 rnPatList = mapM_ rnPattern
@@ -320,6 +312,9 @@ rnPattern p = case unLabel p of
   EmptySetPat -> nop
   ListEnumPat l -> rnPatList l
   TuplePat l -> rnPatList l
+  ConstrPat {} -> error "Rename.hs : no match for ConstrPat" -- Where have they gone ?
+  Selectors {} -> error "Rename.hs : no match for Selectors"
+  Selector {} -> error "Rename.hs : no match for Selector"
 
 rnCommField :: LCommField -> RM ()
 rnCommField f = case unLabel f of

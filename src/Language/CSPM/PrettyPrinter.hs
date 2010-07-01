@@ -45,17 +45,12 @@ prettyExp :: Exp -> Doc
 prettyExp x = case x of
   Var x -> pp x
   IntExp x -> integer x
-  SetEnum x -> braces $ hcatCommaSpace x -- (vcat $ punctuate (comma <+> empty) $ map pp x) -- <> rbrace 
-  ListEnum x -> text "<" <> (hcat $ punctuate (comma <+> empty) $ map pp x) <> text ">"
-  SetOpen x -> braces (pp x <> text "..")
-  ListOpen x -> text "<" <> pp x <> text ".." <> text ">"
-  SetComprehension (x{-[LExp]-},l{-[LCompGen]-})
-    -> braces ((hcat $ punctuate (comma) $ map pp x) <+> text "|" <+> (hcat $ punctuate (comma) $ map pp l))
-  ListComprehension (x,l)
-    -> text "<" <+> (hcat $ punctuate comma $ map pp x) <+> text "|" <+> (hcat $ punctuate (comma) $ map pp l) <+> text ">"
+  SetExp a Nothing -> braces $ pp x
+  SetExp a (Just comp) -> braces ( pp a <+> text "|" <+> hcatCommaSpace comp)
+  ListExp a Nothing -> text "<" <+> pp a <+> text ">"
+  ListExp a (Just comp)
+    -> text "<" <+> pp a <+> text "|" <+> hcatCommaSpace comp <+> text ">"
   ClosureComprehension (x,l) -> text "{|" <+> (hcat $ punctuate comma $ map pp x) <+> text "|" <+> (hcat $ punctuate comma $ map pp l) <+> text "|}"
-  SetClose (x,y) -> braces (pp x <> text ".." <> pp y)
-  ListClose (x,y) -> text "<" <> pp x <> text ".." <> pp y <> text ">"
   Parens x -> parens (pp x)
   BoolSet -> text "Bool"
   IntSet -> text "Int"
@@ -93,17 +88,23 @@ prettyExp x = case x of
 --     pp (ProcRepSharing (Labeled s list v) x proc) = 
 --  ProcRepInternalChoice (Labeled _ list _ :: (Labeled [LCompGen])) proc
 --   -> text "|~|" <+> (hsep $ punctuate (space <> comma <> space) $ map pp list) <+> text "@" <+> pp proc
-  where
-    hcatComma :: PP x => [x] -> Doc
-    hcatComma a = hcat $ punctuate comma $ mapPP a
+
+hcatComma :: PP x => [x] -> Doc
+hcatComma a = hcat $ punctuate comma $ mapPP a
 
 -- Ivo ? what is the difference between comma and (comma <+> empty) ?
-    hcatCommaSpace :: PP x => [x] -> Doc
-    hcatCommaSpace a = hcat $ punctuate (comma <+> empty) $ mapPP a
+hcatCommaSpace :: PP x => [x] -> Doc
+hcatCommaSpace a = hcat $ punctuate (comma <+> empty) $ mapPP a
     
 
 instance PP Rename where
-     pp (Rename x y) = pp x <> text "<-" <> pp y
+  pp (Rename x y) = pp x <> text "<-" <> pp y
+
+instance PP Range where
+   pp x = case x of
+     RangeEnum l -> hcatCommaSpace l
+     RangeOpen a -> pp a <+> text ".."
+     RangeClosed a b -> pp a <+> text ".." <+> pp b
 
 instance PP CompGen where
      pp (Generator patt x) = pp patt <> {-text "<-"-}colon <> pp x

@@ -117,14 +117,8 @@ type LExp = Labeled Exp
 data Exp
   = Var LIdent
   | IntExp Integer
-  | SetEnum [LExp]
-  | ListEnum [LExp]
-  | SetOpen LExp
-  | ListOpen LExp
-  | SetClose (LExp,LExp)
-  | ListClose (LExp,LExp)
-  | SetComprehension ([LExp],[LCompGen])
-  | ListComprehension ([LExp],[LCompGen])
+  | SetExp LRange (Maybe [LCompGen])
+  | ListExp LRange (Maybe [LCompGen])
   | ClosureComprehension ([LExp],[LCompGen])
   | Let [LDecl] LExp
   | Ifte LExp LExp LExp
@@ -166,9 +160,14 @@ data Exp
   | LetI [LDecl] FreeNames LExp -- freenames of all localBound names
   | LambdaI FreeNames [LPattern] LExp
   | ExprWithFreeNames FreeNames LExp
-  deriving (Show,Eq,Ord,Typeable, Data)
+  deriving (Show, Eq, Ord, Typeable, Data)
 
-type LCompGenList = Labeled [LCompGen]
+type LRange = Labeled Range
+data Range
+  = RangeEnum [LExp]
+  | RangeClosed LExp LExp
+  | RangeOpen LExp
+  deriving (Show, Eq, Ord, Typeable, Data)
 
 type LCommField = Labeled CommField
 data CommField
@@ -196,7 +195,7 @@ lBuiltInToConst :: LBuiltIn -> Const
 lBuiltInToConst = h . unLabel where
   h (BuiltIn c) = c
 
- --generators inside a comprehension-expression
+type LCompGenList = Labeled [LCompGen]
 type LCompGen = Labeled CompGen
 data CompGen
   = Generator LPattern LExp
