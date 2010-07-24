@@ -115,7 +115,7 @@ getPos = do
   return $ mkSrcPos t
 
 mkSrcSpan :: Token -> Token -> SrcLoc
-mkSrcSpan b e= SrcLoc.mkTokSpan b e
+mkSrcSpan b e = SrcLoc.mkTokSpan b e
 
 {-# DEPRECATED mkSrcPos "simplify alternatives for sourcelocations" #-}
 mkSrcPos :: Token -> SrcLoc
@@ -161,7 +161,7 @@ builtInFunctions = Set.fromList
 -}
 
 anyBuiltIn :: PT Const
-anyBuiltIn = try $ do
+anyBuiltIn = do
   tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
   case tok of
     T_union  -> return F_union
@@ -187,7 +187,7 @@ anyBuiltIn = try $ do
 
 blockBuiltIn :: PT a
 blockBuiltIn = do
-  bi <- anyBuiltIn
+  bi <- try anyBuiltIn
   fail $ "can not use built-in '"++ show bi ++ "' here" -- todo fix: better error -message
 
 
@@ -215,33 +215,8 @@ sepByComma a = sepBy a commaSeperator
 sepBy1Comma :: PT x -> PT [x]
 sepBy1Comma a = sepBy1 a commaSeperator
 
-
-parseRangeExp :: PT LRange
-parseRangeExp = withLoc (rangeClosed <|> rangeOpen <|> rangeEnum)
-  where
-    rangeEnum = liftM RangeEnum $ sepByComma parseExp_noPrefix
-
-    rangeClosed :: PT Range
-    rangeClosed = try $ do
-      s <-parseExp_noPrefix
-      token T_dotdot
-      e <- parseExp_noPrefix
-      return $ RangeClosed s e
-
-    rangeOpen :: PT Range
-    rangeOpen = try $ do
-      s <- parseExp_noPrefix
-      token T_dotdot
-      return $ RangeOpen s
-
-comprehensionExp :: PT ([LExp],[LCompGen])
-comprehensionExp = do
-  expList <- sepByComma parseExp
-  gens <- parseComprehension
-  return (expList,gens)
-
 parseComprehension :: PT [LCompGen]
-parseComprehension = token T_mid >> sepByComma (compGenerator<|>compGuard )
+parseComprehension = token T_mid >> sepByComma (compGenerator <|> compGuard )
 
 compGuard :: PT LCompGen
 compGuard= withLoc (parseExp_noPrefix >>= return . Guard)
@@ -259,13 +234,13 @@ comprehensionRep = withLoc $ do
   l <- sepByComma (repGenerator <|> compGuard)
   token T_at
   return l
-
-repGenerator :: PT LCompGen
-repGenerator = try $ withLoc $ do
-  pat <- parsePattern
-  token T_colon
-  exp <- parseExp_noPrefix
-  return $ Generator pat exp
+  where
+    repGenerator :: PT LCompGen
+    repGenerator = try $ withLoc $ do
+      pat <- parsePattern
+      token T_colon
+      exp <- parseExp_noPrefix
+      return $ Generator pat exp
 
 inBraces :: PT x -> PT x
 inBraces = between (token T_openBrace) (token T_closeBrace)
@@ -285,12 +260,36 @@ listExp = withLoc $ betweenLtGt $ do
 
 lsBody :: PT (LRange, Maybe [LCompGen])
 lsBody = liftM2 (,) parseRangeExp (optionMaybe parseComprehension)
+  where
+    parseRangeExp :: PT LRange
+    parseRangeExp = withLoc (rangeClosed <|> rangeOpen <|> rangeEnum)
 
-closureComprehension :: PT LExp
-closureComprehension = inSpan  ClosureComprehension
-  $ between (token T_openPBrace) (token T_closePBrace) comprehensionExp
+    rangeEnum = liftM RangeEnum $ sepByComma parseExp_noPrefix
 
--- todo check in csp-m doku size of Int
+    rangeClosed :: PT Range
+    rangeClosed = try $ do
+      s <-parseExp_noPrefix
+      token T_dotdot
+      e <- parseExp_noPrefix
+      return $ RangeClosed s e
+
+    rangeOpen :: PT Range
+    rangeOpen = try $ do
+      s <- parseExp_noPrefix
+      token T_dotdot
+      return $ RangeOpen s
+
+
+closureExp :: PT LExp
+closureExp = withLoc $ do
+  token T_openPBrace
+  expList <- sepByComma parseExp
+  gens <- optionMaybe $ parseComprehension
+  token T_closePBrace
+  case gens of
+    Nothing -> return $ Closure expList
+    Just l -> return  $ ClosureComprehension (expList,l)
+
 intLit :: PT Integer
 intLit =
    -- " - {-comment-} 10 " is parsed as Integer(-10) "
@@ -335,19 +334,19 @@ ifteExp = withLoc $ do
 
 
 funCall :: PT LExp
-funCall = funCallFkt <|> funCallBi
+funCall = try (funCallFkt <|> funCallBi)
+  where
+    funCallFkt :: PT LExp
+    funCallFkt = withLoc $ do
+      fkt <- varExp 
+      args <- parseFunArgs
+      return $ CallFunction fkt args
 
-funCallFkt :: PT LExp
-funCallFkt = withLoc $ do
-  fkt <- varExp 
-  args <- parseFunArgs
-  return $ CallFunction fkt args
-
-funCallBi :: PT LExp
-funCallBi = withLoc $ do
-  fkt <- inSpan BuiltIn anyBuiltIn
-  args <- parseFunArgs
-  return $ CallBuiltIn fkt args
+    funCallBi :: PT LExp
+    funCallBi = withLoc $ do
+      fkt <- inSpan BuiltIn anyBuiltIn
+      args <- parseFunArgs
+      return $ CallBuiltIn fkt args
 
 parseFunArgs :: PT [[LExp]]
 parseFunArgs =  do
@@ -378,7 +377,7 @@ lambdaExp = withLoc $ do
 parseExpBase :: PT LExp
 parseExpBase =
          parenExpOrTupleEnum 
-     <|> (try funCall)
+     <|> funCall
      <|> withLoc ( token T_STOP >> return Stop)
      <|> withLoc ( token T_SKIP >> return Skip)
      <|> withLoc ( token T_true >> return CTrue)
@@ -392,10 +391,9 @@ parseExpBase =
      <|> negateExp        -- -(10) is NegExp(Integer(10))
      <|> varExp
      <|> lambdaExp
-     <|> try closureComprehension
      <|> closureExp
-     <|> try listExp
-     <|> try setExp
+     <|> listExp
+     <|> setExp
      <|> blockBuiltIn
      <?> "core-expression" 
 
@@ -769,19 +767,6 @@ parseFktCurryPat = many1 parseFktCspPat
 parseFktCspPat :: PT [LPattern]
 parseFktCspPat = inParens $ sepByComma parsePattern
 
-{-
-5. nov 2007 remove try to give better error-messages
-parseFktCspPat = 
-  try $ between (cspSym "(") (cspSym ")") $ sepByComma parsePattern
-todo: better error-messages for fun(card) (card is a buildin)
--}
-
-{-
-parsePatL = withLoc $ between (cspSym "(") (cspSym ")")
-                     $ sepBy parsePattern funArgumentSeperator
-funArgumentSeperator = cspSym "," <|> (try (cspSym ")" >> cspSym "("))
--}
-
 parseDeclList :: PT [LDecl]
 parseDeclList = do
   decl<- many1 parseDecl
@@ -906,11 +891,6 @@ procOpSharing = do
   epos <- getLastPos
   return $ (\a b  -> mkLabeledNode (mkSrcSpan spos epos) $ ProcSharing al a b)
 
-closureExp :: PT LExp
-closureExp = inSpan Closure $
-  between (token T_openPBrace ) (token T_closePBrace)
-          (sepBy1Comma parseExp )
-
 {- Replicated Expressions in Prefix form -}
 
 parseProcReplicatedExp :: PT LProc
@@ -922,8 +902,8 @@ parseProcReplicatedExp = do
   <|> procRepAParallel
   <|> procRepLinkParallel
   <|> procRepSharing
-  <|> parsePrefixExp
-  <|> parseExpBase
+  <|> parsePrefixExp -- two calls make exponential blowup !
+  <|> parseExpBase   -- 
   <?> "parseProcReplicatedExp"
   where
   -- todo : refactor all these to using inSpan
@@ -966,7 +946,7 @@ exp <-(parsePrefixExp <|> parseExpBase ) <?> "rhs of prefix operation"
 -}
 parsePrefixExp :: PT LExp
 parsePrefixExp = withLoc $ do
-  (channel,comm) <- try parsePrefix
+  (channel,comm) <- try parsePrefix -- <- todo: inline parseExpBase here
   exp <- parseProcReplicatedExp <?> "rhs of prefix operation"
   return $ PrefixExp channel comm exp
   where 
