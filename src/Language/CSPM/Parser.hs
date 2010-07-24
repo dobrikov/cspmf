@@ -503,7 +503,8 @@ procTable :: OpTable
 parseExp :: PT LExp
 parseExp =
   (parseDotExpOf $
-    buildExpressionParser opTable parseProcReplicatedExp
+    buildExpressionParser procTable parseProcReplicatedExp
+--    buildExpressionParser opTable parseProcReplicatedExp
   )
   <?> "expression"
 
@@ -903,7 +904,7 @@ parseProcReplicatedExp = do
   <|> procRepLinkParallel
   <|> procRepSharing
   <|> parsePrefixExp -- two calls make exponential blowup !
-  <|> parseExpBase   -- 
+--  <|> parseExpBase   -- 
   <?> "parseProcReplicatedExp"
   where
   -- todo : refactor all these to using inSpan
@@ -936,8 +937,7 @@ parseProcReplicatedExp = do
     return $ ProcRepSharing gen al body
 
 {-
-parsePrefixExp is to be called without try
-i.e. it must only commit after "->"
+parsePrefixExp either parses a prefix, or just an regular expression
 
 prefix binds stronger than any operator (except dot-operator)
 either another prefix or an expression without prefix
@@ -945,19 +945,22 @@ exp <-(parsePrefixExp <|> parseExpBase ) <?> "rhs of prefix operation"
 
 -}
 parsePrefixExp :: PT LExp
-parsePrefixExp = withLoc $ do
-  (channel,comm) <- try parsePrefix -- <- todo: inline parseExpBase here
-  exp <- parseProcReplicatedExp <?> "rhs of prefix operation"
-  return $ PrefixExp channel comm exp
+parsePrefixExp = do
+  spos <- getNextPos
+  start <- parseExp_noProc -- channel or just an expression
+  rest <- parsePrefix
+  epos <- getLastPos
+  case rest of
+    Nothing -> return start
+    Just (comm,body) -> mkLabeledNode (mkSrcSpan spos epos) $
+                           PrefixExp start comm body
   where 
-  parsePrefix :: PT (LExp,[LCommField])
-  parsePrefix = do
-    channel <-  parseExp_noProc
---    channel <- parseDotExpOf parseExpBase
---    channel <- try funCall <|> varExp
+  parsePrefix :: PT (Maybe ([LCommField],LExp))
+  parsePrefix = optionMaybe $ do
     commfields <- many parseCommField
     token T_rightarrow
-    return (channel,commfields)
+    exp <- parseProcReplicatedExp <?> "rhs of prefix operation"
+    return (commfields,exp)
 
 
 {-
