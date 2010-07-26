@@ -36,9 +36,22 @@ main
   ast <- eitherToExc $ parse fileName tokenList
   time_have_ast <- getCPUTime
 
+  let
+    lexTime   = (time_have_tokens - startTime)
+    parseTime = (time_have_ast - time_have_tokens)
+    parseLex  = (time_have_ast - startTime)
+    tokPerSec :: Double
+    tokPerSec = 1000 * (fromIntegral $ length tokenList)
+                / (fromIntegral $ div parseLex 1000000000)
   putStrLn $ "Parsing OK"
-  putStrLn $ "lextime : " ++ showTime (time_have_tokens - startTime)
-  putStrLn $ "parsetime : " ++ showTime(time_have_ast - time_have_tokens)
+  putStrLn $ "size             : " ++ (show $ length src)
+  putStrLn $ "loc              : " ++ (show $ length $ lines src) 
+  putStrLn $ "lextime          : " ++ showTime lexTime
+  putStrLn $ "parsetime        : " ++ showTime parseTime
+  putStrLn $ "parser + lexer   : " ++ showTime parseLex
+  putStrLn $ "number of tokens : " ++ (show $ length tokenList)
+  putStrLn $ "tokens per second: " ++ show tokPerSec
+
   writeFile (fileName ++ ".ast") $ show ast
   let smallAst = removeSourceLocations $ removeModuleTokens $ ast
   writeFile (fileName ++ ".clean.ast") $ showAst smallAst
@@ -49,8 +62,6 @@ main
   case astNew of Labeled {} -> return () -- force astNew ?
   time_have_renaming <- getCPUTime
   putStrLn $ "renamingtime : " ++ showTime (time_have_renaming - time_start_renaming)
-  putStrLn $ "total : " ++ showTime(time_have_ast - startTime)
-
 
   writeFile (fileName ++ ".rename.ast") $ show astNew
   let smallAst = removeSourceLocations $ unUniqueIdent $ removeModuleTokens $ astNew
