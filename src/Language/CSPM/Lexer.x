@@ -165,6 +165,7 @@ csp :-
 <0> \" @string* \"              { mkL L_String }
 
 <0> "[" $large + "="            { mkL T_Refine }
+<0> "[="                        { mkL T_Refine }
 
 
 
