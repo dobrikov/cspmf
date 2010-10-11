@@ -269,6 +269,7 @@ rnExp expression = case unLabel expression of
   ProcRenaming rlist gen proc -> case gen of
     Nothing -> mapM_ reRename rlist >> rnExp proc
     Just comp -> inCompGenL comp (mapM_ reRename rlist) >> rnExp proc
+  ProcException p1 e p2 -> rnExp p1 >> rnExp e >> rnExp p2
   ProcRepSequence a p -> inCompGenL a (rnExp p)
   ProcRepInternalChoice a p -> inCompGenL a (rnExp p)
   ProcRepInterleave a p -> inCompGenL a (rnExp p)

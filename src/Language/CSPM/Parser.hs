@@ -469,6 +469,7 @@ procTable :: OpTable
    ,[infixM (nfun2 T_box        F_ExtChoice  ) AssocLeft]
    ,[infixM (nfun2 T_rhd        F_Timeout    ) AssocLeft]
    ,[infixM (nfun2 T_sqcap      F_IntChoice  ) AssocLeft]
+   ,[infixM procOpException AssocLeft]
    ,[infixM (nfun2 T_interleave F_Interleave ) AssocLeft]
   ]
   )
@@ -499,6 +500,22 @@ procTable :: OpTable
 
   posFromTo :: LExp -> LExp -> SrcLoc.SrcLoc
   posFromTo a b = SrcLoc.srcLocFromTo (srcLoc a) (srcLoc b)
+
+  procOpSharing :: PT (LProc -> LProc -> PT LProc)
+  procOpSharing = try $ do
+    spos <- getNextPos
+    al <- between ( token T_openOxBrack) (token T_closeOxBrack) parseExp
+    epos <- getLastPos
+    return $ (\a b  -> mkLabeledNode (mkSrcSpan spos epos) $ ProcSharing al a b)
+
+  procOpException :: PT (LProc -> LProc -> PT LProc)
+  procOpException = do
+    spos <- getNextPos
+    al <- between ( token T_openOxBrack) (token T_exp) parseExp
+    epos <- getLastPos
+    return $ (\a b  -> mkLabeledNode (mkSrcSpan spos epos) $ ProcException al a b)
+
+
 
 parseExp :: PT LExp
 parseExp =
@@ -884,13 +901,6 @@ topDeclList = do
     token T_print
     e <- parseExp
     return $ Print e
-
-procOpSharing :: PT (LProc -> LProc -> PT LProc)
-procOpSharing = do
-  spos <- getNextPos
-  al <- between ( token T_openOxBrack) (token T_closeOxBrack) parseExp
-  epos <- getLastPos
-  return $ (\a b  -> mkLabeledNode (mkSrcSpan spos epos) $ ProcSharing al a b)
 
 {- Replicated Expressions in Prefix form -}
 

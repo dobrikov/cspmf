@@ -116,6 +116,7 @@ csp :-
 <0> "/\" { mkL T_triangle }
 <0> "[]" { mkL T_box }
 <0> "[>" { mkL T_rhd }
+<0> "|>" { mkL T_exp }
 <0> "|~|" { mkL T_sqcap }
 <0> "|||" { mkL T_interleave }
 <0> "\" { mkL T_backslash }

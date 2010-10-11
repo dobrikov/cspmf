@@ -146,6 +146,7 @@ data Exp
   | ProcAParallel LExp LExp LProc LProc
   | ProcLinkParallel LLinkList LProc LProc
   | ProcRenaming [LRename] (Maybe LCompGenList) LProc
+  | ProcException LProc LExp LProc
 --  | ProcRenamingComprehension [LRename] [LCompGen] LProc
   | ProcRepSequence LCompGenList LProc
   | ProcRepInternalChoice LCompGenList LProc

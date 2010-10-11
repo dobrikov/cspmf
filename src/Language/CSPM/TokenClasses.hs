@@ -93,6 +93,7 @@ data PrimToken
   | T_triangle     -- "/\\"
   | T_box          -- "[]"
   | T_rhd          -- "[>"
+  | T_exp          -- "|>"
   | T_sqcap        -- "|~|"
   | T_interleave   -- "|||"
   | T_backslash    -- "\\"

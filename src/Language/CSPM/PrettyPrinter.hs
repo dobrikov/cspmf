@@ -83,6 +83,7 @@ prettyExp x = case x of
   ProcRenaming rlist Nothing proc -> pp proc <+> text "[[" <+> (hsep $ punctuate (space <> comma <> space) $ map pp rlist) <+> text "]]"
   ProcRenaming rlist (Just lcomp) proc
     -> pp proc <+> text "[[" <+> (hsep $ punctuate (space <> comma <> space) $ map pp rlist) <+> text "|" <+> (hsep $ punctuate (space <> comma <> space) $ map pp $ unLabel lcomp) <+> text "]]"
+  ProcException p1 e p2 -> pp p1 <+> text "[|" <+> pp e <+> pp p2
 --  ProcRepAParallel (Labeled _ list _ :: (Labeled [LCompGen])) alph body
 --    -> text "||" <+>  (hsep $ punctuate (space <> comma <> space) $ map pp list) <+> text "@" <+> brackets (pp alph) <+> pp body 
 --     pp (ProcRepSharing (Labeled s list v) x proc) = 
