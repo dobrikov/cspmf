@@ -238,7 +238,7 @@ comprehensionRep = withLoc $ do
     repGenerator :: PT LCompGen
     repGenerator = try $ withLoc $ do
       pat <- parsePattern
-      token T_colon
+      (token T_colon) <|> (token T_leftarrow)
       exp <- parseExp_noPrefix
       return $ Generator pat exp
 
