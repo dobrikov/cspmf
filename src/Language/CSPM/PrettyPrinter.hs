@@ -127,8 +127,8 @@ instance PP BuiltIn where
 instance PP Decl where
      pp (PatBind x y) = pp x <+> equals <+> pp y
      pp (DataType ident list_constr) = text "datatype" <+> pp ident <+> equals <+> (hcat $ punctuate (space <> text "|" <> space) $ map pp list_constr)
-     pp (AssertRef x s y) =  text "assert" <+> pp x <+> ptext s <+> pp y 
-     pp (AssertBool x) = text "assert" <+> pp x <+> text ":[livelock free]"
+     pp (AssertRef {}) = text "{- assert not supported -}"
+     pp (AssertBool {}) = text "{- assert not supported -}"
      pp (Channel list_x ty_ref) = text "channel" <+> (hcat $ punctuate (comma <> space) $ map pp list_x) <> if isEmpty (pp ty_ref) 
                                                                                                                then empty 
                                                                                                                else space <> colon <> space <> pp ty_ref

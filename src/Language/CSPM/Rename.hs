@@ -394,7 +394,8 @@ declRHS :: LDecl -> RM ()
 declRHS d = case unLabel d of
   PatBind _ e -> rnExp e
   FunBind _ cases -> mapM_ rnFunCase cases
-  AssertRef a _ b -> rnExp a >> rnExp b
+  AssertRef p1 _ p2 (Nothing) -> rnExp p1 >> rnExp p2
+  AssertRef p1 _ p2 (Just prio) -> rnExp p1 >> rnExp p2 >> rnExp prio
   AssertBool e -> rnExp e
   Transparent _ -> nop  
   SubType  _ clist -> forM_ clist rnConstructorRHS

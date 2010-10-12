@@ -830,10 +830,11 @@ topDeclList = do
 
   assertRef = withLoc $ do
     token T_assert
-    p1<-parseExp
-    op<- token T_Refine {- ToDo: fix this -}
-    p2<-parseExp
-    return $ AssertRef p1 "k" p2
+    p1 <- parseExp
+    op <- token T_Refine {- ToDo: fix this -}
+    p2 <- parseExp
+    prio <- optionMaybe (token T_TauPriority >> parseExp)
+    return $ AssertRef p1 "k" p2 prio
 
   assertBool = withLoc $ do
     token T_assert

@@ -41,11 +41,14 @@ $idchar    = [$alpha $digit \' \_]
 
 @string  = $graphic # [\"\\] | " " $whitechar
 
-@assertExts = $whitechar+ "[FD]" | $whitechar+ "[F]"
+@assertExts = $whitechar+ "[FD]" | $whitechar+ "[F]" | ""
 @assertCore = "deterministic" @assertExts?
             | "livelock" $whitechar+ "free" @assertExts?
             | "deadlock" $whitechar+ "free" @assertExts?
             | "divergence" $whitechar+ "free" @assertExts?
+            | "livelock-free" @assertExts?  -- also seen with - 
+            | "deadlock-free" @assertExts?
+            | "divergence-free" @assertExts?
 
 csp :-
 
@@ -168,7 +171,8 @@ csp :-
 
 <0> "[" $large + "="            { mkL T_Refine }
 <0> "[="                        { mkL T_Refine }
-
+<0> ":[tau priority over]:"     { mkL T_TauPriority}  -- two version ?
+<0> ":[tau priority]:"     { mkL T_TauPriority}       -- two version ?
 
 
 {

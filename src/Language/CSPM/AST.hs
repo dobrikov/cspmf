@@ -254,7 +254,7 @@ type LDecl = Labeled Decl
 data Decl
   = PatBind LPattern LExp
   | FunBind LIdent [FunCase]
-  | AssertRef LExp String LExp
+  | AssertRef LExp String LExp (Maybe LExp)
   | AssertBool LExp
   | Transparent [LIdent]
   | SubType LIdent [LConstructor]

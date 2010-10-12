@@ -29,6 +29,7 @@ data PrimToken
   | L_EOF
   | L_Include
   | T_Refine
+  | T_TauPriority
 -- keywords
   | T_channel
   | T_datatype
