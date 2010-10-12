@@ -76,6 +76,7 @@ csp :-
 <0> "or"    { mkL T_or }
 <0> "Int"    { mkL T_Int }
 <0> "Bool"    { mkL T_Bool }
+<0> "Proc"    { mkL T_Proc }
 <0> "Events"    { mkL T_Events }
 <0> "CHAOS"    { mkL T_CHAOS }
 <0> "union"    { mkL T_union }

@@ -132,6 +132,7 @@ data Exp
   | Events
   | BoolSet
   | IntSet
+  | ProcSet
   | TupleExp [LExp]
   | Parens LExp
   | AndExp LExp LExp

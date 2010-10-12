@@ -385,6 +385,7 @@ parseExpBase =
      <|> withLoc ( token T_Events >> return Events)
      <|> withLoc ( token T_Bool >> return BoolSet)
      <|> withLoc ( token T_Int >> return IntSet)
+     <|> withLoc ( token T_Proc >> return ProcSet)
      <|> ifteExp
      <|> letExp
      <|> try litExp       -- -10 is Integer(-10) 

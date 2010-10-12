@@ -253,6 +253,7 @@ rnExp expression = case unLabel expression of
   Events -> nop
   BoolSet -> nop
   IntSet -> nop
+  ProcSet -> nop
   TupleExp l -> rnExpList l
   Parens a -> rnExp a 
   AndExp a b -> rnExp a >> rnExp b

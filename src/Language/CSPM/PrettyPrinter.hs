@@ -54,6 +54,7 @@ prettyExp x = case x of
   Parens x -> parens (pp x)
   BoolSet -> text "Bool"
   IntSet -> text "Int"
+  ProcSet -> text "Proc"
   Events -> text "Events"
   Stop -> text "STOP"
   Skip -> text "SKIP"

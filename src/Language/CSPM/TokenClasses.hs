@@ -71,6 +71,7 @@ data PrimToken
   | T_SKIP
   | T_Events
   | T_Int
+  | T_Proc
   | T_Bool
   | T_CHAOS
 -- symbols
