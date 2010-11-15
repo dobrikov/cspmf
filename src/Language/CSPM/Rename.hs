@@ -322,7 +322,7 @@ rnPattern p = case unLabel p of
 rnCommField :: LCommField -> RM ()
 rnCommField f = case unLabel f of
   InComm pat -> rnPattern pat
-  InCommGuarded p g -> rnPattern p >> rnExp g
+  InCommGuarded p g -> rnExp g >> rnPattern p
   OutComm e -> rnExp e
 
 inCompGenL :: LCompGenList -> RM () -> RM ()
