@@ -44,7 +44,7 @@ library
     ,template-haskell
     ,pretty >= 1.0 && < 1.1
     ,mtl >= 1.1 && < 1.2
-    ,syb >= 0.2 && < 0.3
+    ,syb >= 0.3 && < 0.4
 
   GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s -Wall
   Extensions: DeriveDataTypeable, GeneralizedNewtypeDeriving
