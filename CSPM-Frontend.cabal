@@ -61,10 +61,11 @@ library
     Language.CSPM.TokenClasses
     Language.CSPM.PrettyPrinter
     Language.CSPM.PatternCompiler
+    Text.ParserCombinators.Parsec.ExprM
   Other-modules:
     Paths_CSPM_Frontend
     Language.CSPM.Version
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper
     Language.CSPM.LexHelper
-    Text.ParserCombinators.Parsec.ExprM
+

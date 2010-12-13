@@ -21,17 +21,38 @@ import Data.Maybe
 import Language.CSPM.AST -- the module where the syntax for the AST defined is
 import Language.CSPM.Utils(parseFile) -- we use the parseFile function here for parsing of the generated cspm code
 
+-- give just the file name back
+dropCsp :: String -> String
+dropCsp str = fst $ break (== '.') str
+
+runPretty :: FilePath -> IO ()
+runPretty f = 
+ do 
+  str      <- parseFile f
+  let fileName = dropCsp f
+  writeFile (fileName ++ ".ast") (show str)
+  writeFile (fileName ++ "Pretty.csp") (toPrettyString str) 
+
+toPrettyString :: LModule -> String
+toPrettyString lmodule = render $ pp lmodule
+
 class PP x where
   pp :: x -> Doc
 
 instance (PP x) => PP (Labeled x) where
   pp = pp . unLabel
 
+instance PP Module where
+  pp m = vcat $ map pp (moduleDecls m)
+
+dot :: Doc
+dot = text "."
+
 ppListSet :: (PP r) => String -> String -> r -> Maybe [LCompGen] -> Doc
 ppListSet str1 str2 range mgen  = 
      case mgen of
        Nothing  -> text str1 <>  pp range <>  text str2
-       Just gen -> text str1 <+> pp range <+> text "|" <+> (hsep $ punctuate comma (map pp gen)) <+> text str2 
+       Just gen -> text str1 <+> pp range <+> text "|" <+> (hsep $ punctuate comma (map (ppCompGen False) gen)) <+> text str2 
 
 separateElemsWith :: (PP t) => [t] -> Doc -> Doc
 separateElemsWith list sep = hsep $ punctuate sep (map pp list)
@@ -39,8 +60,47 @@ separateElemsWith list sep = hsep $ punctuate sep (map pp list)
 catElemsWith :: (PP t) => [t] -> Doc -> Doc
 catElemsWith list sep = hcat $ punctuate sep $ map pp list
 
+printFunBind :: LIdent -> [FunCase] -> Doc
+printFunBind ident lcase = vcat $ map (printIdent (unLabel ident) <>) (map printCase lcase) 
+
+printCase :: FunCase -> Doc
+printCase c = 
+   case c of 
+    FunCaseI pat  exp -> ((parens $ catElemsWith pat comma) <+> equals <+> pp exp)
+    FunCase [pat] exp -> ((parens $ catElemsWith pat comma) <+> equals <+> pp exp) 
+
 instance PP Decl where
-  pp _ = text ""
+  pp (PatBind     pat    exp)         = pp pat  <+> equals <+> (pp exp)
+  pp (FunBind     ident  lcase)       = printFunBind ident lcase
+  pp (AssertRef   exp1   s exp2)      = text "assert"      <+> pp exp1 <+> text s <+> pp exp2 
+                                       -- <+> case mexp of -- incomplete
+                                       --      Nothing     -> empty
+                                        --     Just    exp -> text ":" <+> (brackets $ pp exp)
+  pp (AssertBool  exp)                = text "assert"      <+> pp exp 
+  pp (Transparent idents)             = text "transparent" <+> (hsep $ punctuate comma (map (printIdent . unLabel) idents))
+  pp (SubType     ident  constrs)     = text "subtype"     <+> printIdent (unLabel ident) <+> equals 
+                                        <+> (vcat $ punctuate (text "|") (map printConstr (map unLabel constrs)))
+  pp (DataType    ident  constrs)     = text "datatype"    <+> printIdent (unLabel ident) <+> equals 
+                                        <+> (vcat $ punctuate (text "|") (map printConstr (map unLabel constrs)))
+  pp (NameType    ident  typ)         = text "nametype"    <+> printIdent (unLabel ident) <+> equals <+> typeDef typ
+  pp (Channel     idents typ)         = text "channel"     <+> (hsep $ punctuate comma $ map (printIdent . unLabel) idents) <+>
+                                   case typ of
+                                     Nothing 
+                                      -> empty
+                                     Just t 
+                                      -> text ":" <+> typeDef t
+  pp (Print  exp )                    = text "print"  <+> pp exp
+
+printConstr :: Constructor -> Doc
+printConstr (Constructor ident typ) = printIdent (unLabel ident) <>
+  case typ of 
+   Nothing -> empty
+   Just t  -> dot <> typeDef  t
+
+typeDef :: LTypeDef -> Doc
+typeDef typ = case unLabel typ of
+               TypeTuple lexp ->  parens $ catElemsWith lexp comma
+               TypeDot   lexp ->  catElemsWith lexp dot
 
 instance PP Exp where
   pp (Var     ident)                     = printIdent $ unLabel ident
@@ -61,7 +121,7 @@ instance PP Exp where
   pp Skip                                = text "SKIP"
   pp CTrue                               = text "true"
   pp CFalse                              = text "false"
-  -- | Events
+  pp Events                              = text ""
   -- | BoolSet
   -- | IntSet
   -- | ProcSet
@@ -73,7 +133,7 @@ instance PP Exp where
   pp (NegExp   exp)                      = text "-"   <>  pp exp
   pp (Fun1     built exp)                = pp built   <>  pp exp
   pp (Fun2     built exp1 exp2)          = pp exp1    <+> pp built <+> pp exp2
-  pp (DotTuple lexp)                     = catElemsWith lexp (text ".")
+  pp (DotTuple lexp)                     = catElemsWith lexp (dot)
   pp (Closure  lexp)                     = text "{|" <+> separateElemsWith lexp comma <+> text "|}"
 -- process expressions
   pp (ProcSharing      exp     proc1 proc2)       = pp proc1 <>       text "[|" <+> pp exp <+> text "|]"       <> pp proc2
@@ -82,31 +142,36 @@ instance PP Exp where
   pp (ProcRenaming     lrename mgen  proc )       = pp proc  <> text "[[" <+> case mgen of
                                                                                  Nothing   -> separateElemsWith lrename comma
                                                                                  Just lgen -> (separateElemsWith lrename comma) 
-                                                                                                <+> text "|" <+> (separateElemsWith (unLabel lgen) comma)
+                                                                                                <+> text "|" <+> (separateGen False (unLabel lgen))
                                                                           <+> text "]]"
---  pp (ProcException LProc LExp LProc)
---  | ProcRenamingComprehension [LRename] [LCompGen] LProc
-  pp (ProcRepSequence       lgen proc)           = replicatedProc (text ";")   lgen proc
-  pp (ProcRepInternalChoice lgen proc)           = replicatedProc (text "|~|") lgen proc
-  pp (ProcRepExternalChoice lgen proc)           = replicatedProc (text "[]")  lgen proc
-  pp (ProcRepInterleave     lgen proc)           = replicatedProc (text "|||") lgen proc
-{-  pp (ProcRepAParallel LCompGenList LExp LProc
-  | ProcRepLinkParallel LCompGenList LLinkList LProc
-  | ProcRepSharing LCompGenList LExp LProc
-  | PrefixExp LExp [LCommField] LProc
+--  pp (ProcException LProc LExp LProc) -- ask Mark...
+--  | ProcRenamingComprehension [LRename] [LCompGen] LProc ==== does not exist in the CSPM Notation
+  pp (ProcRepSequence       lgen proc)           = replicatedProc (text ";")   (unLabel lgen) proc
+  pp (ProcRepInternalChoice lgen proc)           = replicatedProc (text "|~|") (unLabel lgen) proc
+  pp (ProcRepExternalChoice lgen proc)           = replicatedProc (text "[]")  (unLabel lgen) proc
+  pp (ProcRepInterleave     lgen proc)           = replicatedProc (text "|||") (unLabel lgen) proc
+  pp (PrefixExp             exp  fields proc)    = pp exp <> (hcat $ map pp fields) <+> text "->" <+> pp proc
+  pp (ProcRepSharing        lgen exp    proc)    = text "[|" <+> pp exp <+> text "|]" 
+                                                  <+> (separateGen True (unLabel lgen)) <+> text "@" <+> pp proc
+  pp (ProcRepAParallel      lgen exp    proc)    = text "||" <+> (separateGen True (unLabel lgen)) <+> text "@" 
+                                                  <+> (brackets $ pp exp) <+> pp proc
+  pp (ProcRepLinkParallel   lgen llist  proc)    = pp llist  <+> (separateGen True (unLabel lgen)) <+> text "@"
+                                                  <+> pp proc
 -- only used in later stages
-  | PrefixI FreeNames LExp [LCommField] LProc
-  | LetI [LDecl] FreeNames LExp -- freenames of all localBound names
-  | LambdaI FreeNames [LPattern] LExp
-  | ExprWithFreeNames FreeNames LExp
--}
+-- this do not affect the CSPM notation: same outputs as above
+  pp (PrefixI _ exp fields proc)                 = pp exp <> (hcat $ map pp fields) <+> text "->" <+> pp proc
+  pp (LetI    ldecl _      exp)                  = text "" $$ (nest 2 (text "let"))
+                                                                $$ (hcat $ punctuate (text "" $$ nest 4 (text "")) (map pp ldecl)) 
+                                                                        $$ (nest 2 (text "within" <+> pp exp))
+  pp (LambdaI  _     lpat exp)                   = text "\\" <+> (separateElemsWith lpat comma <+> text "@") <+> pp exp
+  pp (ExprWithFreeNames _ exp)                 = pp exp
 
-replicatedProc :: Doc -> LCompGenList -> LProc -> Doc
-replicatedProc op lgen proc = op <+> (separateElemsWith (unLabel lgen) comma) <+> text "@" <+> pp proc
+replicatedProc :: Doc -> [LCompGen] -> LProc -> Doc
+replicatedProc op lgen proc = op <+> (separateGen True lgen) <+> text "@" <+> pp proc
 
 instance PP LinkList where
   pp (LinkList list)                   = brackets $ separateElemsWith list comma
-  pp (LinkListComprehension lgen list) = brackets  (separateElemsWith list comma <+> text "|" <+>  separateElemsWith lgen comma)
+  pp (LinkListComprehension lgen list) = brackets  (separateElemsWith list comma <+> text "|" <+>  separateGen False lgen)
 
 instance PP Link where
   pp (Link exp1 exp2) = pp exp1 <+> text "<->" <+> pp exp2
@@ -114,10 +179,18 @@ instance PP Link where
 instance PP Rename where
   pp (Rename exp1 exp2) = pp exp1 <+> text "<-" <+> pp exp2
 
--- the generators of the comprehension sets and lists (all after the |)
-instance PP CompGen where
-  pp (Generator pat exp) = (pp pat) <+> text "<-" <+> (pp exp)
-  pp (Guard exp)         = pp exp 
+separateGen :: Bool -> [LCompGen] -> Doc
+separateGen b lgen = hsep $ punctuate comma $ map (ppCompGen b) lgen 
+
+-- the generators of the comprehension sets, lists (all after the |) and 
+-- inside replicated processes (like "x: {1..10}", in this case the bool variable must be true,
+-- otherwise false)
+ppCompGen :: Bool -> LCompGen -> Doc 
+ppCompGen b gen = case unLabel gen of 
+  (Generator pat exp) -> (pp pat) <+> case b of
+           False -> text "<-" <+> (pp exp) 
+           True  -> text ":"  <+> (pp exp)
+  (Guard exp)         -> pp exp
 
 -- the range of sets and lists
 instance PP Range where
@@ -125,6 +198,7 @@ instance PP Range where
   pp (RangeClosed exp1 exp2) = (pp exp1) <> text ".." <> (pp exp2)
   pp (RangeOpen exp)         = (pp exp) <> text ".."
 
+-- unwrapp the BuiltIn-oparator
 instance PP BuiltIn where
   pp (BuiltIn c) = pp c
 
@@ -143,7 +217,7 @@ instance PP Pattern where
   pp (ConstrPat ident)  = printIdent $ unLabel ident
   pp (Also pat)         = ppAlso (Also pat)
   pp (Append pat)       = catElemsWith pat (text "^")
-  pp (DotPat pat)       = catElemsWith pat (text ".")
+  pp (DotPat pat)       = catElemsWith pat (dot)
   pp (SingleSetPat pat) = text "{" <+> (pp pat) <+> text "}"  
   pp EmptySetPat        = text "{ }"
   pp (ListEnumPat pat)  = text "<" <+>  separateElemsWith pat comma <+> text ">"
