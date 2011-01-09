@@ -1,269 +1,306 @@
-
-{-# LANGUAGE TypeSynonymInstances #-}
-
-{-# OPTIONS_GHC
-    -XTypeSynonymInstances
-    -XScopedTypeVariables #-}
-
-
-
-
 ----------------------------------------------------------------------------
 -- |
--- Module      :  Language.CSPM.PrettyPrinter
--- Copyright   :  (c) Dobrikov 2008
+-- Module      :  Language.CSPM.PrettyPrinterNew
+-- Copyright   :  (c) Ivaylo Dobrikov 2010
 -- License     :  BSD
 -- 
 -- Maintainer  :  me@dobrikov.biz
 -- Stability   :  experimental
 -- Portability :  GHC-only
---
+-- 
+-- This module defines functions for pretty-printing the 
+-- Abstract Syntax Tree to CSPM syntax. Support Instances and functions 
+-- of all Typescases except the constructors AssertRef (in Decl), ProcSet (in Exp) and ProcException (in Exp)
+-- TODO: better output view for the printed tree. Make printer to pretty printer :).
+-----------------------------------------------------------------------------
 
 module Language.CSPM.PrettyPrinter
 where
 
-import Text.PrettyPrint as PrettyPrint hiding (char)
-import qualified Text.PrettyPrint as PrettyPrint
-import Language.CSPM.AST
-import Language.CSPM.Utils
-
+import Text.PrettyPrint
 import Data.Maybe
 
+import Language.CSPM.AST -- the module where the syntax for the AST defined is
+import Language.CSPM.Utils(parseFile) -- we use the parseFile function here for parsing of the generated cspm code
 
-class PP x where pp :: x-> Doc
+-- give just the file name back
+dropCsp :: String -> String
+dropCsp str = fst $ break (== '.') str
 
-mapPP :: PP x => [x] -> [Doc]
-mapPP = map pp
+runPretty :: FilePath -> IO ()
+runPretty f = 
+ do 
+  str      <- parseFile f
+  let fileName = dropCsp f
+  writeFile (fileName ++ ".ast") (show str)
+  writeFile (fileName ++ "Pretty.csp") (toPrettyString str) 
 
-instance (PP x) => PP (Labeled x) where 
-   pp = pp . unLabel
+toPrettyString :: LModule -> String
+toPrettyString lmodule = render $ pp lmodule
 
-instance PP Ident where pp = text . unIdent
+class PP x where
+  pp :: x -> Doc
 
-instance PP Exp where pp = prettyExp
+instance (PP x) => PP (Labeled x) where
+  pp = pp . unLabel
 
-prettyExp :: Exp -> Doc
-prettyExp x = case x of
-  Var x -> pp x
-  IntExp x -> integer x
-  SetExp a Nothing -> braces $ pp x
-  SetExp a (Just comp) -> braces ( pp a <+> text "|" <+> hcatCommaSpace comp)
-  ListExp a Nothing -> text "<" <+> pp a <+> text ">"
-  ListExp a (Just comp)
-    -> text "<" <+> pp a <+> text "|" <+> hcatCommaSpace comp <+> text ">"
-  ClosureComprehension (x,l) -> text "{|" <+> (hcat $ punctuate comma $ map pp x) <+> text "|" <+> (hcat $ punctuate comma $ map pp l) <+> text "|}"
-  Parens x -> parens (pp x)
-  BoolSet -> text "Bool"
-  IntSet -> text "Int"
-  ProcSet -> text "Proc"
-  Events -> text "Events"
-  Stop -> text "STOP"
-  Skip -> text "SKIP"
-  CTrue -> text "true"
-  CFalse -> text "false"
-  TupleExp xlist -> parens (hcat $ punctuate comma (map pp xlist))
-  DotTuple x -> hcat $ punctuate (text ".") $ map pp x
-  Closure x -> text "{|" <+> (hcat $ punctuate (comma <+> empty) $ map pp x) <+> text "|}"
-  CallBuiltIn x [list] -> pp x <> parens (hcat $ punctuate comma $ map pp list)
-  Ifte x y z -> text "if" <+> pp x <+> text "then" $$ pp y $$ text "else" <+> pp z
-  AndExp x y -> pp x <+> text "and" <+> pp y
-  OrExp x y -> pp x <+> text "or" <+> pp y
-  NotExp x -> text "not" <+> pp x
-  Fun1 x y -> pp x <> pp y
-  Fun2 fun x y ->  pp x <+> pp fun <+> pp y
-  Lambda patt x -> text "\\" <+> (hcat $ punctuate (comma <+> empty) $ map pp patt) <+> text "@" <+> pp x
-  PrefixExp x l_comm_field y -> pp x <> (hcat $ map pp l_comm_field) <+> text "->" <+> pp y 
-  ProcSharing x_middle x_left x_right -> pp x_left <+> text "[|" <+> pp x_middle <+> text "|]" <> pp x_right
-  Let decl x -> text "let" $$ (vcat $ map pp decl) $$ text "within" <+> pp x
--- TODO CallFunction: produce not the correct output in file: protocol.fix.csp
-  CallFunction x [list] -> pp x <> parens (hcat $ punctuate (comma <+> empty) $ map pp list)
-  ProcLinkParallel list x y -> pp x <+> pp list <+> pp y
-  ProcAParallel x1 x2 x3 x4 -> pp x3 <+> brackets (pp x1 <+> text "||" <+> pp x2) <+> pp x4
---  ProcRepInterleave (Labeled _ list _ :: (Labeled [LCompGen])) proc -> text "|||" <+> (hcat $ punctuate (space <> colon <> space) $ map pp list) <+> text "@" <+> pp proc
---  ProcRepChoice (Labeled _ list _ :: (Labeled [LCompGen])) proc -> text "[]" <+> (hcat $ punctuate (space <> colon <> space) $ map pp list) <+> text "@" <+> pp proc
---     pp (ProcRepSharing list x x_proc) = pp x <> text "[|" <> comp_gen_list list <> text "|]" <> pp x_proc -- nicht in die Beispiele vorhanden
-  ProcRenaming rlist Nothing proc -> pp proc <+> text "[[" <+> (hsep $ punctuate (space <> comma <> space) $ map pp rlist) <+> text "]]"
-  ProcRenaming rlist (Just lcomp) proc
-    -> pp proc <+> text "[[" <+> (hsep $ punctuate (space <> comma <> space) $ map pp rlist) <+> text "|" <+> (hsep $ punctuate (space <> comma <> space) $ map pp $ unLabel lcomp) <+> text "]]"
-  ProcException p1 e p2 -> pp p1 <+> text "[|" <+> pp e <+> pp p2
---  ProcRepAParallel (Labeled _ list _ :: (Labeled [LCompGen])) alph body
---    -> text "||" <+>  (hsep $ punctuate (space <> comma <> space) $ map pp list) <+> text "@" <+> brackets (pp alph) <+> pp body 
---     pp (ProcRepSharing (Labeled s list v) x proc) = 
---  ProcRepInternalChoice (Labeled _ list _ :: (Labeled [LCompGen])) proc
---   -> text "|~|" <+> (hsep $ punctuate (space <> comma <> space) $ map pp list) <+> text "@" <+> pp proc
+instance PP Module where
+  pp m = vcat $ map pp (moduleDecls m)
 
-hcatComma :: PP x => [x] -> Doc
-hcatComma a = hcat $ punctuate comma $ mapPP a
+-- help functions for the Instances of the Type-class PP
+dot :: Doc
+dot = text "."
 
--- Ivo ? what is the difference between comma and (comma <+> empty) ?
-hcatCommaSpace :: PP x => [x] -> Doc
-hcatCommaSpace a = hcat $ punctuate (comma <+> empty) $ mapPP a
-    
+ppListSet :: (PP r) => String -> String -> r -> Maybe [LCompGen] -> Doc
+ppListSet str1 str2 range mgen  = 
+     case mgen of
+       Nothing  -> text str1 <>  pp range <>  text str2
+       Just gen -> text str1 <+> pp range <+> text "|" <+> (hsep $ punctuate comma (map (ppCompGen False) gen)) <+> text str2 
 
-instance PP Rename where
-  pp (Rename x y) = pp x <> text "<-" <> pp y
+separateElemsWith :: (PP t) => [t] -> Doc -> Doc
+separateElemsWith list sep = hsep $ punctuate sep (map pp list)
 
-instance PP Range where
-   pp x = case x of
-     RangeEnum l -> hcatCommaSpace l
-     RangeOpen a -> pp a <+> text ".."
-     RangeClosed a b -> pp a <+> text ".." <+> pp b
+catElemsWith :: (PP t) => [t] -> Doc -> Doc
+catElemsWith list sep = hcat $ punctuate sep $ map pp list
 
-instance PP CompGen where
-     pp (Generator patt x) = pp patt <> {-text "<-"-}colon <> pp x
-     pp (Guard x) = space <> pp x
+printFunBind :: LIdent -> [FunCase] -> Doc
+printFunBind ident lcase = vcat $ map (printIdent (unLabel ident) <>) (map printCase lcase) 
 
-comp_gen_list :: [LCompGen] -> Doc
-comp_gen_list l = hcat $ punctuate empty (map pp l)
-
-
-instance PP BuiltIn where
-     pp (BuiltIn const) = pp const  
-
---type LCompGenList = Labeled [LCompGen]
-
---instance  PP LCompGenList => (Labeled [LCompGen]) where
---     pp list = list . unLabel
+printCase :: FunCase -> Doc
+printCase c = 
+   case c of 
+    FunCaseI pat  expr -> ((parens $ catElemsWith pat comma) <+> equals <+> pp expr)
+    FunCase [pat] expr -> ((parens $ catElemsWith pat comma) <+> equals <+> pp expr) 
 
 instance PP Decl where
-     pp (PatBind x y) = pp x <+> equals <+> pp y
-     pp (DataType ident list_constr) = text "datatype" <+> pp ident <+> equals <+> (hcat $ punctuate (space <> text "|" <> space) $ map pp list_constr)
-     pp (AssertRef {}) = text "{- assert not supported -}"
-     pp (AssertBool {}) = text "{- assert not supported -}"
-     pp (Channel list_x ty_ref) = text "channel" <+> (hcat $ punctuate (comma <> space) $ map pp list_x) <> if isEmpty (pp ty_ref) 
-                                                                                                               then empty 
-                                                                                                               else space <> colon <> space <> pp ty_ref
-     pp (FunBind ident list) = {-pp ident {-<> text "("-} <>-} (vcat $ punctuate empty $ map (pp ident <>) (map pp list)) --TODO
-     pp (SubType ident list_constr) = text "subtype" <+> pp ident <+> equals <+> (hcat $ punctuate (space <> text "|" <> space) $ map pp list_constr)
-     pp (NameType ident ty_ref) = text "nametype" <+> pp ident <+> equals <+> pp ty_ref
-     pp (Transparent list) = text "transparent" <+> (hcat $ punctuate (comma <> space) $ map pp list)
-     pp (Print x) = text "print" <+> pp x
+  pp (PatBind     pat    expr)         = pp pat  <+> equals <+> (pp expr)
+  pp (FunBind     ident  lcase)       = printFunBind ident lcase
+-- why must I have here 3 and not 4 arguments, TODO
+  pp (AssertRef   expr1   s expr2)     = empty --text "assert"      <+> pp expr1 <+> text s <+> pp expr2 
+                                       -- <+> case mexp of -- incomplete
+                                       --      Nothing     -> empty
+                                        --     Just    expr -> text ":" <+> (brackets $ pp expr)
+  pp (AssertBool  expr)                = text "assert"      <+> pp expr 
+  pp (Transparent idents)             = text "transparent" <+> (hsep $ punctuate comma (map (printIdent . unLabel) idents))
+  pp (SubType     ident  constrs)     = text "subtype"     <+> printIdent (unLabel ident) <+> equals 
+                                        <+> (vcat $ punctuate (text "|") (map printConstr (map unLabel constrs)))
+  pp (DataType    ident  constrs)     = text "datatype"    <+> printIdent (unLabel ident) <+> equals 
+                                        <+> (hsep $ punctuate (text "|") (map printConstr (map unLabel constrs)))
+  pp (NameType    ident  typ)         = text "nametype"    <+> printIdent (unLabel ident) <+> equals <+> typeDef typ
+  pp (Channel     idents typ)         = text "channel"     <+> (hsep $ punctuate comma $ map (printIdent . unLabel) idents) <+>
+                                   case typ of
+                                     Nothing 
+                                      -> empty
+                                     Just t 
+                                      -> text ":" <+> typeDef t
+  pp (Print  expr )                    = text "print"  <+> pp expr
 
-instance PP Module where 
-     pp m= vcat $ map pp (moduleDecls m)
+-- Contructors
+printConstr :: Constructor -> Doc
+printConstr (Constructor ident typ) = printIdent (unLabel ident) <>
+  case typ of 
+   Nothing -> empty
+   Just t  -> dot <> typeDef  t
 
-instance PP FunCase where
-     pp (FunCase [l_fun_args] x) = text "(" <> (hcat $ punctuate (comma <+> empty) $ map pp l_fun_args ) <> text ")" <+> equals <+> pp x 
+-- Type Definitions
+typeDef :: LTypeDef -> Doc
+typeDef typ = case unLabel typ of
+               TypeTuple lexp ->  parens $ catElemsWith lexp comma
+               TypeDot   lexp ->  catElemsWith lexp dot
+
+instance PP Exp where
+  pp (Var     ident)                     = printIdent $ unLabel ident
+  pp (IntExp  int)                       = integer int
+  pp (SetExp  range mgen)                = ppListSet "{"  "}"            range               mgen
+  pp (ListExp range mgen)                = ppListSet "<"  ">"            range               mgen
+  pp (ClosureComprehension (lexp,lcomp)) = ppListSet "{|" "|}" (labeled $ RangeEnum lexp) (Just lcomp)
+  pp (Let     ldecl expr)                 = text "" $$ (nest 2 (text "let"))
+                                                                $$ (vcat $ punctuate (text "" $$ nest 4 (text "")) (map pp ldecl)) 
+                                                                        $$ (nest 2 (text "within" <+> pp expr))
+  pp (Ifte    expr1  expr2 expr3)           = text "" $$ (nest 2 (text "if")) <+> pp expr1
+                                                                $$ nest 4 (text "then") <+> pp expr2 
+                                                                        $$ nest 4 (text "else" <+> pp expr3)
+  pp (CallFunction expr   [lexp])         = pp expr   <> (parens $ separateElemsWith lexp comma)
+  pp (CallBuiltIn  built [lexp])         = pp built <> (parens $ separateElemsWith lexp comma)
+  pp (Lambda lpat expr)                   = text "\\" <+> (separateElemsWith lpat comma <+> text "@") <+> pp expr
+  pp Stop                                = text "STOP"
+  pp Skip                                = text "SKIP"
+  pp CTrue                               = text "true"
+  pp CFalse                              = text "false"
+  pp Events                              = text "Events"
+  pp BoolSet                             = text "Bool"
+  pp IntSet                              = text "Int"
+--  pp ProcSet 
+  pp (TupleExp lexp)                     = parens $ separateElemsWith lexp comma
+  pp (Parens   expr)                      = parens $ pp expr
+  pp (AndExp   expr1  expr2)               = pp expr1 <+> text "and" <+> pp expr2
+  pp (OrExp    expr1  expr2)               = pp expr1 <+> text "or"  <+> pp expr2
+  pp (NotExp   expr)                      = text "not" <+> pp expr
+  pp (NegExp   expr)                      = text "-"   <>  pp expr
+  pp (Fun1     built expr)                = pp built   <>  pp expr
+  pp (Fun2     built expr1 expr2)          = pp expr1    <+> pp built <+> pp expr2
+  pp (DotTuple lexp)                     = catElemsWith lexp (dot)
+  pp (Closure  lexp)                     = text "{|" <+> separateElemsWith lexp comma <+> text "|}"
+-- process expressions
+  pp (ProcSharing      expr     proc1 proc2)       = pp proc1 <>       text "[|" <+> pp expr <+> text "|]"       <> pp proc2
+  pp (ProcAParallel    expr1    expr2  proc1 proc2) = pp proc1 <> (brackets $ pp expr1 <+> text "||" <+> pp expr2) <> pp proc2
+  pp (ProcLinkParallel llist   proc1 proc2)       = pp proc1 <>                   pp llist                     <> pp proc2
+  pp (ProcRenaming     lrename mgen  proc )       = pp proc  <> text "[[" <+> case mgen of
+                                                                                 Nothing   -> separateElemsWith lrename comma
+                                                                                 Just lgen -> (separateElemsWith lrename comma) 
+                                                                                                <+> text "|" <+> (separateGen False (unLabel lgen))
+                                                                          <+> text "]]"
+--  pp (ProcException LProc LExp LProc) -- ask Mark...
+--  | ProcRenamingComprehension [LRename] [LCompGen] LProc ==== does not exist in the CSPM Notation
+  pp (ProcRepSequence       lgen proc)           = replicatedProc (text ";")   (unLabel lgen) proc
+  pp (ProcRepInternalChoice lgen proc)           = replicatedProc (text "|~|") (unLabel lgen) proc
+  pp (ProcRepExternalChoice lgen proc)           = replicatedProc (text "[]")  (unLabel lgen) proc
+  pp (ProcRepInterleave     lgen proc)           = replicatedProc (text "|||") (unLabel lgen) proc
+  pp (PrefixExp             expr  fields proc)    = pp expr <> (hcat $ map pp fields) <+> text "->" <+> pp proc
+  pp (ProcRepSharing        lgen expr    proc)    = text "[|" <+> pp expr <+> text "|]" 
+                                                  <+> (separateGen True (unLabel lgen)) <+> text "@" <+> pp proc
+  pp (ProcRepAParallel      lgen expr    proc)    = text "||" <+> (separateGen True (unLabel lgen)) <+> text "@" 
+                                                  <+> (brackets $ pp expr) <+> pp proc
+  pp (ProcRepLinkParallel   lgen llist  proc)    = pp llist  <+> (separateGen True (unLabel lgen)) <+> text "@"
+                                                  <+> pp proc
+-- only used in later stages
+-- this do not affect the CSPM notation: same outputs as above
+  pp (PrefixI _ expr fields proc)                 = pp expr <> (hcat $ map pp fields) <+> text "->" <+> pp proc
+  pp (LetI    ldecl _      expr)                  = text "" $$ (nest 2 (text "let"))
+                                                                $$ (hcat $ punctuate (text "" $$ nest 4 (text "")) (map pp ldecl)) 
+                                                                        $$ (nest 2 (text "within" <+> pp expr))
+  pp (LambdaI  _     lpat expr)                   = text "\\" <+> (separateElemsWith lpat comma <+> text "@") <+> pp expr
+  pp (ExprWithFreeNames _ expr)                 = pp expr
+
+replicatedProc :: Doc -> [LCompGen] -> LProc -> Doc
+replicatedProc op lgen proc = op <+> (separateGen True lgen) <+> text "@" <+> pp proc
 
 instance PP LinkList where
-     pp (LinkList list_link) = brackets (hcat $ punctuate (comma <+> empty) $ map pp list_link)
+  pp (LinkList list)                   = brackets $ separateElemsWith list comma
+  pp (LinkListComprehension lgen list) = brackets  (separateElemsWith list comma <+> text "|" <+>  separateGen False lgen)
 
 instance PP Link where
-     pp (Link x y) =  pp x <> text "<->" <> pp y
+  pp (Link expr1 expr2) = pp expr1 <+> text "<->" <+> pp expr2
 
-instance PP Constructor where
-     pp (Constructor ident ty_ref) = pp ident <> if isEmpty (pp ty_ref) 
-                                                    then empty 
-                                                    else {-text "." <>-} pp ty_ref
+instance PP Rename where
+  pp (Rename expr1 expr2) = pp expr1 <+> text "<-" <+> pp expr2
 
-instance (PP x) => PP (Maybe x) where
-     pp (Just x) = pp x
-     pp Nothing = empty
+separateGen :: Bool -> [LCompGen] -> Doc
+separateGen b lgen = hsep $ punctuate comma $ map (ppCompGen b) lgen 
 
---instance PP Funcase where -- siehe emptySet
---     pp (Funcase [[arg]] x) = text "(" <>  <> text ")"  <+> equals <+> pp x
+-- the generators of the comprehension sets, lists (all after the |) and 
+-- inside replicated processes (like "x: {1..10}", in this case the bool variable must be true,
+-- otherwise false)
+ppCompGen :: Bool -> LCompGen -> Doc 
+ppCompGen b gen = case unLabel gen of 
+  (Generator pat expr) -> (pp pat) <+> case b of
+           False -> text "<-" <+> (pp expr) 
+           True  -> text ":"  <+> (pp expr)
+  (Guard expr)         -> pp expr
 
-instance PP TypeDef where 
-     pp (TypeTuple x) = text "." <> parens (hcat $ punctuate comma $ map pp x)
-     pp (TypeDot x) = (hcat $ punctuate (text ".") $ map pp x)
+-- the range of sets and lists
+instance PP Range where
+  pp (RangeEnum lexp)        = separateElemsWith lexp comma
+  pp (RangeClosed expr1 expr2) = (pp expr1) <> text ".." <> (pp expr2)
+  pp (RangeOpen expr)         = (pp expr) <> text ".."
 
-instance PP Pattern where
-     pp (IntPat x) = integer x
-     pp (VarPat x) = pp x
-     pp EmptySetPat = braces empty
-     pp WildCard = text "_"
-     pp (SingleSetPat patt) = brackets (pp patt)
-     pp (ListEnumPat list) = text "<" <> (hcat $ (punctuate (comma) $ map pp list)) <> text ">"
-     pp (TuplePat list) = parens (hcat $ (punctuate (comma) $ map pp list))
-     pp (DotPat list) = hcat $ punctuate (text ".") $ map pp list
+-- unwrapp the BuiltIn-oparator
+instance PP BuiltIn where
+  pp (BuiltIn c) = pp c
 
+-- the communication fields
 instance PP CommField where
-     pp (InComm x) = space <> text "?" <+> pp x
-     pp (OutComm x) = empty <> text "."{-"!"-} <> pp x 
-     pp (InCommGuarded pattern x {-LPattern LExp-}) = space <> text "?" <+> pp pattern <+> colon <+> pp x
+  pp (InComm pat)            = text "?" <> pp pat
+  pp (InCommGuarded pat expr) = text "?" <> pp pat <> text ":" <> pp expr
+  pp (OutComm expr)           = text "!" <> pp expr
+
+-- pretty-printing for CSPM-Patterns
+instance PP Pattern where
+  pp (IntPat n)         = integer n
+  pp TruePat            = text "true"
+  pp FalsePat           = text "false"  
+  pp WildCard           = text "_"
+  pp (ConstrPat ident)  = printIdent $ unLabel ident
+  pp (Also pat)         = ppAlso (Also pat)
+  pp (Append pat)       = catElemsWith pat (text "^")
+  pp (DotPat pat)       = catElemsWith pat (dot)
+  pp (SingleSetPat pat) = text "{" <+> (pp pat) <+> text "}"  
+  pp EmptySetPat        = text "{ }"
+  pp (ListEnumPat pat)  = text "<" <+>  separateElemsWith pat comma <+> text ">"
+  pp (TuplePat pat)     = text "(" <>   separateElemsWith pat comma <>  text ")"
+  pp (VarPat ident)     = printIdent $ unLabel ident
+
+-- external function for Also-Patterns for a better look
+ppAlso :: Pattern -> Doc
+ppAlso (Also [])    = text ""
+ppAlso (Also (h:t)) = 
+   case unLabel h of
+     DotPat _ -> text "(" <> (pp h) <> text ")" <> text "@@" <> ppAlso (Also t)
+     Append _ -> text "(" <> (pp h) <> text ")" <> text "@@" <> ppAlso (Also t)
+     _        -> pp h <> text "@@" <> ppAlso (Also t)
+ppAlso _ = text ""
+
+-- disticts the cases for different syntax-records for the Ident datatype
+printIdent :: Ident -> Doc
+printIdent ident = 
+  case ident of 
+   Ident _  -> text $ unIdent ident
+   UIdent _ -> text $ realName $ unUIdent ident 
 
 instance PP Const where
-     pp F_true = text "true"
-     pp F_false = text "false"
-     pp F_not = text "not"
-     pp F_and = text "and"
-     pp F_or = text "or"
-     pp F_STOP = text "STOP"
-     pp F_SKIP = text "SKIP"
-     pp F_Mult = text "*"
-     pp F_Div = colon
-     pp F_Add = text "+"
-     pp F_Sub = text "-"
-     pp F_Eq = text "=="
-     pp F_NEq = text "!=" 
-     pp F_ExtChoice = text "[]"
-     pp F_Union = text "Union"
-     pp F_concat = text "concat"
-     pp F_Concat = text "^"
-     pp F_union = text "union"
-     pp F_inter = text "inter"
-     pp F_diff = text "diff"
-     pp F_Inter = text "Inter"
-     pp F_member = text "member"
-     pp F_card = text "card"
-     pp F_empty = text "empty"
-     pp F_set = text "set"
-     pp F_Set = text "Set"
-     pp F_null = text "null"
-     pp F_Seq = text "Seq"
-     pp F_head = text "head"
-     pp F_tail = text "tail"
-     pp F_elem = text "elem"
-     pp F_Events = text "Events"
-     pp F_Int = text "Int"
-     pp F_Bool = text "Bool"
-     pp F_GE = text ">="
-     pp F_LE = text "<="
-     pp F_LT = text "<"
-     pp F_GT = text ">"
-     pp F_Sequential = text "Sequential"
-     pp F_Guard = text "&"
-     pp F_Interrupt = text "/\\"
-     pp F_Len2 = text "#"
-     pp F_CHAOS = text "CHAOS"
-     pp F_Timeout = text "[>"
-     pp F_IntChoice = text "|~|"
-     pp F_Interleave = text "|||"
-     pp F_Hiding = text "\\"
-     pp F_length = text "length"
-     pp F_Mod = text "%"
-
-to_PString :: LModule -> String
-to_PString my_mod = render (pp my_mod) 
-
-
-runPretty :: FilePath -> IO String 
-runPretty fname = 
-  do 
-   my_mod <- parseFile fname
-   return (to_PString my_mod) --(render (pp mod))  
-
-compareTrees :: FilePath -> IO Bool
-compareTrees file = 
-  do 
-    parsedFile <- parseFile file
-    let prettyFile = to_PString parsedFile
-    writeFile (file ++ ".pp") prettyFile
-    secondPFile <- parseFile file
-    if (parsedFile == secondPFile)
-       then 
-          return True
-       else 
-          return False 
-
-simpleCompare :: FilePath -> FilePath -> IO Bool
-simpleCompare file1 file2 = 
-  do 
-    tree1 <- readFile file1
-    tree2 <- readFile file2
-    if (tree1 == tree2)
-       then 
-          return True
-       else 
-          return False 
-
+-- Booleans
+  pp F_true   = text "true"
+  pp F_false  = text "false"
+  pp F_not    = text "not"
+  pp F_and    = text "and"
+  pp F_or     = text "or"
+-- Numbers
+  pp F_Mult   = text "*"
+  pp F_Div    = text "/"
+  pp F_Mod    = text "%"
+  pp F_Add    = text "+"
+  pp F_Sub    = text "-"
+-- Equality
+  pp F_GE     = text ">="
+  pp F_LE     = text "<="
+  pp F_LT     = text "<"
+  pp F_GT     = text ">"
+  pp F_Eq     = text "=="
+  pp F_NEq    = text "!="
+-- Sets
+  pp F_union  = text "union"
+  pp F_inter  = text "inter"
+  pp F_diff   = text "diff"
+  pp F_Union  = text "Union"
+  pp F_Inter  = text "Inter"
+  pp F_member = text "member"
+  pp F_card   = text "card"
+  pp F_empty  = text "empty"
+  pp F_set    = text "set"
+  pp F_Set    = text "Set"
+  pp F_Seq    = text "Seq"
+-- Types
+  pp F_Int    = text "Int"
+  pp F_Bool   = text "Bool"
+--Sequences
+  pp F_null   = text "null"
+  pp F_head   = text "head"
+  pp F_tail   = text "tail"
+  pp F_concat = text "concat" 
+  pp F_elem   = text "elem"
+  pp F_length = text "length"
+  pp F_Concat = text "^" 
+  pp F_Len2   = text "#"
+--process oprators
+  pp F_STOP   = text "STOP"
+  pp F_SKIP   = text "SKIP"
+  pp F_Events = text "Events"
+  pp F_CHAOS  = text "CHAOS"
+  pp F_Guard  = text "&"
+  pp F_Sequential = text ";"
+  pp F_Interrupt  = text "/\\"
+  pp F_ExtChoice  = text "[]"
+  pp F_IntChoice  = text "|~|"
+  pp F_Hiding     = text "\\"
+  pp F_Timeout    = text "[>"
+  pp F_Interleave = text "|||"
