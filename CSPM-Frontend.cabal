@@ -64,7 +64,7 @@ library
     Text.ParserCombinators.Parsec.ExprM
   Other-modules:
     Paths_CSPM_Frontend
-    Language.CSPM.Version
+ --   Language.CSPM.Version
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper
     Language.CSPM.LexHelper

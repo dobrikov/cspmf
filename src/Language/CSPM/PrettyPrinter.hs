@@ -18,7 +18,7 @@ module Language.CSPM.PrettyPrinter
 where
 
 import Text.PrettyPrint
-import Data.Maybe
+--import Data.Maybe
 
 import Language.CSPM.AST -- the module where the syntax for the AST defined is
 import Language.CSPM.Utils(parseFile) -- we use the parseFile function here for parsing of the generated cspm code
@@ -58,10 +58,10 @@ ppListSet str1 str2 range mgen  =
        Just gen -> text str1 <+> pp range <+> text "|" <+> (hsep $ punctuate comma (map (ppCompGen False) gen)) <+> text str2 
 
 separateElemsWith :: (PP t) => [t] -> Doc -> Doc
-separateElemsWith list sep = hsep $ punctuate sep (map pp list)
+separateElemsWith list s = hsep $ punctuate s (map pp list)
 
 catElemsWith :: (PP t) => [t] -> Doc -> Doc
-catElemsWith list sep = hcat $ punctuate sep $ map pp list
+catElemsWith list s = hcat $ punctuate s $ map pp list
 
 printFunBind :: LIdent -> [FunCase] -> Doc
 printFunBind ident lcase = vcat $ map (printIdent (unLabel ident) <>) (map printCase lcase) 
@@ -70,24 +70,24 @@ printCase :: FunCase -> Doc
 printCase c = 
    case c of 
     FunCaseI pat  expr -> ((parens $ catElemsWith pat comma) <+> equals <+> pp expr)
-    FunCase [pat] expr -> ((parens $ catElemsWith pat comma) <+> equals <+> pp expr) 
+    FunCase (pat:_) expr -> ((parens $ catElemsWith pat comma) <+> equals <+> pp expr) 
 
 instance PP Decl where
   pp (PatBind     pat    expr)         = pp pat  <+> equals <+> (pp expr)
   pp (FunBind     ident  lcase)       = printFunBind ident lcase
 -- why must I have here 3 and not 4 arguments, TODO
-  pp (AssertRef   expr1   s expr2)     = empty --text "assert"      <+> pp expr1 <+> text s <+> pp expr2 
+  pp (AssertRef   _   _ _ _)     = empty --text "assert"      <+> pp expr1 <+> text s <+> pp expr2 
                                        -- <+> case mexp of -- incomplete
                                        --      Nothing     -> empty
                                         --     Just    expr -> text ":" <+> (brackets $ pp expr)
   pp (AssertBool  expr)                = text "assert"      <+> pp expr 
-  pp (Transparent idents)             = text "transparent" <+> (hsep $ punctuate comma (map (printIdent . unLabel) idents))
+  pp (Transparent ids)             = text "transparent" <+> (hsep $ punctuate comma (map (printIdent . unLabel) ids))
   pp (SubType     ident  constrs)     = text "subtype"     <+> printIdent (unLabel ident) <+> equals 
                                         <+> (vcat $ punctuate (text "|") (map printConstr (map unLabel constrs)))
   pp (DataType    ident  constrs)     = text "datatype"    <+> printIdent (unLabel ident) <+> equals 
                                         <+> (hsep $ punctuate (text "|") (map printConstr (map unLabel constrs)))
   pp (NameType    ident  typ)         = text "nametype"    <+> printIdent (unLabel ident) <+> equals <+> typeDef typ
-  pp (Channel     idents typ)         = text "channel"     <+> (hsep $ punctuate comma $ map (printIdent . unLabel) idents) <+>
+  pp (Channel     ids typ)         = text "channel"     <+> (hsep $ punctuate comma $ map (printIdent . unLabel) ids) <+>
                                    case typ of
                                      Nothing 
                                       -> empty
@@ -110,7 +110,7 @@ typeDef typ = case unLabel typ of
 
 instance PP Exp where
   pp (Var     ident)                     = printIdent $ unLabel ident
-  pp (IntExp  int)                       = integer int
+  pp (IntExp  i)                       = integer i
   pp (SetExp  range mgen)                = ppListSet "{"  "}"            range               mgen
   pp (ListExp range mgen)                = ppListSet "<"  ">"            range               mgen
   pp (ClosureComprehension (lexp,lcomp)) = ppListSet "{|" "|}" (labeled $ RangeEnum lexp) (Just lcomp)
@@ -229,6 +229,8 @@ instance PP Pattern where
   pp (ListEnumPat pat)  = text "<" <+>  separateElemsWith pat comma <+> text ">"
   pp (TuplePat pat)     = text "(" <>   separateElemsWith pat comma <>  text ")"
   pp (VarPat ident)     = printIdent $ unLabel ident
+  pp (Selectors _ _)    = empty
+  pp (Selector _ _)       = empty
 
 -- external function for Also-Patterns for a better look
 ppAlso :: Pattern -> Doc
