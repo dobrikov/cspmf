@@ -22,6 +22,7 @@ import Text.PrettyPrint
 
 import Language.CSPM.AST -- the module where the syntax for the AST defined is
 import Language.CSPM.Utils(parseFile) -- we use the parseFile function here for parsing of the generated cspm code
+import Language.CSPM.SrcLoc
 
 -- give just the file name back
 dropCsp :: String -> String
@@ -75,11 +76,10 @@ printCase c =
 instance PP Decl where
   pp (PatBind     pat    expr)         = pp pat  <+> equals <+> (pp expr)
   pp (FunBind     ident  lcase)       = printFunBind ident lcase
--- why must I have here 3 and not 4 arguments, TODO
-  pp (AssertRef   _   _ _ _)     = empty --text "assert"      <+> pp expr1 <+> text s <+> pp expr2 
-                                       -- <+> case mexp of -- incomplete
-                                       --      Nothing     -> empty
-                                        --     Just    expr -> text ":" <+> (brackets $ pp expr)
+  pp (AssertRef   expr1 s expr2 mexpr)     = text "assert" <+> pp expr1 <+> text s <+> pp expr2 
+                                              <+> case mexpr of -- incomplete
+                                                    Nothing     -> empty
+                                                    Just    expr -> text ":" <+> (brackets $ pp expr)
   pp (AssertBool  expr)                = text "assert"      <+> pp expr 
   pp (Transparent ids)             = text "transparent" <+> (hsep $ punctuate comma (map (printIdent . unLabel) ids))
   pp (SubType     ident  constrs)     = text "subtype"     <+> printIdent (unLabel ident) <+> equals 

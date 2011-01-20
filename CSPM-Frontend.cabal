@@ -43,7 +43,7 @@ library
 --    ,template-haskell >= 2.4 && < 2.5
     ,template-haskell
     ,pretty >= 1.0 && < 1.1
-    ,mtl >= 1.1 && < 1.2
+    ,mtl >= 1.1
     ,syb >= 0.3 && < 0.4
 
   GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s -Wall
@@ -61,6 +61,7 @@ library
     Language.CSPM.TokenClasses
     Language.CSPM.PrettyPrinter
     Language.CSPM.PatternCompiler
+    Language.CSPM.TestScript
     Text.ParserCombinators.Parsec.ExprM
   Other-modules:
     Paths_CSPM_Frontend
