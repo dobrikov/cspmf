@@ -5,17 +5,18 @@ where
 
 import Language.CSPM.AST
 import Language.CSPM.Utils(parseFile)
+import Language.CSPM.PrettyPrinter(dropCsp, toPrettyString)
 import Language.CSPM.AstUtils(removeParens, removeModuleTokens, removeSourceLocations, unUniqueIdent)
 import Language.CSPM.SrcLoc
 
---instance Eq t => Eq (Labeled t) where
---  (==) (Labeled t1) (Labeled t2) = t1 == t2
-
---compareLabeledTrees :: Labeled t -> Labeled t -> True
-compareLabeledTrees (Labeled _ _ t1) (Labeled _ _ t2) = t1 == t2
-
-compareIdents :: Ident -> Ident -> Bool
-compareIdents i1 i2 = (unIdent i1) == (unIdent i2)
+testPrettyParser :: FilePath -> IO Bool
+testPrettyParser f = 
+  do 
+   str1 <- parseFile f
+   let fileName = dropCsp f
+   writeFile (fileName ++ "Pretty.csp") (toPrettyString str1)
+   str2 <- parseFile (fileName ++ "Pretty.csp") 
+   return $ compareAST (simplifyAst str1) (simplifyAst str2)
 
 simplifyAst :: LModule -> LModule
 simplifyAst ast = removeParens $ removeSourceLocations $ removeModuleTokens ast
@@ -76,35 +77,33 @@ instance EqAst Exp where
    compareAST (Lambda lista a) (Lambda listb b) = and [(and $ zipWith compareAST lista listb), compareAST a b]
    compareAST (Fun1 a1 a2) (Fun1 b1 b2) = and [compareAST a1 b1, compareAST a2 b2] 
    compareAST (Fun2 a1 a2 a3) (Fun2 b1 b2 b3) = and [compareAST a1 b1, compareAST a2 b2, compareAST a3 b3] 
-{-   compareAST (SetExp rangea a) (SetExp rangeb b) = case (a, b) of
+   compareAST (SetExp rangea a) (SetExp rangeb b) = case (a, b) of
       (Just t1, Just t2) -> and [(and $ zipWith compareAST t1 t2), compareAST (unLabel rangea) (unLabel rangeb)]
-      (Nothing, Nothing) -> compareAST a b
+      (Nothing, Nothing) -> compareAST rangea rangeb
       otherwise -> False
-   
    compareAST (ListExp rangea a) (ListExp rangeb b) = case (a, b) of
       (Just t1, Just t2) -> and [(and $ zipWith compareAST t1 t2), compareAST (unLabel rangea) (unLabel rangeb)]
-      (Nothing, Nothing) -> compareAST a b
+      (Nothing, Nothing) -> compareAST rangea rangeb
       otherwise -> False
--}
    compareAST (ClosureComprehension (l1, l2)) (ClosureComprehension (ll1, ll2)) =  and [and $ zipWith compareAST l1 ll1, and $ zipWith compareAST l2 ll2]
    compareAST (CallFunction a [lista]) (CallFunction b [listb]) = and [(and $ zipWith compareAST lista listb), compareAST a b]
    compareAST (CallBuiltIn a [lista]) (CallBuiltIn b [listb]) = and [and $ zipWith compareAST lista listb, compareAST a b]
    compareAST (ProcSharing a1 a2 a3) (ProcSharing b1 b2 b3) = and [compareAST a1 b1, compareAST a2 b2, compareAST a3 b3] 
    compareAST (ProcAParallel a1 a2 a3 a4) (ProcAParallel b1 b2 b3 b4) = and [compareAST a1 b1, compareAST a2 b2, compareAST a3 b3, compareAST a4 b4] 
    compareAST (ProcLinkParallel a1 a2 a3) (ProcLinkParallel b1 b2 b3) = and [compareAST a1 b1, compareAST a2 b2, compareAST a3 b3] 
---   compareAST (ProcRepLinkParallel a1 a2 a3) (ProcRepLinkParallel b1 b2 b3) = and [compareAST a1 b1, compareAST a2 b2, compareAST a3 b3] 
---   compareAST (ProcRepSharing a1 a2 a3) (ProcRepSharing b1 b2 b3) = and [compareAST a1 b1, compareAST a2 b2, compareAST a3 b3] 
---   compareAST (ProcRepAParallel a1 a2 a3) (ProcRepAParallel b1 b2 b3) = and [compareAST a1 b1, compareAST a2 b2, compareAST a3 b3] 
+   compareAST (ProcRepLinkParallel a1 a2 a3) (ProcRepLinkParallel b1 b2 b3) = and [compareAST a1 b1, compareAST a2 b2, compareAST a3 b3] 
+   compareAST (ProcRepSharing a1 a2 a3) (ProcRepSharing b1 b2 b3) = and [compareAST a1 b1, compareAST a2 b2, compareAST a3 b3] 
+   compareAST (ProcRepAParallel a1 a2 a3) (ProcRepAParallel b1 b2 b3) = and [compareAST a1 b1, compareAST a2 b2, compareAST a3 b3] 
    compareAST (ProcException a1 a2 a3) (ProcException b1 b2 b3) = and [compareAST a1 b1, compareAST a2 b2, compareAST a3 b3] 
- --  compareAST (ProcRepInterleave a1 a2) (ProcRepInterleave b1 b2) = and [compareAST a1 b1, compareAST a2 b2] 
---   compareAST (ProcRepExternalChoice a1 a2) (ProcRepExternalChoice b1 b2) = and [compareAST a1 b1, compareAST a2 b2] 
---   compareAST (ProcRepInternalChoice a1 a2) (ProcRepInternalChoice b1 b2) = and [compareAST a1 b1, compareAST a2 b2] 
---   compareAST (ProcRepSequence a1 a2) (ProcRepSequence b1 b2) = and [compareAST a1 b1, compareAST a2 b2] 
+   compareAST (ProcRepInterleave a1 a2) (ProcRepInterleave b1 b2) = and [compareAST a1 b1, compareAST a2 b2] 
+   compareAST (ProcRepExternalChoice a1 a2) (ProcRepExternalChoice b1 b2) = and [compareAST a1 b1, compareAST a2 b2] 
+   compareAST (ProcRepInternalChoice a1 a2) (ProcRepInternalChoice b1 b2) = and [compareAST a1 b1, compareAST a2 b2] 
+   compareAST (ProcRepSequence a1 a2) (ProcRepSequence b1 b2) = and [compareAST a1 b1, compareAST a2 b2] 
    compareAST (PrefixExp a1 lista a2) (PrefixExp b1 listb b2) = and [compareAST a1 b1, compareAST a2 b2, and $ zipWith compareAST lista listb] 
-{-   compareAST (ProcRenaming lista ma a) (ProcRenaming listb mb b) = case (ma, mb) of
+   compareAST (ProcRenaming lista ma a) (ProcRenaming listb mb b) = case (ma, mb) of
       (Just t1, Just t2) -> and [compareAST t1 t2, and $ zipWith compareAST lista listb, compareAST a b]
       (Nothing, Nothing) -> and [and $ zipWith compareAST lista listb, compareAST a b]
-      otherwise -> False -}
+      otherwise -> False 
    compareAST _ _ = False
 
 instance EqAst Range where
