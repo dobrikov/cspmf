@@ -55,7 +55,7 @@ dot = text "."
 ppListSet :: (PP r) => String -> String -> r -> Maybe [LCompGen] -> Doc
 ppListSet str1 str2 range mgen  = 
      case mgen of
-       Nothing  -> text str1 <>  pp range <>  text str2
+       Nothing  -> text str1 <+>  pp range <+>  text str2
        Just gen -> text str1 <+> pp range <+> text "|" <+> (hsep $ punctuate comma (map (ppCompGen False) gen)) <+> text str2 
 
 separateElemsWith :: (PP t) => [t] -> Doc -> Doc
@@ -76,11 +76,7 @@ printCase c =
 instance PP Decl where
   pp (PatBind     pat    expr)         = pp pat  <+> equals <+> (pp expr)
   pp (FunBind     ident  lcase)       = printFunBind ident lcase
-  pp (AssertRef   expr1 s expr2 mexpr)     = text "assert" <+> pp expr1 <+> text s <+> pp expr2 
-                                              <+> case mexpr of -- incomplete
-                                                    Nothing     -> empty
-                                                    Just    expr -> text ":" <+> (brackets $ pp expr)
-  pp (AssertBool  expr)                = text "assert"      <+> pp expr 
+  pp (Assert assertexpr)     = text "assert" <+> pp assertexpr  
   pp (Transparent ids)             = text "transparent" <+> (hsep $ punctuate comma (map (printIdent . unLabel) ids))
   pp (SubType     ident  constrs)     = text "subtype"     <+> printIdent (unLabel ident) <+> equals 
                                         <+> (vcat $ punctuate (text "|") (map printConstr (map unLabel constrs)))
@@ -110,7 +106,7 @@ typeDef typ = case unLabel typ of
 
 instance PP Exp where
   pp (Var     ident)                     = printIdent $ unLabel ident
-  pp (IntExp  i)                       = integer i
+  pp (IntExp  i)                         = integer i
   pp (SetExp  range mgen)                = ppListSet "{"  "}"            range               mgen
   pp (ListExp range mgen)                = ppListSet "<"  ">"            range               mgen
   pp (ClosureComprehension (lexp,lcomp)) = ppListSet "{|" "|}" (labeled $ RangeEnum lexp) (Just lcomp)
@@ -136,7 +132,7 @@ instance PP Exp where
   pp (AndExp   expr1  expr2)               = pp expr1 <+> text "and" <+> pp expr2
   pp (OrExp    expr1  expr2)               = pp expr1 <+> text "or"  <+> pp expr2
   pp (NotExp   expr)                      = text "not" <+> pp expr
-  pp (NegExp   expr)                      = text "-"   <>  pp expr
+  pp (NegExp   expr)                      = text " " <+> text "-"   <>  pp expr
   pp (Fun1     built expr)                = pp built   <>  pp expr
   pp (Fun2     built expr1 expr2)          = pp expr1    <+> pp built <+> pp expr2
   pp (DotTuple lexp)                     = catElemsWith lexp (dot)
@@ -249,6 +245,33 @@ printIdent ident =
    Ident _  -> text $ unIdent ident
    UIdent _ -> text $ realName $ unUIdent ident 
 
+instance PP AssertExp where
+  pp (AssertBool expr) = pp expr
+  pp (AssertListRef expr1 op expr2) = pp expr1 <+> pp op <+> pp expr2
+  pp (AssertTauPrio expr1 op expr2 expr3) = pp expr1 <+> pp op <+> pp expr2 <+> text ":[tau priority over]:" <+> pp expr3
+  pp (AssertInternalFDRChecks expr m) = pp expr <+> pp m
+
+instance PP FDRModels where
+  pp DeadlockFreeF = text ":[ deadlock free [F] ]"
+  pp DeadlockFreeFD = text ":[ deadlock free [FD] ]"
+  pp DeterministicFreeF = text ":[ deterministic free [F] ]"
+  pp DeterministicFreeFD = text ":[ deterministic free [FD] ]"
+  pp LivelockFree = text ":[ divergence free ]"
+
+instance PP AssertOp where 
+  pp F_Trace = text "[T="
+  pp F_Failure = text "[F="
+  pp F_FailureDivergence = text "[FD="
+  pp F_RefusalTesting = text "[R="
+  pp F_RefusalTestingDiv = text "[RD="
+  pp F_RevivalTesting = text "[V="
+  pp F_RevivalTestingDiv = text "[VD="
+  pp F_TauPriorityOp = text "[TP="
+
+instance PP AssertTOp where
+  pp F_TTrace = text "[T="
+  pp F_Refine = text "[="
+
 instance PP Const where
 -- Booleans
   pp F_true   = text "true"
@@ -261,7 +284,7 @@ instance PP Const where
   pp F_Div    = text "/"
   pp F_Mod    = text "%"
   pp F_Add    = text "+"
-  pp F_Sub    = text "-"
+  pp F_Sub    = text "" <+> text "-"
 -- Equality
   pp F_GE     = text ">="
   pp F_LE     = text "<="

@@ -100,6 +100,28 @@ csp :-
 <0> "elem"    { mkL T_elem }
 <0> "length"    { mkL T_length }
 
+-- assetion Lists refinement operators
+<0> "[=" { mkL T_Refine }
+<0> "[T=" { mkL T_trace } -- !!!
+<0> "[F=" { mkL T_failure } -- !!!
+<0> "[FD=" { mkL T_failureDivergence } -- !!!
+<0> "[R=" { mkL T_refusalTesting }
+<0> "[RD=" { mkL T_refusalTestingDiv }
+<0> "[V=" { mkL T_revivalTesting }
+<0> "[VD=" { mkL T_revivalTestingDiv }
+<0> "[TP=" { mkL T_tauPriorityOp }
+-- the right version should be "tau priority over"
+<0> ":[tau priority" { mkL T_TauPriorityOver}
+<0> "deadlock free [FD]" { mkL T_deadlockFreeFD}
+<0> "deadlock free [F]" { mkL T_deadlockFreeF}
+<0> "deadlock free" { mkL T_deadlockFreeFD}
+<0> "deterministic free [FD]" { mkL T_deterministicFreeFD}
+<0> "deterministic free [F]" { mkL T_deterministicFreeF}
+<0> "deterministic free" { mkL T_deterministicFreeFD}
+<0> "divergence free" { mkL T_livelockFree}
+<0> "livelock free" { mkL T_livelockFree}
+<0> ":[" { mkL T_option }
+<0> "]:" { mkL T_clOption }
 -- symbols
 <0> "^" { mkL T_hat }
 <0> "#" { mkL T_hash }
@@ -156,7 +178,7 @@ csp :-
 "{-"				{ block_comment }
 
 -- Fixme : tread this properly
-<0> ":[" $whitechar* @assertCore $whitechar* "]"    { mkL L_CSPFDR }
+
 
 <0> "include"                   { mkL L_Include }
 
@@ -168,11 +190,6 @@ csp :-
 
 
 <0> \" @string* \"              { mkL L_String }
-
-<0> "[" $large + "="            { mkL T_Refine }
-<0> "[="                        { mkL T_Refine }
-<0> ":[tau priority over]:"     { mkL T_TauPriority}  -- two version ?
-<0> ":[tau priority]:"     { mkL T_TauPriority}       -- two version ?
 
 
 {

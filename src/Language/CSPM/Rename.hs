@@ -367,8 +367,7 @@ declLHS d = case unLabel d of
   PatBind pat _ -> rnPattern pat
    --todo : proper type-checking/counting number of Funargs
   FunBind i _ -> bindNewUniqueIdent (FunID (-1)) i
-  AssertRef {} -> nop
-  AssertBool {} -> nop
+  Assert {} -> nop
   Transparent tl -> mapM_ (bindNewTopIdent TransparentID) tl
   SubType i clist -> do
     bindNewTopIdent DataTypeID i   -- fix this
@@ -394,9 +393,10 @@ declRHS :: LDecl -> RM ()
 declRHS d = case unLabel d of
   PatBind _ e -> rnExp e
   FunBind _ cases -> mapM_ rnFunCase cases
-  AssertRef p1 _ p2 (Nothing) -> rnExp p1 >> rnExp p2
+  Assert p -> nop --error "TODO: import changes in this module"
+{-  AssertRef p1 _ p2 (Nothing) -> rnExp p1 >> rnExp p2
   AssertRef p1 _ p2 (Just prio) -> rnExp p1 >> rnExp p2 >> rnExp prio
-  AssertBool e -> rnExp e
+  AssertBool e -> rnExp e -}
   Transparent _ -> nop  
   SubType  _ clist -> forM_ clist rnConstructorRHS
   DataType _ clist -> forM_ clist rnConstructorRHS
@@ -426,7 +426,7 @@ rnTypeDef t = case unLabel t of
 -- the 'AstAnnotation's.
 applyRenaming ::
      (Bindings,AstAnnotation UniqueIdent,AstAnnotation UniqueIdent)
-  -> LModule 
+  -> LModule
   -> LModule
 applyRenaming (_,defIdent,usedIdent) ast
   = everywhere (mkT patchVarPat . mkT patchIdent) ast

@@ -160,6 +160,36 @@ builtInFunctions = Set.fromList
         T_elem, T_length, T_CHAOS ]
 -}
 
+anyAssertOp :: PT LAssertOp
+anyAssertOp = withLoc $ do 
+  tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
+  case tok of
+    T_trace  -> return F_Trace
+    T_failure  -> return F_Failure
+    T_failureDivergence   -> return F_FailureDivergence
+    T_refusalTesting -> return F_RefusalTesting
+    T_refusalTestingDiv -> return F_RefusalTestingDiv
+    T_revivalTesting -> return F_RevivalTesting
+    T_revivalTestingDiv -> return F_RevivalTestingDiv
+    T_tauPriorityOp -> return F_TauPriorityOp
+
+anyAssertTOp :: PT LAssertTOp
+anyAssertTOp = withLoc $ do 
+  tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
+  case tok of
+    T_trace  -> return F_TTrace
+    T_Refine  -> return F_Refine
+
+fdrModel :: PT LFDRModels
+fdrModel = withLoc $ do 
+  tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
+  case tok of
+    T_deadlockFreeF -> return DeadlockFreeF
+    T_deadlockFreeFD  -> return DeadlockFreeFD
+    T_deterministicFreeF -> return DeterministicFreeF
+    T_deterministicFreeFD -> return DeterministicFreeFD
+    T_livelockFree -> return LivelockFree
+  
 anyBuiltIn :: PT Const
 anyBuiltIn = do
   tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
@@ -819,30 +849,58 @@ topDeclList = do
   topDecl =
         funBind
     <|> singleList patBind
-    <|> singleList parseAssert
+    <|> singleList parseAssertDecl
     <|> singleList parseTransparent
     <|> singleList parseDatatype
     <|> singleList parseSubtype
     <|> singleList parseNametype
     <|> singleList parseChannel
     <|> singleList parsePrint
-    <?> "top-level declaration"   
-
-  assertRef = withLoc $ do
+    <?> "top-level declaration"  
+ 
+  assertListRef = withLoc $ do
     token T_assert
     p1 <- parseExp
-    op <- token T_Refine {- ToDo: fix this -}
+    op <- anyAssertOp
     p2 <- parseExp
-    prio <- optionMaybe (token T_TauPriority >> parseExp)
-    return $ AssertRef p1 "k" p2 prio
+    return $ AssertListRef p1 op p2
 
   assertBool = withLoc $ do
     token T_assert
     b<-parseExp
     return $ AssertBool b
 
-  parseAssert :: PT LDecl
-  parseAssert = (try assertRef) <|> assertBool
+  assertTauPrio = withLoc $ do
+    token T_assert
+    p1 <- parseExp
+    op <- anyAssertTOp
+    p2 <- parseExp
+    token T_TauPriorityOver
+    lIdent
+    token T_clOption
+    set <- parseExp
+    return $ AssertTauPrio p1 op p2 set
+
+  assertIntFDRChecks = withLoc $ do
+    token T_assert
+    p <- parseExp
+    token T_option
+    model <- fdrModel 
+    lIdent
+    token T_closeBrack
+    return $ AssertInternalFDRChecks p model
+ 
+
+  parseAssert :: PT LAssertExp
+  parseAssert = (try assertIntFDRChecks) 
+            -- <|> (try assertTauPrio)
+            <|> (try assertListRef)
+            <|> assertBool
+
+  parseAssertDecl :: PT LDecl
+  parseAssertDecl = withLoc $ do
+     assertExp <- parseAssert
+     return $ Assert assertExp
 
   parseTransparent :: PT LDecl
   parseTransparent = withLoc $ do

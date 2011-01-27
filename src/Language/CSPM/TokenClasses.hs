@@ -23,13 +23,10 @@ data PrimToken
   = L_Integer
   | L_String
   | L_Ident
-  | L_CSPFDR      -- needed for special assertions
   | L_LComment
   | L_BComment
   | L_EOF
   | L_Include
-  | T_Refine
-  | T_TauPriority
 -- keywords
   | T_channel
   | T_datatype
@@ -125,4 +122,22 @@ data PrimToken
   | T_closePBrace  -- "|}"
   | T_underscore   -- "_"
   | T_is           -- "="
+-- assert List refinement Operators
+  | T_Refine -- "[="
+  | T_trace  -- "[T="
+  | T_failure -- "[F="
+  | T_failureDivergence -- "[FD="
+  | T_refusalTesting -- "[R="
+  | T_refusalTestingDiv -- "[RD="
+  | T_revivalTesting -- "[V="
+  | T_revivalTestingDiv -- "[VD="
+  | T_tauPriorityOp -- "[TP="
+  | T_TauPriorityOver
+  | T_deadlockFreeF
+  | T_deadlockFreeFD
+  | T_deterministicFreeF
+  | T_deterministicFreeFD
+  | T_livelockFree
+  | T_option
+  | T_clOption
   deriving (Show,Eq,Ord,Typeable, Data)

@@ -5,7 +5,7 @@ where
 
 import Language.CSPM.AST
 import Language.CSPM.Utils(parseFile)
-import Language.CSPM.PrettyPrinter(dropCsp, toPrettyString)
+import Language.CSPM.PrettyPrinter(dropCsp, toPrettyString, runPretty)
 import Language.CSPM.AstUtils(removeParens, removeModuleTokens, removeSourceLocations, unUniqueIdent)
 import Language.CSPM.SrcLoc
 

@@ -5,7 +5,6 @@ module Language.CSPM.LexHelper
   ,filterIgnoredToken
   ,tokenIsIgnored
   ,tokenIsComment
-  ,tokenIsFDR
 )
 where
 
@@ -59,7 +58,6 @@ filterIgnoredToken = filter ( not . tokenIsIgnored)
 
 tokenIsIgnored :: Token -> Bool
 tokenIsIgnored (Token _ _ _ L_LComment _) = True
-tokenIsIgnored (Token _ _ _ L_CSPFDR _) = True
 tokenIsIgnored (Token _ _ _ L_BComment _) = True
 tokenIsIgnored _ = False
 
@@ -67,7 +65,3 @@ tokenIsComment :: Token -> Bool
 tokenIsComment (Token _ _ _ L_LComment _) = True
 tokenIsComment (Token _ _ _ L_BComment _) = True
 tokenIsComment _ = False
-
-tokenIsFDR :: Token -> Bool
-tokenIsFDR (Token _ _ _ L_CSPFDR _) = True
-tokenIsFDR _ = False
