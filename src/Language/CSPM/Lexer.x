@@ -20,7 +20,7 @@ $whitechar = [\ \t\n\r\f\v]
 $digit     = 0-9
 
 $symbol = [\!\#\$\%\&\*\+\.\/\<\=\>\?\@\\\^\|\-\~\(\)\,\;\[\]\`\{\}\_\:\']
-
+$symbol1 = [\_\']
 --$large     = [A-Z \xc0-\xd6 \xd8-\xde]
 --$small     = [a-z \xdf-\xf6 \xf8-\xff \_]
 $large     = [A-Z]
@@ -28,7 +28,7 @@ $small     = [a-z]
 $alpha     = [$small $large]
 
 $graphic   = [$small $large $symbol $digit]
-
+$graphic1   = [$small $large $symbol1 $digit]
 $octit	   = 0-7
 $hexit     = [0-9 A-F a-f]
 $idchar    = [$alpha $digit \' \_]
@@ -40,7 +40,7 @@ $idchar    = [$alpha $digit \' \_]
 @hexadecimal = $hexit+
 
 @string  = $graphic # [\"\\] | " " $whitechar
-
+@stringOp = $graphic1 # [\"\\] | " " $whitechar
 @assertExts = $whitechar+ "[FD]" | $whitechar+ "[F]" | ""
 @assertCore = "deterministic" @assertExts?
             | "livelock" $whitechar+ "free" @assertExts?
@@ -111,16 +111,16 @@ csp :-
 <0> "[VD=" { mkL T_revivalTestingDiv }
 <0> "[TP=" { mkL T_tauPriorityOp }
 -- the right version should be "tau priority over"
-<0> ":[tau priority" { mkL T_TauPriorityOver}
-<0> "deadlock free [FD]" { mkL T_deadlockFreeFD}
-<0> "deadlock free [F]" { mkL T_deadlockFreeF}
-<0> "deadlock free" { mkL T_deadlockFreeFD}
-<0> "deterministic free [FD]" { mkL T_deterministicFreeFD}
-<0> "deterministic free [F]" { mkL T_deterministicFreeF}
-<0> "deterministic free" { mkL T_deterministicFreeFD}
-<0> "divergence free" { mkL T_livelockFree}
-<0> "livelock free" { mkL T_livelockFree}
-<0> ":[" { mkL T_option }
+<0> "tau" $whitechar* "priority" $whitechar* { mkL T_TauPriorityOver}
+<0> ":[" $whitechar* "deadlock" $whitechar* "free" $whitechar* "[FD]" $whitechar* @stringOp? "]" { mkL T_deadlockFreeFD }
+<0> ":[" $whitechar* "deadlock" $whitechar* "free" $whitechar* "[F]" $whitechar* @stringOp? "]"{ mkL T_deadlockFreeF }
+<0> ":[" $whitechar* "deadlock" $whitechar* "free" $whitechar* @stringOp? "]" { mkL T_deadlockFreeFD}
+<0> ":[" $whitechar* "deterministic" $whitechar* "free" $whitechar* "[FD]" $whitechar* @stringOp? "]" { mkL T_deterministicFreeFD}
+<0> ":[" $whitechar* "deterministic" $whitechar* "free" $whitechar* "[F]" $whitechar* @stringOp? "]" { mkL T_deterministicFreeF}
+<0> ":[" $whitechar* "deterministic" $whitechar* "free" $whitechar* @stringOp? "]" { mkL T_deterministicFreeFD}
+<0> ":[" $whitechar* "divergence" $whitechar* "free" $whitechar* @string* "]" { mkL T_livelockFree}
+<0> ":[" $whitechar* "livelock" $whitechar* "free" $whitechar* @string* "]" { mkL T_livelockFree}
+-- <0> ":[" { mkL T_option }
 <0> "]:" { mkL T_clOption }
 -- symbols
 <0> "^" { mkL T_hat }

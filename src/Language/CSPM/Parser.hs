@@ -875,6 +875,7 @@ topDeclList = do
     p1 <- parseExp
     op <- anyAssertTOp
     p2 <- parseExp
+    token T_option
     token T_TauPriorityOver
     token T_clOption
     set <- parseExp
@@ -883,17 +884,15 @@ topDeclList = do
   assertIntFDRChecks = withLoc $ do
     token T_assert
     p <- parseExp
-    token T_option
     model <- fdrModel 
-    token T_closeBrack
     return $ AssertInternalFDRChecks p model
  
 
   parseAssert :: PT LAssertExp
-  parseAssert = (try assertIntFDRChecks) 
-             <|> (try assertTauPrio)
-            <|> (try assertListRef)
-            <|> assertBool
+  parseAssert =  (try assertIntFDRChecks) 
+             -- <|> (try assertTauPrio)
+            -- <|> (try assertListRef)
+             <|> assertBool
 
   parseAssertDecl :: PT LDecl
   parseAssertDecl = withLoc $ do

@@ -155,8 +155,8 @@ data Exp
   | ProcRepInterleave LCompGenList LProc
   | ProcRepAParallel LCompGenList LExp LProc
   | ProcRepLinkParallel LCompGenList LLinkList LProc
-  | ProcRepSharing LCompGenList LExp LProc
-  | PrefixExp LExp [LCommField] LProc
+  | ProcRepSharing LCompGenList LExp LProc--
+  | PrefixExp LExp [LCommField] LProc--
 -- only used in later stages
   | PrefixI FreeNames LExp [LCommField] LProc
   | LetI [LDecl] FreeNames LExp -- freenames of all localBound names
