@@ -367,7 +367,10 @@ declLHS d = case unLabel d of
   PatBind pat _ -> rnPattern pat
    --todo : proper type-checking/counting number of Funargs
   FunBind i _ -> bindNewUniqueIdent (FunID (-1)) i
-  Assert {} -> nop
+  AssertBool {} -> nop
+  AssertListRef {} -> nop
+  AssertTauPrio {} -> nop
+  AssertInternalFDRChecks {} -> nop
   Transparent tl -> mapM_ (bindNewTopIdent TransparentID) tl
   SubType i clist -> do
     bindNewTopIdent DataTypeID i   -- fix this
@@ -393,10 +396,10 @@ declRHS :: LDecl -> RM ()
 declRHS d = case unLabel d of
   PatBind _ e -> rnExp e
   FunBind _ cases -> mapM_ rnFunCase cases
-  Assert p -> nop --error "TODO: import changes in this module"
-{-  AssertRef p1 _ p2 (Nothing) -> rnExp p1 >> rnExp p2
-  AssertRef p1 _ p2 (Just prio) -> rnExp p1 >> rnExp p2 >> rnExp prio
-  AssertBool e -> rnExp e -}
+  AssertBool e -> rnExp e
+  AssertListRef p1 _ p2 -> rnExp p1 >> rnExp p2
+  AssertTauPrio p1 _ p2 e -> rnExp p1 >> rnExp p2 >> rnExp e
+  AssertInternalFDRChecks p _ -> rnExp p
   Transparent _ -> nop  
   SubType  _ clist -> forM_ clist rnConstructorRHS
   DataType _ clist -> forM_ clist rnConstructorRHS

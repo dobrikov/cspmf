@@ -45,6 +45,7 @@ module Language.CSPM.Frontend
   ,compilePattern
   ,version
   ,pp
+  ,compareAST
 )
 where
 
@@ -56,7 +57,7 @@ import Language.CSPM.AST (Labeled(..),LModule,Module(..),Bindings)
 import Language.CSPM.SrcLoc (SrcLoc(..))
 import Language.CSPM.AstUtils 
   (removeSourceLocations,removeModuleTokens,removeParens,relabelAst
-  ,unUniqueIdent,showAst,computeFreeNames)
+  ,unUniqueIdent,showAst,computeFreeNames, compareAST)
 
 import qualified Language.CSPM.LexHelper as Lexer
   (lexInclude,lexPlain,filterIgnoredToken)

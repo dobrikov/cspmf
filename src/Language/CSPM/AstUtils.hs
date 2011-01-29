@@ -19,6 +19,7 @@ module Language.CSPM.AstUtils
   ,showAst
   ,relabelAst
   ,computeFreeNames
+  ,compareAST
   )
 where
 
@@ -32,6 +33,7 @@ import Data.Data
 import Data.Generics.Schemes (everywhere,listify)
 import Data.Generics.Aliases (mkT,extQ)
 import Data.Generics.Basics (gmapQ,toConstr,showConstr)
+import Data.Generics.Twins (geq)
 
 -- | 'removeSourceLocations' sets all locationsInfos to 'NoLocation'
 removeSourceLocations :: LModule  -> LModule  
@@ -90,7 +92,11 @@ showAst ast = gshow ast
        ++ concat (gmapQ ((++) " " . gshow) t)
        ++ ")"
 
-
+-- | Compares two ASTs.
+-- | Useful for comparing the AST generated from the source code
+-- | and the AST generated from the pretty printed code.
+compareAST :: LModule -> LModule -> Bool
+compareAST ast1 ast2 = geq ast1 ast2
 
 -- | Compute the "FreeNames" of an Expression.
 -- | This function does only work after renaming has been done.

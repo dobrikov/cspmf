@@ -852,7 +852,7 @@ topDeclList = do
   topDecl =
         funBind
     <|> singleList patBind
-    <|> singleList parseAssertDecl
+    <|> singleList parseAssert
     <|> singleList parseTransparent
     <|> singleList parseDatatype
     <|> singleList parseSubtype
@@ -888,18 +888,12 @@ topDeclList = do
     model <- fdrModel 
     return $ AssertInternalFDRChecks p model
  
-
-  parseAssert :: PT LAssertExp
+  parseAssert :: PT LDecl
   parseAssert =  try assertTauPrio 
              <|> try assertListRef
              <|> try assertIntFDRChecks
              <|> assertBool
              <?> "assert Declaration"
-
-  parseAssertDecl :: PT LDecl
-  parseAssertDecl = withLoc $ do
-     assertExp <- parseAssert
-     return $ Assert assertExp
 
   parseTransparent :: PT LDecl
   parseTransparent = withLoc $ do
