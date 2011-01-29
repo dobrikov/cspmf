@@ -135,9 +135,7 @@ data PrimToken
   | T_TauPriorityOver
   | T_deadlockFreeF
   | T_deadlockFreeFD
-  | T_deterministicFreeF
-  | T_deterministicFreeFD
+  | T_deterministicF
+  | T_deterministicFD
   | T_livelockFree
-  | T_option
-  | T_clOption
   deriving (Show,Eq,Ord,Typeable, Data)

@@ -254,9 +254,9 @@ instance PP AssertExp where
 instance PP FDRModels where
   pp DeadlockFreeF = text ":[ deadlock free [F] ]"
   pp DeadlockFreeFD = text ":[ deadlock free [FD] ]"
-  pp DeterministicFreeF = text ":[ deterministic free [F] ]"
-  pp DeterministicFreeFD = text ":[ deterministic free [FD] ]"
-  pp LivelockFree = text ":[ divergence free ]"
+  pp DeterministicF = text ":[ deterministic [F] ]"
+  pp DeterministicFD = text ":[ deterministic [FD] ]"
+  pp LivelockFree = text ":[ livelock free ]"
 
 instance PP AssertOp where 
   pp F_Trace = text "[T="

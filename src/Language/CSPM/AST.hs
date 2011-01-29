@@ -335,8 +335,8 @@ type LFDRModels = Labeled FDRModels
 data FDRModels
  =   DeadlockFreeF
    | DeadlockFreeFD
-   | DeterministicFreeF
-   | DeterministicFreeFD
+   | DeterministicF
+   | DeterministicFD
    | LivelockFree
   deriving (Show,Eq,Ord,Typeable, Data)
 

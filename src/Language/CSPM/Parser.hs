@@ -172,13 +172,15 @@ anyAssertOp = withLoc $ do
     T_revivalTesting -> return F_RevivalTesting
     T_revivalTestingDiv -> return F_RevivalTestingDiv
     T_tauPriorityOp -> return F_TauPriorityOp
+    _              -> fail "Unexpected Token"
 
 anyAssertTOp :: PT LAssertTOp
 anyAssertTOp = withLoc $ do 
   tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
   case tok of
     T_trace  -> return F_TTrace
-    T_Refine  -> return F_Refine
+    T_Refine -> return F_Refine
+    _        -> fail "Unexpected Token"
 
 fdrModel :: PT LFDRModels
 fdrModel = withLoc $ do 
@@ -186,9 +188,10 @@ fdrModel = withLoc $ do
   case tok of
     T_deadlockFreeF -> return DeadlockFreeF
     T_deadlockFreeFD  -> return DeadlockFreeFD
-    T_deterministicFreeF -> return DeterministicFreeF
-    T_deterministicFreeFD -> return DeterministicFreeFD
+    T_deterministicF -> return DeterministicF
+    T_deterministicFD -> return DeterministicFD
     T_livelockFree -> return LivelockFree
+    _              -> fail "Unexpected Token"
   
 anyBuiltIn :: PT Const
 anyBuiltIn = do
@@ -875,9 +878,7 @@ topDeclList = do
     p1 <- parseExp
     op <- anyAssertTOp
     p2 <- parseExp
-    token T_option
     token T_TauPriorityOver
-    token T_clOption
     set <- parseExp
     return $ AssertTauPrio p1 op p2 set
 
@@ -889,10 +890,11 @@ topDeclList = do
  
 
   parseAssert :: PT LAssertExp
-  parseAssert =  (try assertIntFDRChecks) 
-             -- <|> (try assertTauPrio)
-            -- <|> (try assertListRef)
+  parseAssert =  try assertTauPrio 
+             <|> try assertListRef
+             <|> try assertIntFDRChecks
              <|> assertBool
+             <?> "assert Declaration"
 
   parseAssertDecl :: PT LDecl
   parseAssertDecl = withLoc $ do

@@ -42,13 +42,18 @@ $idchar    = [$alpha $digit \' \_]
 @string  = $graphic # [\"\\] | " " $whitechar
 @stringOp = $graphic1 # [\"\\] | " " $whitechar
 @assertExts = $whitechar+ "[FD]" | $whitechar+ "[F]" | ""
-@assertCore = "deterministic" @assertExts?
-            | "livelock" $whitechar+ "free" @assertExts?
-            | "deadlock" $whitechar+ "free" @assertExts?
-            | "divergence" $whitechar+ "free" @assertExts?
-            | "livelock-free" @assertExts?  -- also seen with - 
-            | "deadlock-free" @assertExts?
-            | "divergence-free" @assertExts?
+@assertCoreDeadlock    =  "deadlock" $whitechar+ "free" | "deadlock-free"
+@assertCoreDeadlockF   = @assertCoreDeadlock $whitechar+ "[F]"
+@assertCoreDeadlockFD  = @assertCoreDeadlock $whitechar+ "[FD]"
+@assertCoreDeterm      = "deterministic"
+@assertCoreDetermF     = "deterministic" $whitechar+ "[F]"
+@assertCoreDetermFD    = "deterministic" $whitechar+ "[FD]"
+@assertCoreDivergence  = "divergence" $whitechar+ "free" @assertExts? 
+                       | "divergence-free" @assertExts?
+@assertCoreLivelock    = "livelock" $whitechar+ "free" @assertExts? 
+                       | "livelock-free" @assertExts?  -- also seen with -
+@assertTau             = "tau" $whitechar+ "priority" $whitechar+ "over" 
+@assertExts1 = @stringOp | @assertExts
 
 csp :-
 
@@ -110,18 +115,15 @@ csp :-
 <0> "[V=" { mkL T_revivalTesting }
 <0> "[VD=" { mkL T_revivalTestingDiv }
 <0> "[TP=" { mkL T_tauPriorityOp }
--- the right version should be "tau priority over"
-<0> "tau" $whitechar* "priority" $whitechar* { mkL T_TauPriorityOver}
-<0> ":[" $whitechar* "deadlock" $whitechar* "free" $whitechar* "[FD]" $whitechar* @stringOp? "]" { mkL T_deadlockFreeFD }
-<0> ":[" $whitechar* "deadlock" $whitechar* "free" $whitechar* "[F]" $whitechar* @stringOp? "]"{ mkL T_deadlockFreeF }
-<0> ":[" $whitechar* "deadlock" $whitechar* "free" $whitechar* @stringOp? "]" { mkL T_deadlockFreeFD}
-<0> ":[" $whitechar* "deterministic" $whitechar* "free" $whitechar* "[FD]" $whitechar* @stringOp? "]" { mkL T_deterministicFreeFD}
-<0> ":[" $whitechar* "deterministic" $whitechar* "free" $whitechar* "[F]" $whitechar* @stringOp? "]" { mkL T_deterministicFreeF}
-<0> ":[" $whitechar* "deterministic" $whitechar* "free" $whitechar* @stringOp? "]" { mkL T_deterministicFreeFD}
-<0> ":[" $whitechar* "divergence" $whitechar* "free" $whitechar* @string* "]" { mkL T_livelockFree}
-<0> ":[" $whitechar* "livelock" $whitechar* "free" $whitechar* @string* "]" { mkL T_livelockFree}
--- <0> ":[" { mkL T_option }
-<0> "]:" { mkL T_clOption }
+<0> ":[" $whitechar* @assertTau $whitechar* "]:"           { mkL T_TauPriorityOver}
+<0> ":[" $whitechar* @assertCoreDeadlockFD $whitechar* "]" { mkL T_deadlockFreeFD }
+<0> ":[" $whitechar* @assertCoreDeadlockF  $whitechar* "]" {mkL T_deadlockFreeF }
+<0> ":[" $whitechar* @assertCoreDeadlock   $whitechar* "]" { mkL T_deadlockFreeFD}
+<0> ":[" $whitechar* @assertCoreDetermFD   $whitechar* "]" { mkL T_deterministicFD}
+<0> ":[" $whitechar* @assertCoreDetermF    $whitechar* "]" { mkL T_deterministicF}
+<0> ":[" $whitechar* @assertCoreDeterm     $whitechar* "]" { mkL T_deterministicFD}
+<0> ":[" $whitechar* @assertCoreDivergence $whitechar* "]" { mkL T_livelockFree}
+<0> ":[" $whitechar* @assertCoreLivelock   $whitechar* "]" { mkL T_livelockFree}
 -- symbols
 <0> "^" { mkL T_hat }
 <0> "#" { mkL T_hash }
