@@ -1,5 +1,5 @@
 Name:                CSPM-Frontend
-Version:             0.5.1.0
+Version:             0.6.0.0
 
 Synopsis:            A CSP-M parser compatible with FDR-2.83
 
@@ -17,7 +17,7 @@ Author:              Marc Fontaine
 Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>
 Homepage:            http://www.stups.uni-duesseldorf.de/~fontaine/csp
 Stability:           maintained
-Tested-With:         GHC == 7.0.0
+Tested-With:         GHC == 7.0.1
 
 cabal-Version:       >= 1.8
 build-type: Simple
@@ -40,10 +40,9 @@ library
     ,array >= 0.3 && < 0.4
     ,parsec >= 2.1.0.0 && < 3.0
     ,old-time >= 1.0  && < 1.1
---    ,template-haskell >= 2.4 && < 2.5
-    ,template-haskell
+    ,template-haskell >= 2.5 && < 2.6
     ,pretty >= 1.0 && < 1.1
-    ,mtl >= 1.1
+    ,mtl >= 2.0 && < 2.1
     ,syb >= 0.3 && < 0.4
 
   GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s -Wall
@@ -61,11 +60,11 @@ library
     Language.CSPM.TokenClasses
     Language.CSPM.PrettyPrinter
     Language.CSPM.PatternCompiler
-    Language.CSPM.TestScript
+--    Language.CSPM.TestScript
     Text.ParserCombinators.Parsec.ExprM
   Other-modules:
     Paths_CSPM_Frontend
- --   Language.CSPM.Version
+    Language.CSPM.Version
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper
     Language.CSPM.LexHelper
