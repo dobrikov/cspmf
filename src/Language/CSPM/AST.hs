@@ -255,7 +255,7 @@ data Decl
   | Channel [LIdent] (Maybe LTypeDef)
   | Print LExp
 --  | FunBindI LIdent FreeNames [FunCase]
-  deriving ( Eq, Ord, Show,Typeable, Data)
+  deriving (Show,Eq,Ord,Typeable, Data)
 
 {-
 We want to use                1) type FunArgs = [LPattern]

@@ -42,7 +42,7 @@ library
     ,old-time >= 1.0  && < 1.1
     ,template-haskell >= 2.5 && < 2.6
     ,pretty >= 1.0 && < 1.1
-    ,mtl >= 2.0 && < 2.1
+    ,mtl (>= 2.0 && < 2.1 ) || (>= 1.1 && < 1.2)
     ,syb >= 0.3 && < 0.4
 
   GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s -Wall
