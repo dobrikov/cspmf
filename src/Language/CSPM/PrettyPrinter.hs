@@ -76,10 +76,7 @@ printCase c =
 instance PP Decl where
   pp (PatBind     pat    expr)         = pp pat  <+> equals <+> (pp expr)
   pp (FunBind     ident  lcase)       = printFunBind ident lcase
-  pp (AssertBool expr) = pp expr
-  pp (AssertListRef expr1 op expr2) = text "assert" <+> pp expr1 <+> pp op <+> pp expr2
-  pp (AssertTauPrio expr1 op expr2 expr3) = text "assert" <+> pp expr1 <+> pp op <+> pp expr2 <+> text ":[tau priority over]:" <+> pp expr3
-  pp (AssertInternalFDRChecks expr m) = text "assert" <+> pp expr <+> pp m 
+  pp (Assert a) = text "assert" <+> pp a
   pp (Transparent ids)             = text "transparent" <+> (hsep $ punctuate comma (map (printIdent . unLabel) ids))
   pp (SubType     ident  constrs)     = text "subtype"     <+> printIdent (unLabel ident) <+> equals 
                                         <+> (vcat $ punctuate (text "|") (map printConstr (map unLabel constrs)))
@@ -247,6 +244,12 @@ printIdent ident =
   case ident of 
    Ident _  -> text $ unIdent ident
    UIdent _ -> text $ realName $ unUIdent ident 
+
+instance PP AssertExp where
+  pp (AssertBool expr) = pp expr
+  pp (AssertListRef expr1 op expr2) = pp expr1 <+> pp op <+> pp expr2
+  pp (AssertTauPrio expr1 op expr2 expr3) = pp expr1 <+> pp op <+> pp expr2 <+> text ":[tau priority over]:" <+> pp expr3
+  pp (AssertInternalFDRChecks expr m) = pp expr <+> pp m 
 
 instance PP FDRModels where
   pp DeadlockFreeF = text ":[ deadlock free [F] ]"

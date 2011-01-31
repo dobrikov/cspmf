@@ -247,10 +247,7 @@ type LDecl = Labeled Decl
 data Decl
   = PatBind LPattern LExp
   | FunBind LIdent [FunCase]
-  | AssertBool LExp
-  | AssertListRef LExp LAssertOp LExp
-  | AssertTauPrio LExp LAssertTOp LExp LExp
-  | AssertInternalFDRChecks LExp LFDRModels
+  | Assert LAssertExp
   | Transparent [LIdent]
   | SubType LIdent [LConstructor]
   | DataType LIdent [LConstructor]
@@ -316,6 +313,14 @@ unsafeMkLabeledNode i loc node
 
 class (Monad m) => NodeIdSupply m where
   getNewNodeId :: m NodeId
+
+type LAssertExp = Labeled AssertExp
+data AssertExp 
+ =  AssertBool LExp
+  | AssertListRef LExp LAssertOp LExp
+  | AssertTauPrio LExp LAssertTOp LExp LExp
+  | AssertInternalFDRChecks LExp LFDRModels
+  deriving (Show,Typeable,Data)
 
 type LFDRModels = Labeled FDRModels
 data FDRModels
