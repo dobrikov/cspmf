@@ -96,7 +96,7 @@ showAst ast = gshow ast
 -- | Useful for comparing the AST generated from the source code
 -- | and the AST generated from the pretty printed code.
 compareAST :: LModule -> LModule -> Bool
-compareAST ast1 ast2 = geq ast1 ast2
+compareAST ast1 ast2 = ast1 == ast2
 
 -- | Compute the "FreeNames" of an Expression.
 -- | This function does only work after renaming has been done.

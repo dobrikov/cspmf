@@ -40,20 +40,19 @@ $idchar    = [$alpha $digit \' \_]
 @hexadecimal = $hexit+
 
 @string  = $graphic # [\"\\] | " " $whitechar
-@stringOp = $graphic1 # [\"\\] | " " $whitechar
+@alphaString = [$alpha $digit]
 @assertExts = $whitechar+ "[FD]" | $whitechar+ "[F]" | ""
-@assertCoreDeadlock    =  "deadlock" $whitechar+ "free" | "deadlock-free"
-@assertCoreDeadlockF   = @assertCoreDeadlock $whitechar+ "[F]"
-@assertCoreDeadlockFD  = @assertCoreDeadlock $whitechar+ "[FD]"
-@assertCoreDeterm      = "deterministic"
-@assertCoreDetermF     = "deterministic" $whitechar+ "[F]"
-@assertCoreDetermFD    = "deterministic" $whitechar+ "[FD]"
-@assertCoreDivergence  = "divergence" $whitechar+ "free" @assertExts? 
-                       | "divergence-free" @assertExts?
-@assertCoreLivelock    = "livelock" $whitechar+ "free" @assertExts? 
-                       | "livelock-free" @assertExts?  -- also seen with -
-@assertTau             = "tau" $whitechar+ "priority" $whitechar+ "over" 
-@assertExts1 = @stringOp | @assertExts
+@assertCoreDeadlock    = "deadlock" $whitechar+ "free" ($whitechar+ @alphaString+)* | "deadlock-free" ($whitechar+ @alphaString+)* 
+@assertCoreDeadlockF   = @assertCoreDeadlock $whitechar+ "[F]" ($whitechar+ @alphaString+)*
+@assertCoreDeadlockFD  = @assertCoreDeadlock $whitechar+ "[FD]" ($whitechar+ @alphaString+)* 
+@assertCoreDeterm      = "deterministic" ($whitechar+ @alphaString+)* 
+@assertCoreDetermF     = "deterministic" $whitechar+ "[F]" ($whitechar+ @alphaString+)* 
+@assertCoreDetermFD    = "deterministic" $whitechar+ "[FD]" ($whitechar+ @alphaString+)* 
+@assertCoreDivergence  = "divergence" $whitechar+ "free" @assertExts? ($whitechar+ @alphaString+)* 
+                       | "divergence-free" @assertExts? ($whitechar+ @alphaString+)* 
+@assertCoreLivelock    = "livelock" $whitechar+ "free" @assertExts? ($whitechar+ @alphaString+)* 
+                       | "livelock-free" @assertExts? ($whitechar+ @alphaString+)*  -- also seen with -
+@assertTau             = "tau" $whitechar+ "priority" ($whitechar+ @alphaString+)*
 
 csp :-
 
@@ -64,14 +63,14 @@ csp :-
 <0> "subtype"     { mkL T_subtype }
 <0> "assert"      { mkL T_assert }
 <0> "pragma"      { mkL T_pragma }
-<0> "transparent"    { mkL T_transparent }
+<0> "transparent" { mkL T_transparent }
 <0> "external"    { mkL T_external }
-<0> "print"    { mkL T_print }
-<0> "if"    { mkL T_if }
-<0> "then"    { mkL T_then }
-<0> "else"    { mkL T_else }
-<0> "let"    { mkL T_let }
-<0> "within"    { mkL T_within }
+<0> "print"       { mkL T_print }
+<0> "if"          { mkL T_if }
+<0> "then"        { mkL T_then }
+<0> "else"        { mkL T_else }
+<0> "let"         { mkL T_let }
+<0> "within"      { mkL T_within }
 
 -- CSP-M builtIns
 

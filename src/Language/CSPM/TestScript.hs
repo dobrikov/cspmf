@@ -8,6 +8,7 @@ import Language.CSPM.Utils(parseFile)
 import Language.CSPM.PrettyPrinter(dropCsp, toPrettyString, runPretty)
 import Language.CSPM.AstUtils(removeParens, removeModuleTokens, removeSourceLocations, unUniqueIdent, compareAST)
 import Language.CSPM.SrcLoc
+import Language.CSPM.Parser(parse)
 
 simplifyAst :: LModule -> LModule
 simplifyAst ast = removeParens $ removeSourceLocations $ removeModuleTokens ast

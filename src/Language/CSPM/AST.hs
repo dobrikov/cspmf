@@ -30,7 +30,7 @@ type Bindings = Map String UniqueIdent
 type FreeNames = IntMap UniqueIdent
 
 newtype NodeId = NodeId {unNodeId :: Int}
-  deriving (Show,Eq,Ord,Enum,Ix, Typeable, Data)
+  deriving ( Eq, Ord, Show,Enum,Ix, Typeable, Data)
 
 mkNodeId :: Int -> NodeId
 mkNodeId = NodeId
@@ -39,7 +39,7 @@ data Labeled t = Labeled {
     nodeId :: NodeId
    ,srcLoc  :: SrcLoc
    ,unLabel :: t
-   } deriving (Typeable, Data,Show)
+   } deriving ( Eq, Ord, Typeable, Data,Show)
 
 -- | Wrap a node with a dummyLabel
 -- | todo: redo we need a specal case in DataConstructor Labeled
@@ -60,7 +60,7 @@ type LIdent = Labeled Ident
 data Ident 
   = Ident  {unIdent :: String}
   | UIdent {unUIdent :: UniqueIdent}
-  deriving (Show,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
 
 identId :: LIdent -> Int
 identId = uniqueIdentId . unUIdent . unLabel
@@ -75,28 +75,28 @@ data UniqueIdent = UniqueIdent
   ,newName     :: String
   ,prologMode  :: PrologMode
   ,bindType    :: BindType
-  } deriving (Show,Typeable, Data)
+  } deriving ( Eq, Ord, Show,Typeable, Data)
 
 data IDType 
   = VarID | ChannelID | NameTypeID | FunID Int
   | ConstrID String | DataTypeID | TransparentID
-  deriving (Show,Eq,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
 
 {- actually BindType and PrologMode are semantically aquivalent -}
 data BindType = LetBound | NotLetBound
-  deriving (Show,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
 
 --isLetBound :: BindType -> Bool
 --isLetBound x = x==LetBound
 
 data PrologMode = PrologGround | PrologVariable
-  deriving (Show,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
 
 type LModule = Labeled Module
 data Module = Module {
    moduleDecls :: [LDecl]
   ,moduleTokens :: Maybe [Token]
-  } deriving (Show,Typeable, Data)
+  } deriving ( Eq, Ord, Show,Typeable, Data)
 
 
 {-
@@ -156,36 +156,36 @@ data Exp
   | LetI [LDecl] FreeNames LExp -- freenames of all localBound names
   | LambdaI FreeNames [LPattern] LExp
   | ExprWithFreeNames FreeNames LExp
-  deriving (Show, Typeable, Data)
+  deriving ( Eq, Ord, Show, Typeable, Data)
 
 type LRange = Labeled Range
 data Range
   = RangeEnum [LExp]
   | RangeClosed LExp LExp
   | RangeOpen LExp
-  deriving (Show, Typeable, Data)
+  deriving ( Eq, Ord, Show, Typeable, Data)
 
 type LCommField = Labeled CommField
 data CommField
   =  InComm LPattern
   | InCommGuarded LPattern LExp
   | OutComm LExp
-  deriving (Show,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
 
 type LLinkList = Labeled LinkList
 data LinkList
   = LinkList [LLink]
   | LinkListComprehension [LCompGen] [LLink]
-  deriving (Show,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
 
 type LLink = Labeled Link
-data Link = Link LExp LExp deriving (Show,Typeable, Data)
+data Link = Link LExp LExp deriving ( Eq, Ord, Show,Typeable, Data)
 
 type LRename = Labeled Rename
-data Rename = Rename LExp LExp deriving (Show,Typeable, Data)
+data Rename = Rename LExp LExp deriving ( Eq, Ord, Show,Typeable, Data)
 
 type LBuiltIn = Labeled BuiltIn
-data BuiltIn = BuiltIn Const deriving (Show,Typeable, Data)
+data BuiltIn = BuiltIn Const deriving ( Eq, Ord, Show,Typeable, Data)
 
 lBuiltInToConst :: LBuiltIn -> Const
 lBuiltInToConst = h . unLabel where
@@ -196,7 +196,7 @@ type LCompGen = Labeled CompGen
 data CompGen
   = Generator LPattern LExp
   | Guard LExp
-  deriving (Show,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
 
 type LPattern = Labeled Pattern
 data Pattern
@@ -219,7 +219,7 @@ data Pattern
                 selectors :: Array Int Selector
                ,idents :: Array Int (Maybe LIdent) }
   | Selector Selector (Maybe LIdent)
-  deriving (Show,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
 
 {- a Selector is a path in a Pattern/Expression -}
 data Selector
@@ -241,7 +241,7 @@ data Selector
   | TailSel Selector
   | SliceSel Int Int Selector
   | SuffixSel Int Int Selector
-  deriving (Show, Typeable, Data)
+  deriving ( Eq, Ord, Show, Typeable, Data)
 
 type LDecl = Labeled Decl
 data Decl
@@ -255,7 +255,7 @@ data Decl
   | Channel [LIdent] (Maybe LTypeDef)
   | Print LExp
 --  | FunBindI LIdent FreeNames [FunCase]
-  deriving (Show,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
 
 {-
 We want to use                1) type FunArgs = [LPattern]
@@ -270,18 +270,18 @@ type FunArgs = [[LPattern]] -- CSPM confusion of currying/tuples
 data FunCase 
   = FunCase FunArgs LExp     -- osolete version
   | FunCaseI [LPattern] LExp   -- newVersion for interpreter
-  deriving (Show,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
 
 type LTypeDef = Labeled TypeDef
 data TypeDef
   = TypeTuple [LExp]
   | TypeDot [LExp]
-  deriving (Show,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
 
 type LConstructor = Labeled Constructor
 data Constructor
   = Constructor LIdent (Maybe LTypeDef) 
-  deriving (Show,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
 
 {-
 some helper functions
@@ -320,7 +320,7 @@ data AssertExp
   | AssertListRef LExp LAssertOp LExp
   | AssertTauPrio LExp LAssertTOp LExp LExp
   | AssertInternalFDRChecks LExp LFDRModels
-  deriving (Show,Typeable,Data)
+  deriving ( Eq, Ord, Show,Typeable,Data)
 
 type LFDRModels = Labeled FDRModels
 data FDRModels
@@ -329,13 +329,13 @@ data FDRModels
    | DeterministicF
    | DeterministicFD
    | LivelockFree
-  deriving (Show,Typeable,Data)
+  deriving ( Eq, Ord, Show,Typeable,Data)
 
 type LAssertTOp = Labeled AssertTOp 
 data AssertTOp
   =  F_TTrace
    | F_Refine
-  deriving (Show,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
 
 type LAssertOp = Labeled AssertOp
 data AssertOp 
@@ -347,7 +347,7 @@ data AssertOp
   | F_RevivalTesting
   | F_RevivalTestingDiv
   | F_TauPriorityOp
-  deriving (Show,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
 
 data Const
   = F_true
@@ -399,4 +399,4 @@ data Const
   | F_Hiding
   | F_Timeout
   | F_Interleave
-  deriving (Show,Typeable, Data)
+  deriving ( Eq, Ord, Show,Typeable, Data)
