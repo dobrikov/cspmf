@@ -3,13 +3,13 @@ Version:             0.3.0.0
 
 Description:
   This package constains a translation from a CSP-M AST to the representation
-  used by the ProB formal methods tool.
+  used by the ProB tool.
   This code is only interesting for ProB developers.
 
 License:             BSD3
 category:            Formal Methods
 License-File:        LICENSE
-Author:              2006-20010 Marc Fontaine
+Author:              2006-2011 Marc Fontaine
 Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>
 HomePage:            http://www.stups.uni-duesseldorf.de/ProB
 cabal-Version:  >= 1.8
