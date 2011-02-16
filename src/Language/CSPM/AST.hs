@@ -254,7 +254,6 @@ data Decl
   | NameType LIdent LTypeDef
   | Channel [LIdent] (Maybe LTypeDef)
   | Print LExp
---  | FunBindI LIdent FreeNames [FunCase]
   deriving (Show,Eq,Ord,Typeable, Data)
 
 {-
@@ -268,7 +267,7 @@ For now we just patch the AST Just before PatternCompilation
 -}
 type FunArgs = [[LPattern]] -- CSPM confusion of currying/tuples
 data FunCase 
-  = FunCase FunArgs LExp     -- osolete version
+  = FunCase FunArgs LExp       -- oldVersion (returned by parser)
   | FunCaseI [LPattern] LExp   -- newVersion for interpreter
   deriving ( Eq, Ord, Show,Typeable, Data)
 
