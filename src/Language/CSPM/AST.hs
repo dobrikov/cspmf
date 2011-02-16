@@ -86,9 +86,6 @@ data IDType
 data BindType = LetBound | NotLetBound
   deriving ( Eq, Ord, Show,Typeable, Data)
 
---isLetBound :: BindType -> Bool
---isLetBound x = x==LetBound
-
 data PrologMode = PrologGround | PrologVariable
   deriving ( Eq, Ord, Show,Typeable, Data)
 
@@ -142,7 +139,6 @@ data Exp
   | ProcLinkParallel LLinkList LProc LProc
   | ProcRenaming [LRename] (Maybe LCompGenList) LProc
   | ProcException LProc LExp LProc
---  | ProcRenamingComprehension [LRename] [LCompGen] LProc
   | ProcRepSequence LCompGenList LProc
   | ProcRepInternalChoice LCompGenList LProc
   | ProcRepExternalChoice LCompGenList LProc
@@ -282,36 +278,8 @@ data Constructor
   = Constructor LIdent (Maybe LTypeDef) 
   deriving ( Eq, Ord, Show,Typeable, Data)
 
-{-
-some helper functions
--}
-{- does not make sense if nodId should be unique -}
-instance Functor Labeled where
-  fmap f x = x {unLabel = f $ unLabel x }
-
 withLabel :: ( NodeId -> a -> b ) -> Labeled a -> Labeled b
 withLabel f x = x {unLabel = f (nodeId x) (unLabel x) }
-
-mkLabeledNode :: (NodeIdSupply m) => SrcLoc -> t -> m (Labeled t)
-mkLabeledNode loc node = do
-  i <- getNewNodeId
-  return $ Labeled {
-    nodeId = i
-   ,srcLoc = loc
-   ,unLabel = node }
-
-{-
--- user must supply a unique NodeId
-unsafeMkLabeledNode :: NodeId -> SrcLoc -> t -> Labeled t
-unsafeMkLabeledNode i loc node
-  = Labeled {
-    nodeId = i
-   ,srcLoc = loc
-   ,unLabel = node }
--}
-
-class (Monad m) => NodeIdSupply m where
-  getNewNodeId :: m NodeId
 
 type LAssertExp = Labeled AssertExp
 data AssertExp 

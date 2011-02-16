@@ -53,7 +53,7 @@ getRenaming ::
   -> Either RenameError (Bindings,AstAnnotation UniqueIdent,AstAnnotation UniqueIdent)
 getRenaming m
   = case execStateT (rnModule m) initialRState of
-      Right state -> Right (visible state,identDefinition state, identUse state)
+      Right st -> Right (visible st,identDefinition st, identUse st)
       Left e -> Left e
 
 type RM x = StateT RState (Either RenameError) x

@@ -20,10 +20,9 @@ where
 
 import Language.CSPM.Parser (ParseError(..),parse)
 import Language.CSPM.Rename (RenameError(..),getRenaming,applyRenaming)
-import Language.CSPM.Token (Token, LexError(..))
+import Language.CSPM.Token (LexError(..))
 import Language.CSPM.AST (LModule)
-import qualified Language.CSPM.LexHelper as Lexer
-  (lexInclude,lexPlain,filterIgnoredToken)
+import qualified Language.CSPM.LexHelper as Lexer (lexInclude)
 
 import Control.Exception as Exception
 import System.CPUTime

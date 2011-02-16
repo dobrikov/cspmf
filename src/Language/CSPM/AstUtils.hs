@@ -24,7 +24,6 @@ module Language.CSPM.AstUtils
 where
 
 import Language.CSPM.AST hiding (prologMode)
-import qualified Language.CSPM.AST as AST
 import qualified Language.CSPM.SrcLoc as SrcLoc
 
 import Data.IntMap (IntMap)
@@ -32,8 +31,7 @@ import qualified Data.IntMap as IntMap
 import Data.Data
 import Data.Generics.Schemes (everywhere,listify)
 import Data.Generics.Aliases (mkT,extQ)
-import Data.Generics.Basics (gmapQ,toConstr,showConstr)
-import Data.Generics.Twins (geq)
+--import Data.Generics.Basics (gmapQ,toConstr,showConstr)
 
 -- | 'removeSourceLocations' sets all locationsInfos to 'NoLocation'
 removeSourceLocations :: LModule  -> LModule  

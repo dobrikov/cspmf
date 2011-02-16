@@ -15,7 +15,6 @@
 * add Autoversion to packet
 * add wrappers for functions that throw dynamic exceptions
 -}
-{-# OPTIONS_GHC -fglasgow-exts #-}
 module Language.CSPM.Parser
 (
   parse
@@ -89,15 +88,19 @@ countGt env = env {gtCounter = gtCounter env +1 }
 
 data GtMode=GtNoLimit | GtLimit Int deriving Show
 
-instance NodeIdSupply (GenParser Token PState) where
-  getNewNodeId = do
-    i <- gets nodeIdSupply
-    modify $ \s -> s { nodeIdSupply = succ $ nodeIdSupply s}
-    return i  
+mkLabeledNode :: SrcLoc -> t -> PT (Labeled t)
+mkLabeledNode loc node = do
+  i <- getStates nodeIdSupply
+  updateState $ \s -> s { nodeIdSupply = succ $ nodeIdSupply s}
+  return $ Labeled {
+    nodeId = i
+   ,srcLoc = loc
+   ,unLabel = node }
 
-instance MonadState PState (GenParser Token PState) where
-  get = getState
-  put = setState
+getStates :: (PState -> x) -> PT x
+getStates sel = do
+  st <- getState
+  return $ sel st
 
 getNextPos :: PT Token
 getNextPos = do
@@ -1069,12 +1072,6 @@ testFollows p = do
   _ <- setParserState oldState
   return res
 
-getStates :: (PState -> x) -> PT x
-getStates sel = do
-  st <- getState
-  return $ sel st
-
-
 primExUpdatePos :: SourcePos -> Token -> t -> SourcePos
 primExUpdatePos pos t@(Token {}) _
   = newPos (sourceName pos) (-1) (Token.unTokenId $ Token.tokenId t)
@@ -1090,15 +1087,16 @@ improve this
 anyToken :: PT Token
 anyToken = tokenPrimEx Token.showToken primExUpdatePos (Just primExUpdateState) Just
 
+notFollowedBy :: GenParser tok st Token -> GenParser tok st ()
 notFollowedBy p 
   = try (do{ c <- p; unexpected $ Token.showToken c }
          <|> return ()
         )
 
+notFollowedBy' :: GenParser tok st a -> GenParser tok st ()
 notFollowedBy' p
-  = try (do{ p; pzero }
-         <|> return ()
-        )
+  = try $ ( p >> pzero ) <|> return ()
+
 eof :: PT ()
 eof  = notFollowedBy anyToken <?> "end of input"
 

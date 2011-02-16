@@ -18,11 +18,9 @@ module Language.CSPM.PrettyPrinter
 where
 
 import Text.PrettyPrint
---import Data.Maybe
 
-import Language.CSPM.AST -- the module where the syntax for the AST defined is
-import Language.CSPM.Utils(parseFile) -- we use the parseFile function here for parsing of the generated cspm code
-import Language.CSPM.SrcLoc
+import Language.CSPM.AST
+import Language.CSPM.Utils(parseFile)
 
 -- give just the file name back
 dropCsp :: String -> String
