@@ -206,9 +206,9 @@ declList l = concatMap td l
 ta :: LAssertExp -> [Term]
 ta aexpr = case unLabel aexpr of
    AssertBool e -> [ nTerm "assertBool" [te e] ] 
-   AssertListRef p1 _ p2 -> [ nTerm "assertListRef" [te p1, te p2] ]      
-   AssertTauPrio p1 _ p2 e -> [ nTerm "assertTauPrio" [te p1, te p2, te e] ]
-   AssertInternalFDRChecks p modus -> [ nTerm "assertFdrCheck" [te p, aTerm $ show modus] ]
+   AssertRefine p1 m p2 -> [ nTerm "assertRef" [te p1, aTerm $ show m, te p2] ]      
+   AssertTauPrio p1 m p2 e -> [ nTerm "assertTauPrio" [te p1, aTerm $ show m, te p2, te e] ]
+   AssertModelCheck p m -> [ nTerm "assertModelCheck" [te p, aTerm $ show m] ]
 
 td :: LDecl -> [Term]
 td decl = case unLabel decl of
