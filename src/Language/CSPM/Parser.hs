@@ -163,26 +163,26 @@ builtInFunctions = Set.fromList
         T_elem, T_length, T_CHAOS ]
 -}
 
-anyAssertOp :: PT LAssertOp
-anyAssertOp = withLoc $ do 
+refineOp :: PT LRefineOp
+refineOp = withLoc $ do 
   tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
   case tok of
-    T_trace  -> return F_Trace
-    T_failure  -> return F_Failure
-    T_failureDivergence   -> return F_FailureDivergence
-    T_refusalTesting -> return F_RefusalTesting
-    T_refusalTestingDiv -> return F_RefusalTestingDiv
-    T_revivalTesting -> return F_RevivalTesting
-    T_revivalTestingDiv -> return F_RevivalTestingDiv
-    T_tauPriorityOp -> return F_TauPriorityOp
+    T_trace  -> return Trace
+    T_failure  -> return Failure
+    T_failureDivergence   -> return FailureDivergence
+    T_refusalTesting -> return RefusalTesting
+    T_refusalTestingDiv -> return RefusalTestingDiv
+    T_revivalTesting -> return RevivalTesting
+    T_revivalTestingDiv -> return RevivalTestingDiv
+    T_tauPriorityOp -> return TauPriorityOp
     _              -> fail "Unexpected Token"
 
-anyAssertTOp :: PT LAssertTOp
-anyAssertTOp = withLoc $ do 
+tauRefineOp :: PT LTauRefineOp
+tauRefineOp = withLoc $ do 
   tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
   case tok of
-    T_trace  -> return F_TTrace
-    T_Refine -> return F_Refine
+    T_trace  -> return TauTrace
+    T_Refine -> return TauRefine
     _        -> fail "Unexpected Token"
 
 fdrModel :: PT LFDRModels
@@ -867,9 +867,9 @@ topDeclList = do
   assertListRef = withLoc $ do
     token T_assert
     p1 <- parseExp
-    op <- anyAssertOp
+    op <- refineOp
     p2 <- parseExp
-    return $ AssertListRef p1 op p2
+    return $ AssertRefine p1 op p2
 
   assertBool = withLoc $ do
     token T_assert
@@ -879,7 +879,7 @@ topDeclList = do
   assertTauPrio = withLoc $ do
     token T_assert
     p1 <- parseExp
-    op <- anyAssertTOp
+    op <- tauRefineOp
     p2 <- parseExp
     token T_TauPriorityOver
     set <- parseExp
@@ -889,7 +889,7 @@ topDeclList = do
     token T_assert
     p <- parseExp
     model <- fdrModel 
-    return $ AssertInternalFDRChecks p model
+    return $ AssertModelCheck p model
  
   parseAssert :: PT LAssertExp
   parseAssert =  try assertTauPrio 

@@ -283,37 +283,37 @@ withLabel f x = x {unLabel = f (nodeId x) (unLabel x) }
 
 type LAssertExp = Labeled AssertExp
 data AssertExp 
- =  AssertBool LExp
-  | AssertListRef LExp LAssertOp LExp
-  | AssertTauPrio LExp LAssertTOp LExp LExp
-  | AssertInternalFDRChecks LExp LFDRModels
+  = AssertBool LExp
+  | AssertRefine LExp LRefineOp LExp
+  | AssertTauPrio LExp LTauRefineOp LExp LExp
+  | AssertModelCheck LExp LFDRModels
   deriving ( Eq, Ord, Show,Typeable,Data)
 
 type LFDRModels = Labeled FDRModels
 data FDRModels
- =   DeadlockFreeF
-   | DeadlockFreeFD
-   | DeterministicF
-   | DeterministicFD
-   | LivelockFree
+  = DeadlockFreeF
+  | DeadlockFreeFD
+  | DeterministicF
+  | DeterministicFD
+  | LivelockFree
   deriving ( Eq, Ord, Show,Typeable,Data)
 
-type LAssertTOp = Labeled AssertTOp 
-data AssertTOp
-  =  F_TTrace
-   | F_Refine
-  deriving ( Eq, Ord, Show,Typeable, Data)
+type LTauRefineOp = Labeled TauRefineOp 
+data TauRefineOp
+  = TauTrace
+  | TauRefine
+ deriving ( Eq, Ord, Show,Typeable, Data)
 
-type LAssertOp = Labeled AssertOp
-data AssertOp 
-  = F_Trace
-  | F_Failure
-  | F_FailureDivergence
-  | F_RefusalTesting
-  | F_RefusalTestingDiv
-  | F_RevivalTesting
-  | F_RevivalTestingDiv
-  | F_TauPriorityOp
+type LRefineOp = Labeled RefineOp
+data RefineOp 
+  = Trace
+  | Failure
+  | FailureDivergence
+  | RefusalTesting
+  | RefusalTestingDiv
+  | RevivalTesting
+  | RevivalTestingDiv
+  | TauPriorityOp
   deriving ( Eq, Ord, Show,Typeable, Data)
 
 data Const

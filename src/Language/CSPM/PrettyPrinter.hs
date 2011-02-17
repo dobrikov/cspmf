@@ -9,9 +9,7 @@
 -- Portability :  GHC-only
 -- 
 -- This module defines functions for pretty-printing the 
--- Abstract Syntax Tree to CSPM syntax. Support Instances and functions 
--- of all Typescases except the constructors AssertRef (in Decl), ProcSet (in Exp) and ProcException (in Exp)
--- TODO: better output view for the printed tree. Make printer to pretty printer :).
+-- Abstract Syntax Tree to CSPM syntax.
 -----------------------------------------------------------------------------
 
 module Language.CSPM.PrettyPrinter
@@ -245,9 +243,9 @@ printIdent ident =
 
 instance PP AssertExp where
   pp (AssertBool expr) = pp expr
-  pp (AssertListRef expr1 op expr2) = pp expr1 <+> pp op <+> pp expr2
+  pp (AssertRefine expr1 op expr2) = pp expr1 <+> pp op <+> pp expr2
   pp (AssertTauPrio expr1 op expr2 expr3) = pp expr1 <+> pp op <+> pp expr2 <+> text ":[tau priority over]:" <+> pp expr3
-  pp (AssertInternalFDRChecks expr m) = pp expr <+> pp m 
+  pp (AssertModelCheck expr m) = pp expr <+> pp m 
 
 instance PP FDRModels where
   pp DeadlockFreeF = text ":[ deadlock free [F] ]"
@@ -256,19 +254,19 @@ instance PP FDRModels where
   pp DeterministicFD = text ":[ deterministic [FD] ]"
   pp LivelockFree = text ":[ livelock free ]"
 
-instance PP AssertOp where 
-  pp F_Trace = text "[T="
-  pp F_Failure = text "[F="
-  pp F_FailureDivergence = text "[FD="
-  pp F_RefusalTesting = text "[R="
-  pp F_RefusalTestingDiv = text "[RD="
-  pp F_RevivalTesting = text "[V="
-  pp F_RevivalTestingDiv = text "[VD="
-  pp F_TauPriorityOp = text "[TP="
+instance PP RefineOp where 
+  pp Trace = text "[T="
+  pp Failure = text "[F="
+  pp FailureDivergence = text "[FD="
+  pp RefusalTesting = text "[R="
+  pp RefusalTestingDiv = text "[RD="
+  pp RevivalTesting = text "[V="
+  pp RevivalTestingDiv = text "[VD="
+  pp TauPriorityOp = text "[TP="
 
-instance PP AssertTOp where
-  pp F_TTrace = text "[T="
-  pp F_Refine = text "[="
+instance PP TauRefineOp where
+  pp TauTrace = text "[T="
+  pp TauRefine = text "[="
 
 instance PP Const where
 -- Booleans

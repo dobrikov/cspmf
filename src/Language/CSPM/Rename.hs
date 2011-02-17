@@ -395,9 +395,9 @@ declRHS d = case unLabel d of
   FunBind _ cases -> mapM_ rnFunCase cases
   Assert a -> case unLabel a of
       AssertBool e -> rnExp e
-      AssertListRef p1 _ p2 -> rnExp p1 >> rnExp p2
+      AssertRefine p1 _ p2 -> rnExp p1 >> rnExp p2
       AssertTauPrio p1 _ p2 e -> rnExp p1 >> rnExp p2 >> rnExp e
-      AssertInternalFDRChecks p _ -> rnExp p
+      AssertModelCheck p _ -> rnExp p
   Transparent _ -> nop  
   SubType  _ clist -> forM_ clist rnConstructorRHS
   DataType _ clist -> forM_ clist rnConstructorRHS
