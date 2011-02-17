@@ -203,20 +203,11 @@ tp pattern = case unLabel pattern of
 declList :: [LDecl] -> [Term]
 declList l = concatMap td l
 
-ta :: LAssertExp -> [Term]
-ta aexpr = case unLabel aexpr of
-   AssertBool e -> [ nTerm "assertBool" [te e] ] 
-   AssertRefine p1 m p2 -> [ nTerm "assertRef" [te p1, termShow m, te p2] ]      
-   AssertTauPrio p1 m p2 e -> [ nTerm "assertTauPrio" [te p1, termShow m, te p2, te e] ]
-   AssertModelCheck p m -> [ nTerm "assertModelCheck" [te p, termShow m] ]
-   where
-     termShow :: Show a => Labeled a -> Term
-     termShow = aTerm . show . unLabel 
 td :: LDecl -> [Term]
 td decl = case unLabel decl of
   PatBind pat e -> [ nTerm "bindval" [tp pat, te e, plLoc decl]]
   FunBind fkt caseList -> map (mkFunBind fkt) caseList
-  Assert e -> ta e
+  Assert e -> mkAssert e
   Transparent idList 
     -> [ nTerm "cspTransparent" [pList $ map plName idList] ]
   SubType i constrL  -> [ nTerm "subTypeDef"  [plNameTerm i, mkConstructorList constrL] ]
@@ -251,6 +242,20 @@ td decl = case unLabel decl of
     mkChannel :: Maybe LTypeDef -> LIdent -> Term
     mkChannel Nothing  i = nTerm "channel" [ plNameTerm i, nTerm "type" [term $ atom "dotUnitType" ]]
     mkChannel (Just t) i = nTerm "channel" [ plNameTerm i, nTerm "type" [mkTypeDef t]]
+
+    mkAssert :: LAssertDecl -> [Term]
+    mkAssert ass = case unLabel ass of
+      AssertBool e -> [ nTerm "assertBool" [te e] ]
+      AssertRefine p1 m p2
+        -> [ nTerm "assertRef" [te p1, termShow m, te p2, plLoc decl] ]
+      AssertTauPrio p1 m p2 e
+        -> [ nTerm "assertTauPrio" [te p1, termShow m, te p2, te e, plLoc decl] ]
+      AssertModelCheck p m
+        -> [ nTerm "assertModelCheck" [te p, termShow m] ]
+
+    termShow :: Show a => Labeled a -> Term
+    termShow = aTerm . show . unLabel
+
 
 
 plName :: LIdent -> Atom
