@@ -243,7 +243,7 @@ type LDecl = Labeled Decl
 data Decl
   = PatBind LPattern LExp
   | FunBind LIdent [FunCase]
-  | Assert LAssertExp
+  | Assert LAssertDecl
   | Transparent [LIdent]
   | SubType LIdent [LConstructor]
   | DataType LIdent [LConstructor]
@@ -281,8 +281,8 @@ data Constructor
 withLabel :: ( NodeId -> a -> b ) -> Labeled a -> Labeled b
 withLabel f x = x {unLabel = f (nodeId x) (unLabel x) }
 
-type LAssertExp = Labeled AssertExp
-data AssertExp 
+type LAssertDecl = Labeled AssertDecl
+data AssertDecl
   = AssertBool LExp
   | AssertRefine LExp LRefineOp LExp
   | AssertTauPrio LExp LTauRefineOp LExp LExp

@@ -241,7 +241,7 @@ printIdent ident =
    Ident _  -> text $ unIdent ident
    UIdent _ -> text $ realName $ unUIdent ident 
 
-instance PP AssertExp where
+instance PP AssertDecl where
   pp (AssertBool expr) = pp expr
   pp (AssertRefine expr1 op expr2) = pp expr1 <+> pp op <+> pp expr2
   pp (AssertTauPrio expr1 op expr2 expr3) = pp expr1 <+> pp op <+> pp expr2 <+> text ":[tau priority over]:" <+> pp expr3

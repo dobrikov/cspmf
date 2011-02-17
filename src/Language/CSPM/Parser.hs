@@ -891,7 +891,7 @@ topDeclList = do
     model <- fdrModel 
     return $ AssertModelCheck p model
  
-  parseAssert :: PT LAssertExp
+  parseAssert :: PT LAssertDecl
   parseAssert =  try assertTauPrio 
              <|> try assertListRef
              <|> try assertIntFDRChecks
