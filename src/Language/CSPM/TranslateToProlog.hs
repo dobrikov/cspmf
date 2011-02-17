@@ -22,7 +22,9 @@ main :: IO ()
 main = do
   args <- getArgs
   case args of
-    [inFile,outFile] -> translateToProlog inFile outFile
+    [inFile,outFile] -> do
+      translateToProlog inFile outFile
+      exitSuccess
     _ -> do
       putStrLn "Start with two arguments (input filename and output filename)"
       exitFailure
@@ -39,7 +41,7 @@ translateToProlog inFile outFile = do
                $ handleRenameError renameErrorHandler $ mainWork inFile
   (r :: Either SomeException ()) <- try $ writeFile outFile res
   case r of
-    Right () -> exitSuccess
+    Right () -> return ()
     Left err -> do
       putStrLn "output-file not written"
       putStrLn $ show err
