@@ -20,6 +20,7 @@ module Language.CSPM.AstUtils
   ,relabelAst
   ,computeFreeNames
   ,compareAST
+  ,getModuleAsserts
   )
 where
 
@@ -29,6 +30,7 @@ import qualified Language.CSPM.SrcLoc as SrcLoc
 import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.Data
+import Data.Maybe
 import Data.Generics.Schemes (everywhere,listify)
 import Data.Generics.Aliases (mkT,extQ)
 --import Data.Generics.Basics (gmapQ,toConstr,showConstr)
@@ -122,3 +124,12 @@ computeFreeNames syntax
     isFunDef :: Decl -> Bool
     isFunDef (FunBind {}) = True
     isFunDef _ = False
+
+
+-- | Get the assert declarations of a module
+getModuleAsserts :: LModule -> [LAssertDecl]
+getModuleAsserts = mapMaybe justAssert . moduleDecls . unLabel
+  where
+    justAssert decl = case unLabel decl of
+      Assert  a -> Just a
+      _ -> Nothing
