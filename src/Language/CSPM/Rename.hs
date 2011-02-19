@@ -2,8 +2,8 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Language.CSPM.Rename
--- Copyright   :  (c) Fontaine 2008
--- License     :  BSD
+-- Copyright   :  (c) Fontaine 2008 - 2011
+-- License     :  BSD3
 -- 
 -- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
 -- Stability   :  experimental
@@ -21,12 +21,13 @@ fix topleveldecls to toplevel ? -> allready done by parser
 -}
 module Language.CSPM.Rename
   (
-   getRenaming
+   renameModule
+  ,getRenaming
   ,applyRenaming
-  ,RenameError(..)
+  ,RenameError (..)
+  ,RenameInfo (..)
   )
 where
-
 import Language.CSPM.AST hiding (prologMode,bindType)
 import qualified Language.CSPM.AST as AST
 import qualified Language.CSPM.SrcLoc as SrcLoc
@@ -43,6 +44,19 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
 
+{-# DEPRECATED applyRenaming, getRenaming "use renameModule instead" #-}
+
+-- | 'renameModule' renames a 'Module'
+renameModule ::
+     LModule
+  -> Either RenameError (LModule, RenameInfo)
+renameModule m = do
+  st <- execStateT (rnModule m) initialRState
+  return
+    (
+     applyRenamingNew m (identDefinition st) (identUse st)
+    ,st)
+
 -- | 'getRenaming' computes two 'AstAnnotation's.
 -- The first one contains all the defining occurences of identifier
 -- The second one contains all the using occurences of identitier.
@@ -51,16 +65,15 @@ import qualified Data.IntMap as IntMap
 getRenaming ::
      LModule 
   -> Either RenameError (Bindings,AstAnnotation UniqueIdent,AstAnnotation UniqueIdent)
-getRenaming m
-  = case execStateT (rnModule m) initialRState of
-      Right st -> Right (visible st,identDefinition st, identUse st)
-      Left e -> Left e
+getRenaming m = do
+  st <- execStateT (rnModule m) initialRState
+  return (visible st,identDefinition st, identUse st)
 
-type RM x = StateT RState (Either RenameError) x
+type RM x = StateT RenameInfo (Either RenameError) x
 
 type UniqueName = Int
 
-data RState = RState
+data RenameInfo = RenameInfo
   {
     nameSupply :: UniqueName
 -- used to check that we do not bind a name twice inside a pattern
@@ -73,8 +86,8 @@ data RState = RState
    ,bindType   :: BindType
   } deriving Show
 
-initialRState :: RState
-initialRState = RState
+initialRState :: RenameInfo
+initialRState = RenameInfo
   {
     nameSupply    = 0
    ,localBindings = Map.empty
@@ -430,6 +443,14 @@ applyRenaming ::
   -> LModule
   -> LModule
 applyRenaming (_,defIdent,usedIdent) ast
+  = applyRenamingNew ast defIdent usedIdent
+
+applyRenamingNew ::
+     LModule 
+  -> AstAnnotation UniqueIdent
+  -> AstAnnotation UniqueIdent
+  -> LModule
+applyRenamingNew ast defIdent usedIdent
   = everywhere (mkT patchVarPat . mkT patchIdent) ast
   where
     patchIdent :: LIdent -> LIdent

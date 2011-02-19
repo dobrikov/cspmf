@@ -11,7 +11,8 @@
 -- Use Template Haskell to gather some info a compile-time.
 -- (Template-Haskell makes problems with haddock)
 {-# LANGUAGE TemplateHaskell #-}
-module Language.CSPM.Version
+
+module Language.CSPM.Version {-# DEPRECATED "This will be removed" #-}
 (
  version
 )
