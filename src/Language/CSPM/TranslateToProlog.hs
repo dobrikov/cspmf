@@ -64,11 +64,10 @@ mainWork fileName = do
   printDebug $ "parsetime : " ++ showTime(time_have_ast - time_have_tokens)
   
   time_start_renaming <- getCPUTime
-  renaming <- eitherToExc $ getRenaming ast
+  (astNew,renaming) <- eitherToExc $ renameModule ast
   let
-    astNew = applyRenaming renaming ast
     plCode = cspToProlog astNew
-    symbolTable = mkSymbolTable $ (\(_,x,_) -> x) renaming
+    symbolTable = mkSymbolTable $ identDefinition renaming
   output <- evaluate $ show $ vcat [ 
       mkResult "ok" "" 0 0 0
      ,plCode
