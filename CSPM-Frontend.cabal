@@ -1,5 +1,5 @@
 Name:                CSPM-Frontend
-Version:             0.6.0.2
+Version:             0.6.5.0
 
 Synopsis:            A CSP-M parser compatible with FDR-2.91
 
@@ -39,8 +39,6 @@ library
     ,containers >= 0.4 && < 0.5
     ,array >= 0.3 && < 0.4
     ,parsec2 >= 1.0.0 && < 1.1.0
-    ,old-time >= 1.0  && < 1.1
-    ,template-haskell >= 2.5 && < 2.6
     ,pretty >= 1.0 && < 1.1
     ,mtl (>= 2.0 && < 2.1 ) || (>= 1.1 && < 1.2)
     ,syb >= 0.3 && < 0.4
@@ -59,12 +57,12 @@ library
     Language.CSPM.AstUtils
     Language.CSPM.TokenClasses
     Language.CSPM.PrettyPrinter
-    Language.CSPM.PatternCompiler
+--    Language.CSPM.PatternCompiler
 --    Language.CSPM.TestScript
     Text.ParserCombinators.Parsec.ExprM
   Other-modules:
-    Paths_CSPM_Frontend
-    Language.CSPM.Version
+--    Paths_CSPM_Frontend
+--    Language.CSPM.Version
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper
     Language.CSPM.LexHelper

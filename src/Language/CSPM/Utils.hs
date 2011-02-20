@@ -18,10 +18,10 @@ module Language.CSPM.Utils
  ,parseFile,testFrontend)
 where
 
-import Language.CSPM.Parser (ParseError(..),parse)
-import Language.CSPM.Rename (RenameError(..),getRenaming,applyRenaming)
+import Language.CSPM.Parser (ParseError(..), parse)
+import Language.CSPM.Rename (RenameError(..), renameModule, ModuleFromRenaming)
 import Language.CSPM.Token (LexError(..))
-import Language.CSPM.AST (LModule)
+import Language.CSPM.AST (ModuleFromParser, LModule)
 import qualified Language.CSPM.LexHelper as Lexer (lexInclude)
 
 import Control.Exception as Exception
@@ -45,13 +45,13 @@ handleRenameError :: (RenameError -> IO a) -> IO a -> IO a
 handleRenameError handler proc = Exception.catch proc handler
 
 -- | Lex and parse a file and return a "LModule", throw an exception in case of an error
-parseFile :: FilePath -> IO LModule
+parseFile :: FilePath -> IO ModuleFromParser
 parseFile fileName = do
   src <- readFile fileName
   tokenList <- Lexer.lexInclude src >>= eitherToExc
   eitherToExc $ parse fileName tokenList
 
-testFrontend :: FilePath -> IO (LModule,LModule)
+testFrontend :: FilePath -> IO (ModuleFromParser, ModuleFromRenaming)
 testFrontend fileName = do
   src <- readFile fileName
 
@@ -63,8 +63,7 @@ testFrontend fileName = do
   ast <- eitherToExc $ parse fileName tokenList
   time_have_ast <- getCPUTime
 
-  renaming <- eitherToExc $ getRenaming ast
-  let astNew = applyRenaming renaming ast
+  (astNew, _renaming) <- eitherToExc $ renameModule ast
   time_have_renaming <- getCPUTime
 
   putStrLn $ "Parsing OK"

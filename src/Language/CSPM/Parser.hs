@@ -51,7 +51,7 @@ type PT a= GenParser Token PState a
 parse :: 
       SourceName
    -> [Token]
-   -> Either ParseError LModule
+   -> Either ParseError ModuleFromParser
 parse filename tokenList
   = wrapParseError tokenList $
       runParser (parseModule tokenList) initialPState filename $ filterIgnoredToken tokenList
@@ -138,7 +138,7 @@ inSpan constr exp = do
   e <- getLastPos
   mkLabeledNode (mkSrcSpan s e) $ constr l
 
-parseModule :: [Token.Token] -> PT (Labeled Module)
+parseModule :: [Token.Token] -> PT (Labeled (Module FromParser))
 parseModule tokenList = withLoc $ do
  decl<-topDeclList 
  eof <?> "end of module"
@@ -1107,7 +1107,10 @@ pprintParsecError err
         (ParsecError.errorMessages err)
 
 
-wrapParseError :: [Token] -> Either ParsecError.ParseError LModule -> Either ParseError LModule
+wrapParseError ::
+     [Token]
+  -> Either ParsecError.ParseError ModuleFromParser
+  -> Either ParseError ModuleFromParser
 wrapParseError _ (Right ast) = Right ast
 wrapParseError tl (Left err) = Left $ ParseError {
    parseErrorMsg = pprintParsecError err

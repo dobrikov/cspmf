@@ -1,8 +1,8 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Language.CSPM.AstUtils
--- Copyright   :  (c) Fontaine 2008
--- License     :  BSD
+-- Copyright   :  (c) Fontaine 2008 - 2011
+-- License     :  BSD3
 -- 
 -- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
 -- Stability   :  experimental
@@ -10,6 +10,7 @@
 --
 -- Some utility functions for converting the AST
 
+{-# LANGUAGE RankNTypes #-}
 module Language.CSPM.AstUtils
   (
    removeSourceLocations
@@ -17,9 +18,7 @@ module Language.CSPM.AstUtils
   ,removeModuleTokens
   ,unUniqueIdent
   ,showAst
-  ,relabelAst
   ,computeFreeNames
-  ,compareAST
   ,getModuleAsserts
   )
 where
@@ -36,7 +35,7 @@ import Data.Generics.Aliases (mkT,extQ)
 --import Data.Generics.Basics (gmapQ,toConstr,showConstr)
 
 -- | 'removeSourceLocations' sets all locationsInfos to 'NoLocation'
-removeSourceLocations :: LModule  -> LModule  
+removeSourceLocations :: Data a => Labeled (Module a) -> Labeled (Module a)
 removeSourceLocations ast 
   = everywhere (mkT patchLabel) ast
   where
@@ -44,12 +43,12 @@ removeSourceLocations ast
     patchLabel _ = SrcLoc.NoLocation
 
 -- | set the tokenlist in the module datatype to Nothing
-removeModuleTokens :: LModule -> LModule
+removeModuleTokens :: Labeled (Module a) -> Labeled (Module a)
 removeModuleTokens t = t {unLabel = m}
   where m = (unLabel t ) {moduleTokens = Nothing}
 
 -- | 'removeParens' removes all occurences of of Parens,i.e. explicit parentheses from the AST
-removeParens :: LModule  -> LModule  
+removeParens :: Data a => Labeled (Module a) -> Labeled (Module a)
 removeParens ast 
   = everywhere (mkT patchExp) ast
   where
@@ -61,20 +60,13 @@ removeParens ast
 -- | unUniqueIdent replaces the all UIdent with the Ident of the the new name, thus forgetting
 -- | additional information like the bindingside, etc.
 -- | Usefull to get a smaller AST. 
-unUniqueIdent :: LModule  -> LModule  
+unUniqueIdent :: Data a => Labeled (Module a) -> Labeled (Module a)
 unUniqueIdent ast
   = everywhere (mkT patchIdent) ast
   where
     patchIdent :: Ident -> Ident
     patchIdent (UIdent u) = Ident $ newName u
     patchIdent _ = error "unUniqueIdent : did not expect and 'Ident' in the AST"
-
--- | 'relabelAst' compute an AST with new NodeIds starting with the given NodeId
-relabelAst :: 
-     NodeId 
-  -> LModule 
-  -> LModule
-relabelAst = error "relabel not yet implemented (TODO)"
 
 -- | 'a show function that omits the node labeles.
 -- | TODO : fix this is very buggy.
@@ -91,12 +83,6 @@ showAst ast = gshow ast
        ++ showConstr (toConstr t)
        ++ concat (gmapQ ((++) " " . gshow) t)
        ++ ")"
-
--- | Compares two ASTs.
--- | Useful for comparing the AST generated from the source code
--- | and the AST generated from the pretty printed code.
-compareAST :: LModule -> LModule -> Bool
-compareAST ast1 ast2 = ast1 == ast2
 
 -- | Compute the "FreeNames" of an Expression.
 -- | This function does only work after renaming has been done.
@@ -127,7 +113,7 @@ computeFreeNames syntax
 
 
 -- | Get the assert declarations of a module
-getModuleAsserts :: LModule -> [LAssertDecl]
+getModuleAsserts :: Data a => Labeled (Module a) -> [LAssertDecl]
 getModuleAsserts = mapMaybe justAssert . moduleDecls . unLabel
   where
     justAssert decl = case unLabel decl of

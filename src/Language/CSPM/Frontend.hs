@@ -30,13 +30,13 @@ module Language.CSPM.Frontend
   ,RenameInfo (..)
   ,getRenaming
   ,applyRenaming
+  ,castModule
   -- AstUtils
   ,removeSourceLocations
   ,removeParens
   ,removeModuleTokens
   ,unUniqueIdent
   ,showAst
-  ,relabelAst
   ,computeFreeNames
   --
   ,RenameError(..)
@@ -44,29 +44,25 @@ module Language.CSPM.Frontend
   ,handleLexError
   ,handleParseError
   ,handleRenameError
-  ,compilePattern
-  ,version
   ,pp
-  ,compareAST
 )
 where
 
 import Language.CSPM.Parser (ParseError(..),parse)
 import Language.CSPM.Rename
   (RenameError (..), RenameInfo (..), renameModule, getRenaming, applyRenaming)
-import Language.CSPM.PatternCompiler (compilePattern)
 import Language.CSPM.Token (Token,LexError(..))
-import Language.CSPM.AST (Labeled(..),LModule,Module(..),Bindings)
+import Language.CSPM.AST
+  (Labeled (..), LModule, Module (..), Bindings, castModule)
 import Language.CSPM.SrcLoc (SrcLoc(..))
 import Language.CSPM.AstUtils 
-  (removeSourceLocations,removeModuleTokens,removeParens,relabelAst
-  ,unUniqueIdent,showAst,computeFreeNames, compareAST)
+  (removeSourceLocations, removeModuleTokens, removeParens
+  ,unUniqueIdent, showAst, computeFreeNames)
 
 import qualified Language.CSPM.LexHelper as Lexer
-  (lexInclude,lexPlain,filterIgnoredToken)
-import Language.CSPM.Version
+  (lexInclude, lexPlain, filterIgnoredToken)
 
 import Language.CSPM.PrettyPrinter (pp)
 import Language.CSPM.Utils
-  (eitherToExc,handleLexError,handleParseError,handleRenameError
-  ,parseFile,testFrontend)
+  (eitherToExc, handleLexError, handleParseError, handleRenameError
+  ,parseFile, testFrontend)

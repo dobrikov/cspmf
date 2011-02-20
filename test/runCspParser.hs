@@ -66,8 +66,8 @@ main
   writeFile (fileName ++ ".rename.ast") $ show astNew
   let smallAst = removeSourceLocations $ unUniqueIdent $ removeModuleTokens $ astNew
   writeFile (fileName ++ ".clean.ast") $ showAst smallAst
-  let astPatComp = compilePattern astNew
-  writeFile (fileName ++ ".patcomp") $ show astPatComp
+--  let astPatComp = compilePattern astNew
+--  writeFile (fileName ++ ".patcomp") $ show astPatComp
   exitWith ExitSuccess
 
 showTime :: Integer -> String

@@ -32,7 +32,7 @@ runPretty f =
   writeFile (fileName ++ ".ast") (show str)
   writeFile (fileName ++ "Pretty.csp") (toPrettyString str) 
 
-toPrettyString :: LModule -> String
+toPrettyString :: Labeled (Module a) -> String
 toPrettyString lmodule = render $ pp lmodule
 
 class PP x where
@@ -41,7 +41,7 @@ class PP x where
 instance (PP x) => PP (Labeled x) where
   pp = pp . unLabel
 
-instance PP Module where
+instance PP (Module a) where
   pp m = vcat $ map pp (moduleDecls m)
 
 -- help functions for the Instances of the Type-class PP

@@ -1,8 +1,8 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Language.CSPM.AST
--- Copyright   :  (c) Fontaine 2008
--- License     :  BSD
+-- Copyright   :  (c) Fontaine 2008 - 2011
+-- License     :  BSD3
 -- 
 -- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
 -- Stability   :  experimental
@@ -11,7 +11,10 @@
 -- This Module defines an Abstract Syntax Tree for CSPM.
 -- This is the AST that is computed by the parser.
 -- For historycal reasons, it is rather unstructured
+
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE EmptyDataDecls, RankNTypes #-}
+
 module Language.CSPM.AST
 where
 
@@ -59,8 +62,14 @@ type LIdent = Labeled Ident
 
 data Ident 
   = Ident  {unIdent :: String}
-  | UIdent {unUIdent :: UniqueIdent}
+--  | UIdent {unUIdent :: UniqueIdent}
+  | UIdent UniqueIdent
   deriving ( Eq, Ord, Show,Typeable, Data)
+
+unUIdent :: Ident -> UniqueIdent
+unUIdent (UIdent u) = u
+unUIdent other
+  = error $ "Identifier is not of variant UIdent (missing Renaming) " ++ show other
 
 identId :: LIdent -> Int
 identId = uniqueIdentId . unUIdent . unLabel
@@ -89,13 +98,29 @@ data BindType = LetBound | NotLetBound
 data PrologMode = PrologGround | PrologVariable
   deriving ( Eq, Ord, Show,Typeable, Data)
 
-type LModule = Labeled Module
-data Module = Module {
+data Module a = Module {
    moduleDecls :: [LDecl]
   ,moduleTokens :: Maybe [Token]
   } deriving ( Eq, Ord, Show,Typeable, Data)
 
+data FromParser deriving Typeable
+instance Data FromParser
 
+data UnTagged deriving Typeable
+instance Data UnTagged
+
+{-# DEPRECATED castModule "Use taged modules instead" #-}
+castModule :: Module a -> Module b
+castModule (Module t d) = Module t d
+
+{-# DEPRECATED castLModule "Use taged modules instead" #-}
+castLModule :: Labeled (Module a) -> Labeled (Module b)
+castLModule (Labeled i s (Module t d)) = (Labeled i s (Module t d))
+
+{-# DEPRECATED LModule "Use taged versions instead" #-}
+type LModule = Labeled (Module UnTagged)
+
+type ModuleFromParser = Labeled (Module FromParser)
 {-
 LProc is just a typealias for better readablility
 todo : maybe use a real type

@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveDataTypeable #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Language.CSPM.Rename
@@ -19,6 +18,9 @@ todo :: maybe also compute debruin-index/ freevariables
 todo :: check idType in useIdent
 fix topleveldecls to toplevel ? -> allready done by parser
 -}
+
+{-# LANGUAGE EmptyDataDecls, DeriveDataTypeable #-}
+
 module Language.CSPM.Rename
   (
    renameModule
@@ -26,12 +28,14 @@ module Language.CSPM.Rename
   ,applyRenaming
   ,RenameError (..)
   ,RenameInfo (..)
+  ,ModuleFromRenaming
   )
 where
 import Language.CSPM.AST hiding (prologMode,bindType)
 import qualified Language.CSPM.AST as AST
 import qualified Language.CSPM.SrcLoc as SrcLoc
 
+import Data.Generics.Basics (Data)
 import Data.Generics.Schemes (everywhere)
 import Data.Generics.Aliases (mkT)
 import Data.Typeable (Typeable)
@@ -44,12 +48,16 @@ import qualified Data.Set as Set
 import qualified Data.Map as Map
 import qualified Data.IntMap as IntMap
 
+data FromRenaming deriving Typeable
+instance Data FromRenaming
+
+type ModuleFromRenaming = Labeled (Module FromRenaming)
 {-# DEPRECATED applyRenaming, getRenaming "use renameModule instead" #-}
 
 -- | 'renameModule' renames a 'Module'
 renameModule ::
-     LModule
-  -> Either RenameError (LModule, RenameInfo)
+     ModuleFromParser
+  -> Either RenameError (ModuleFromRenaming, RenameInfo)
 renameModule m = do
   st <- execStateT (rnModule m) initialRState
   return
@@ -63,8 +71,8 @@ renameModule m = do
 -- 'getRename' returns an 'RenameError' if the 'Module' contains unbound
 -- identifiers or illegal redefinitions.
 getRenaming ::
-     LModule 
-  -> Either RenameError (Bindings,AstAnnotation UniqueIdent,AstAnnotation UniqueIdent)
+     ModuleFromParser
+  -> Either RenameError (Bindings, AstAnnotation UniqueIdent, AstAnnotation UniqueIdent)
 getRenaming m = do
   st <- execStateT (rnModule m) initialRState
   return (visible st,identDefinition st, identUse st)
@@ -238,7 +246,7 @@ The actual renamings are stored in a sepearte AstAnnotation inside the RM-Monad
 nop :: RM ()
 nop = return ()
 
-rnModule :: LModule -> RM ()
+rnModule :: ModuleFromParser -> RM ()
 rnModule m = rnDeclList $ moduleDecls $ unLabel m
 
 rnExpList :: [LExp] -> RM ()
@@ -440,18 +448,18 @@ rnTypeDef t = case unLabel t of
 -- the 'AstAnnotation's.
 applyRenaming ::
      (Bindings,AstAnnotation UniqueIdent,AstAnnotation UniqueIdent)
-  -> LModule
-  -> LModule
+  -> ModuleFromParser
+  -> ModuleFromRenaming
 applyRenaming (_,defIdent,usedIdent) ast
   = applyRenamingNew ast defIdent usedIdent
 
 applyRenamingNew ::
-     LModule 
+     ModuleFromParser
   -> AstAnnotation UniqueIdent
   -> AstAnnotation UniqueIdent
-  -> LModule
+  -> ModuleFromRenaming
 applyRenamingNew ast defIdent usedIdent
-  = everywhere (mkT patchVarPat . mkT patchIdent) ast
+  = castLModule $ everywhere (mkT patchVarPat . mkT patchIdent) ast
   where
     patchIdent :: LIdent -> LIdent
     patchIdent l =
