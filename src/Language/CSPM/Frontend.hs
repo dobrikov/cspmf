@@ -23,6 +23,8 @@ module Language.CSPM.Frontend
   ,ParseError(..)
   ,Module
   ,LModule
+  ,ModuleFromParser
+  ,ModuleFromRenaming
   ,Labeled(..)
   ,Bindings
   ,SrcLoc (..)
@@ -48,12 +50,14 @@ module Language.CSPM.Frontend
 )
 where
 
-import Language.CSPM.Parser (ParseError(..),parse)
+import Language.CSPM.Parser (ParseError(..), parse)
 import Language.CSPM.Rename
-  (RenameError (..), RenameInfo (..), renameModule, getRenaming, applyRenaming)
+  (RenameError (..), RenameInfo (..), renameModule, getRenaming, applyRenaming
+  ,ModuleFromRenaming)
 import Language.CSPM.Token (Token,LexError(..))
 import Language.CSPM.AST
-  (Labeled (..), LModule, Module (..), Bindings, castModule)
+  (Labeled (..), LModule, Module (..), Bindings, castModule
+  ,ModuleFromParser)
 import Language.CSPM.SrcLoc (SrcLoc(..))
 import Language.CSPM.AstUtils 
   (removeSourceLocations, removeModuleTokens, removeParens
