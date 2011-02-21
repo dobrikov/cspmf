@@ -44,14 +44,15 @@ import Control.Exception (Exception)
 import Control.Monad.Error
 import Control.Monad.State
 import Data.Set (Set)
-import qualified Data.Set as Set
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 import qualified Data.IntMap as IntMap
+
 
 data FromRenaming deriving Typeable
 instance Data FromRenaming
 
-type ModuleFromRenaming = Labeled (Module FromRenaming)
+type ModuleFromRenaming = Module FromRenaming
 {-# DEPRECATED applyRenaming, getRenaming "use renameModule instead" #-}
 
 -- | 'renameModule' renames a 'Module'
@@ -247,7 +248,7 @@ nop :: RM ()
 nop = return ()
 
 rnModule :: ModuleFromParser -> RM ()
-rnModule m = rnDeclList $ moduleDecls $ unLabel m
+rnModule = rnDeclList . moduleDecls
 
 rnExpList :: [LExp] -> RM ()
 rnExpList = mapM_ rnExp
@@ -459,7 +460,7 @@ applyRenamingNew ::
   -> AstAnnotation UniqueIdent
   -> ModuleFromRenaming
 applyRenamingNew ast defIdent usedIdent
-  = castLModule $ everywhere (mkT patchVarPat . mkT patchIdent) ast
+  = castModule $ everywhere (mkT patchVarPat . mkT patchIdent) ast
   where
     patchIdent :: LIdent -> LIdent
     patchIdent l =

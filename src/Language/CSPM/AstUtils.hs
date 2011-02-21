@@ -26,7 +26,6 @@ where
 import Language.CSPM.AST hiding (prologMode)
 import qualified Language.CSPM.SrcLoc as SrcLoc
 
-import Data.IntMap (IntMap)
 import qualified Data.IntMap as IntMap
 import Data.Data
 import Data.Maybe
@@ -89,32 +88,40 @@ showAst ast = gshow ast
 -- | This implementation is inefficient.
 computeFreeNames :: Data a => a -> FreeNames
 computeFreeNames syntax
-  = IntMap.difference (toIntMap used) (toIntMap def)
+  = IntMap.difference (IntMap.fromList used) (IntMap.fromList def)
   where
-    toIntMap :: [UniqueIdent] -> IntMap UniqueIdent
-    toIntMap
-      = IntMap.fromList . map (\x -> (uniqueIdentId x,x))
-    used :: [UniqueIdent]
-    used = map (\(Var x) -> unUIdent $ unLabel x) $ listify isUse syntax
-    def :: [UniqueIdent]
-    def  = (map (\(VarPat x) -> unUIdent $ unLabel x) $ listify isDef syntax)
-         ++(map (\(FunBind x _) -> unUIdent $ unLabel x) $ listify isFunDef syntax)
+    used :: [(Int, UniqueIdent)]
+    used = map (getIdent . unUse) $ listify isUse syntax
+    def :: [(Int, UniqueIdent)]
+    def  =  (map (getIdent . unDef) $ listify isDef syntax)
+         ++ (map (getIdent . unDecl) $ listify isDecl syntax)
+    getIdent :: LIdent -> (Int, UniqueIdent)
+    getIdent x = (uniqueIdentId h, h)
+      where h = unUIdent $ unLabel x
+
     isUse :: Exp -> Bool
     isUse (Var {}) = True
     isUse _ = False
 
+    unUse (Var x) = x
+    unUse _ = error "computeFreeNames : expecting Var"
+
     isDef :: Pattern -> Bool
     isDef (VarPat {}) = True
     isDef _ = False
-   
-    isFunDef :: Decl -> Bool
-    isFunDef (FunBind {}) = True
-    isFunDef _ = False
 
+    isDecl (FunBind {}) = True
+    isDecl _ = False
+
+    unDef (VarPat x) = x
+    unDef _ = error "computeFreeNames : expecting VarPar"
+
+    unDecl (FunBind x _) = x
+    unDecl _ = error "computeFreeNames : expecting FunBind"
 
 -- | Get the assert declarations of a module
-getModuleAsserts :: Data a => Labeled (Module a) -> [LAssertDecl]
-getModuleAsserts = mapMaybe justAssert . moduleDecls . unLabel
+getModuleAsserts :: Module a -> [LAssertDecl]
+getModuleAsserts = mapMaybe justAssert . moduleDecls
   where
     justAssert decl = case unLabel decl of
       Assert  a -> Just a

@@ -1,8 +1,8 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Language.CSPM.Parser
--- Copyright   :  (c) Fontaine 2008
--- License     :  BSD
+-- Copyright   :  (c) Fontaine 2008 - 2011
+-- License     :  BSD3
 -- 
 -- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
 -- Stability   :  experimental
@@ -138,14 +138,17 @@ inSpan constr exp = do
   e <- getLastPos
   mkLabeledNode (mkSrcSpan s e) $ constr l
 
-parseModule :: [Token.Token] -> PT (Labeled (Module FromParser))
-parseModule tokenList = withLoc $ do
+parseModule :: [Token.Token] -> PT ModuleFromParser
+parseModule tokenList = do
+ s <- getNextPos
  decl<-topDeclList 
  eof <?> "end of module"
+ e <- getLastPos
  return $ Module {
    moduleDecls = decl
   ,moduleTokens = Just tokenList
-  }
+  ,moduleSrcLoc = mkSrcSpan s e
+ }
 
 token :: TokenClasses.PrimToken -> PT ()
 token t = tokenPrimExDefault tokenTest

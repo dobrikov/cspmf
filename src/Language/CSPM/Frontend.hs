@@ -2,7 +2,7 @@
 -- |
 -- Module      :  Language.CSPM.Frontend
 -- Copyright   :  (c) Fontaine 2008 - 2011
--- License     :  BSD
+-- License     :  BSD3
 -- 
 -- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
 -- Stability   :  experimental
@@ -22,10 +22,9 @@ module Language.CSPM.Frontend
   ,parse
   ,ParseError(..)
   ,Module
-  ,LModule
   ,ModuleFromParser
   ,ModuleFromRenaming
-  ,Labeled(..)
+  ,Labeled (..)
   ,Bindings
   ,SrcLoc (..)
   ,renameModule
@@ -41,7 +40,7 @@ module Language.CSPM.Frontend
   ,showAst
   ,computeFreeNames
   --
-  ,RenameError(..)
+  ,RenameError (..)
   ,eitherToExc
   ,handleLexError
   ,handleParseError
@@ -56,7 +55,7 @@ import Language.CSPM.Rename
   ,ModuleFromRenaming)
 import Language.CSPM.Token (Token,LexError(..))
 import Language.CSPM.AST
-  (Labeled (..), LModule, Module (..), Bindings, castModule
+  (Labeled (..), Module (..), Bindings, castModule
   ,ModuleFromParser)
 import Language.CSPM.SrcLoc (SrcLoc(..))
 import Language.CSPM.AstUtils 

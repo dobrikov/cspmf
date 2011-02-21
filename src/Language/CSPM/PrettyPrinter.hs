@@ -32,8 +32,8 @@ runPretty f =
   writeFile (fileName ++ ".ast") (show str)
   writeFile (fileName ++ "Pretty.csp") (toPrettyString str) 
 
-toPrettyString :: Labeled (Module a) -> String
-toPrettyString lmodule = render $ pp lmodule
+toPrettyString :: Module a -> String
+toPrettyString = render . pp
 
 class PP x where
   pp :: x -> Doc

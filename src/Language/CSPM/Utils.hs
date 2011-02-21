@@ -21,7 +21,7 @@ where
 import Language.CSPM.Parser (ParseError(..), parse)
 import Language.CSPM.Rename (RenameError(..), renameModule, ModuleFromRenaming)
 import Language.CSPM.Token (LexError(..))
-import Language.CSPM.AST (ModuleFromParser, LModule)
+import Language.CSPM.AST (ModuleFromParser)
 import qualified Language.CSPM.LexHelper as Lexer (lexInclude)
 
 import Control.Exception as Exception

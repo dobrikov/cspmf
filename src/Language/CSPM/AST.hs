@@ -101,26 +101,16 @@ data PrologMode = PrologGround | PrologVariable
 data Module a = Module {
    moduleDecls :: [LDecl]
   ,moduleTokens :: Maybe [Token]
+  ,moduleSrcLoc :: SrcLoc
   } deriving ( Eq, Ord, Show,Typeable, Data)
 
 data FromParser deriving Typeable
 instance Data FromParser
 
-data UnTagged deriving Typeable
-instance Data UnTagged
-
-{-# DEPRECATED castModule "Use taged modules instead" #-}
 castModule :: Module a -> Module b
-castModule (Module t d) = Module t d
+castModule (Module t d s) = Module t d s
 
-{-# DEPRECATED castLModule "Use taged modules instead" #-}
-castLModule :: Labeled (Module a) -> Labeled (Module b)
-castLModule (Labeled i s (Module t d)) = (Labeled i s (Module t d))
-
-{-# DEPRECATED LModule "Use taged versions instead" #-}
-type LModule = Labeled (Module UnTagged)
-
-type ModuleFromParser = Labeled (Module FromParser)
+type ModuleFromParser = Module FromParser
 {-
 LProc is just a typealias for better readablility
 todo : maybe use a real type
