@@ -21,6 +21,7 @@ module Language.CSPM.AstToProlog
 )
 where
 
+import Language.CSPM.Frontend (ModuleFromRenaming)
 import Language.CSPM.AST
 import qualified Language.CSPM.SrcLoc as SrcLoc
 import Language.Prolog.PrettyPrint.Direct
@@ -33,7 +34,7 @@ import qualified Data.IntMap as IntMap
 -- | Translate a "LModule" into a "Doc" containing a number of Prolog facts.
 -- The LModule must be a renamed,i.e. contain only unique "Ident"ifier.
 cspToProlog ::
-  LModule -- ^ the renamed Module 
+  ModuleFromRenaming -- ^ the renamed Module
   -> Doc  -- ^ prolog facts
 cspToProlog ast = 
   let
@@ -56,9 +57,9 @@ plLocatedConstructs = Set.fromList
    F_ExtChoice, F_IntChoice, F_Sequential, F_Hiding
   ]
 
-mkModule :: LModule -> Doc
+mkModule :: ModuleFromRenaming -> Doc
 mkModule m
-  = plPrg [declGroup $ map clause $ declList $ moduleDecls $ unLabel m ]
+  = plPrg [declGroup $ map clause $ declList $ moduleDecls m]
 
 te :: LExp -> Term
 te expr = case unLabel expr of
