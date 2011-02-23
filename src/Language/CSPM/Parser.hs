@@ -15,6 +15,9 @@
 * add Autoversion to packet
 * add wrappers for functions that throw dynamic exceptions
 -}
+
+{-# LANGUAGE DeriveDataTypeable #-}
+
 module Language.CSPM.Parser
 (
   parse
@@ -180,6 +183,32 @@ refineOp = withLoc $ do
     T_tauPriorityOp -> return TauPriorityOp
     _              -> fail "Unexpected Token"
 
+fdrModelO :: PT LFDRModelsO
+fdrModelO = withLoc $ do 
+  tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
+  case tok of
+    T_deadlockFreeF   -> return DeadlockFreeF
+    T_deadlockFreeFD  -> return DeadlockFreeFD
+    T_deadlockFreeT   -> return DeadlockFreeT
+    T_deterministicF  -> return DeterministicF
+    T_deterministicFD -> return DeterministicFD
+    T_deterministicT  -> return DeterministicT
+    T_livelockFree    -> return LivelockFreeO
+    _                 -> fail "Unexpected Token"
+
+fdrModel :: PT LFDRModels
+fdrModel = withLoc $ do 
+  tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
+  case tok of
+    T_deadlockFreeF   -> return DeadlockFree
+    T_deadlockFreeFD  -> return DeadlockFree
+    T_deadlockFreeT   -> return DeadlockFree
+    T_deterministicF  -> return Deterministic
+    T_deterministicFD -> return Deterministic
+    T_deterministicT  -> return Deterministic
+    T_livelockFree    -> return LivelockFree
+    _                 -> fail "Unexpected Token"
+
 tauRefineOp :: PT LTauRefineOp
 tauRefineOp = withLoc $ do 
   tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
@@ -187,17 +216,6 @@ tauRefineOp = withLoc $ do
     T_trace  -> return TauTrace
     T_Refine -> return TauRefine
     _        -> fail "Unexpected Token"
-
-fdrModel :: PT LFDRModels
-fdrModel = withLoc $ do 
-  tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
-  case tok of
-    T_deadlockFreeF -> return DeadlockFreeF
-    T_deadlockFreeFD  -> return DeadlockFreeFD
-    T_deterministicF -> return DeterministicF
-    T_deterministicFD -> return DeterministicFD
-    T_livelockFree -> return LivelockFree
-    _              -> fail "Unexpected Token"
   
 anyBuiltIn :: PT Const
 anyBuiltIn = do
@@ -876,7 +894,7 @@ topDeclList = do
 
   assertBool = withLoc $ do
     token T_assert
-    b<-parseExp
+    b <- parseExp
     return $ AssertBool b
 
   assertTauPrio = withLoc $ do
@@ -891,13 +909,36 @@ topDeclList = do
   assertIntFDRChecks = withLoc $ do
     token T_assert
     p <- parseExp
-    model <- fdrModel 
-    return $ AssertModelCheck p model
+    model <- fdrModelO 
+    case unLabel model of
+      DeadlockFreeF   -> return $ AssertModelCheck False p (labeled DeadlockFree)  (Just F)
+      DeadlockFreeFD  -> return $ AssertModelCheck False p (labeled DeadlockFree)  (Just FD)
+      DeadlockFreeT   -> return $ AssertModelCheck False p (labeled DeadlockFree)  (Just T)
+      DeterministicF  -> return $ AssertModelCheck False p (labeled Deterministic) (Just F)
+      DeterministicFD -> return $ AssertModelCheck False p (labeled Deterministic) (Just FD)
+      DeterministicT  -> return $ AssertModelCheck False p (labeled Deterministic) (Just T)
+      _               -> return $ AssertModelCheck False p (labeled LivelockFree)  Nothing
+
+  assertNotIntFDRChecks = withLoc $ do
+    token T_assert
+    token T_not
+    p <- parseExp
+    model <- fdrModelO 
+    case unLabel model of
+      DeadlockFreeF   -> return $ AssertModelCheck True p (labeled DeadlockFree)  (Just F)
+      DeadlockFreeFD  -> return $ AssertModelCheck True p (labeled DeadlockFree)  (Just FD)
+      DeadlockFreeT   -> return $ AssertModelCheck True p (labeled DeadlockFree)  (Just T)
+      DeterministicF  -> return $ AssertModelCheck True p (labeled Deterministic) (Just F)
+      DeterministicFD -> return $ AssertModelCheck True p (labeled Deterministic) (Just FD)
+      DeterministicT  -> return $ AssertModelCheck True p (labeled Deterministic) (Just T)
+      _               -> return $ AssertModelCheck True p (labeled LivelockFree)  Nothing
  
+
   parseAssert :: PT LAssertDecl
-  parseAssert =  try assertTauPrio 
+  parseAssert =  try assertNotIntFDRChecks
+             <|> try assertIntFDRChecks 
              <|> try assertListRef
-             <|> try assertIntFDRChecks
+             <|> try assertTauPrio
              <|> assertBool
              <?> "assert Declaration"
 

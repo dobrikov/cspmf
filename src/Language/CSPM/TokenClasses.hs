@@ -134,8 +134,13 @@ data PrimToken
   | T_tauPriorityOp -- "[TP="
   | T_TauPriorityOver
   | T_deadlockFreeF
+  | T_deadlockFreeT
   | T_deadlockFreeFD
   | T_deterministicF
   | T_deterministicFD
+  | T_deterministicT
   | T_livelockFree
+  | T_F
+  | T_FD
+  | T_T
   deriving (Show,Eq,Ord,Typeable, Data)

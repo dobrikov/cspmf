@@ -41,18 +41,22 @@ $idchar    = [$alpha $digit \' \_]
 
 @string  = $graphic # [\"\\] | " " $whitechar
 @alphaString = [$alpha $digit]
-@assertExts = $whitechar+ "[FD]" | $whitechar+ "[F]" | ""
-@assertCoreDeadlock    = "deadlock" $whitechar+ "free" ($whitechar+ @alphaString+)* | "deadlock-free" ($whitechar+ @alphaString+)* 
-@assertCoreDeadlockF   = @assertCoreDeadlock $whitechar+ "[F]" ($whitechar+ @alphaString+)*
-@assertCoreDeadlockFD  = @assertCoreDeadlock $whitechar+ "[FD]" ($whitechar+ @alphaString+)* 
-@assertCoreDeterm      = "deterministic" ($whitechar+ @alphaString+)* 
-@assertCoreDetermF     = "deterministic" $whitechar+ "[F]" ($whitechar+ @alphaString+)* 
-@assertCoreDetermFD    = "deterministic" $whitechar+ "[FD]" ($whitechar+ @alphaString+)* 
-@assertCoreDivergence  = "divergence" $whitechar+ "free" @assertExts? ($whitechar+ @alphaString+)* 
-                       | "divergence-free" @assertExts? ($whitechar+ @alphaString+)* 
-@assertCoreLivelock    = "livelock" $whitechar+ "free" @assertExts? ($whitechar+ @alphaString+)* 
-                       | "livelock-free" @assertExts? ($whitechar+ @alphaString+)*  -- also seen with -
-@assertTau             = "tau" $whitechar+ "priority" ($whitechar+ @alphaString+)*
+@str = $whitechar+ @alphaString+
+@assertExts = "[FD]" | "[F]" | "[T]" | ""
+@assertCoreDeadlock    = "deadlock" @str* $whitechar+ "free" @str* $whitechar*
+                       | "deadlock-free" @str* $whitechar*
+@assertCoreDeadlockF   = @assertCoreDeadlock "[F]" @str* 
+@assertCoreDeadlockFD  = @assertCoreDeadlock "[FD]" @str* 
+@assertCoreDeadlockT   = @assertCoreDeadlock "[T]" @str* 
+@assertCoreDeterm      = "deterministic" @str*
+@assertCoreDetermF     = @assertCoreDeterm $whitechar+ "[F]"  @str*
+@assertCoreDetermFD    = @assertCoreDeterm $whitechar+ "[FD]" @str*
+@assertCoreDetermT     = @assertCoreDeterm $whitechar+ "[T]"  @str*  
+@assertCoreDivergence  = "divergence-free" (@str* $whitechar+ @assertExts)? @str*  
+                       | "divergence" @str* $whitechar+ "free" (@str* $whitechar+ @assertExts)? @str*
+@assertCoreLivelock    = "livelock"   @str* $whitechar+ "free" (@str* $whitechar+ @assertExts)? @str*
+                       | "livelock-free" (@str* $whitechar+ @assertExts)? @str*
+@assertTau             = "tau" (@str* $whitechar+)? "priority" @str*
 
 csp :-
 
@@ -106,23 +110,25 @@ csp :-
 
 -- assetion Lists refinement operators
 <0> "[=" { mkL T_Refine }
-<0> "[T=" { mkL T_trace } -- !!!
-<0> "[F=" { mkL T_failure } -- !!!
-<0> "[FD=" { mkL T_failureDivergence } -- !!!
+<0> "[T=" { mkL T_trace }
+<0> "[F=" { mkL T_failure }
+<0> "[FD=" { mkL T_failureDivergence }
 <0> "[R=" { mkL T_refusalTesting }
 <0> "[RD=" { mkL T_refusalTestingDiv }
 <0> "[V=" { mkL T_revivalTesting }
 <0> "[VD=" { mkL T_revivalTestingDiv }
 <0> "[TP=" { mkL T_tauPriorityOp }
-<0> ":[" $whitechar* @assertTau $whitechar* "]:"           { mkL T_TauPriorityOver}
-<0> ":[" $whitechar* @assertCoreDeadlockFD $whitechar* "]" { mkL T_deadlockFreeFD }
-<0> ":[" $whitechar* @assertCoreDeadlockF  $whitechar* "]" {mkL T_deadlockFreeF }
-<0> ":[" $whitechar* @assertCoreDeadlock   $whitechar* "]" { mkL T_deadlockFreeFD}
-<0> ":[" $whitechar* @assertCoreDetermFD   $whitechar* "]" { mkL T_deterministicFD}
-<0> ":[" $whitechar* @assertCoreDetermF    $whitechar* "]" { mkL T_deterministicF}
-<0> ":[" $whitechar* @assertCoreDeterm     $whitechar* "]" { mkL T_deterministicFD}
-<0> ":[" $whitechar* @assertCoreDivergence $whitechar* "]" { mkL T_livelockFree}
-<0> ":[" $whitechar* @assertCoreLivelock   $whitechar* "]" { mkL T_livelockFree}
+<0> ":[" $whitechar* @assertTau $whitechar* "]:"           { mkL T_TauPriorityOver }
+<0> ":[" $whitechar* @assertCoreDeadlockFD $whitechar* "]" { mkL T_deadlockFreeFD  }
+<0> ":[" $whitechar* @assertCoreDeadlockT  $whitechar* "]" { mkL T_deadlockFreeT   }
+<0> ":[" $whitechar* @assertCoreDeadlockF  $whitechar* "]" { mkL T_deadlockFreeF   }
+<0> ":[" $whitechar* @assertCoreDeadlock   $whitechar* "]" { mkL T_deadlockFreeFD  }
+<0> ":[" $whitechar* @assertCoreDetermFD   $whitechar* "]" { mkL T_deterministicFD }
+<0> ":[" $whitechar* @assertCoreDetermF    $whitechar* "]" { mkL T_deterministicF  }
+<0> ":[" $whitechar* @assertCoreDeterm     $whitechar* "]" { mkL T_deterministicFD }
+<0> ":[" $whitechar* @assertCoreDetermT    $whitechar* "]" { mkL T_deterministicT  }
+<0> ":[" $whitechar* @assertCoreDivergence $whitechar* "]" { mkL T_livelockFree    }
+<0> ":[" $whitechar* @assertCoreLivelock   $whitechar* "]" { mkL T_livelockFree    }
 -- symbols
 <0> "^" { mkL T_hat }
 <0> "#" { mkL T_hash }

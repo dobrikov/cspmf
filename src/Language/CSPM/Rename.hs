@@ -419,7 +419,7 @@ declRHS d = case unLabel d of
       AssertBool e -> rnExp e
       AssertRefine p1 _ p2 -> rnExp p1 >> rnExp p2
       AssertTauPrio p1 _ p2 e -> rnExp p1 >> rnExp p2 >> rnExp e
-      AssertModelCheck p _ -> rnExp p
+      AssertModelCheck _ p _ _ -> rnExp p
   Transparent _ -> nop  
   SubType  _ clist -> forM_ clist rnConstructorRHS
   DataType _ clist -> forM_ clist rnConstructorRHS

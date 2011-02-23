@@ -95,6 +95,9 @@ data IDType
 data BindType = LetBound | NotLetBound
   deriving ( Eq, Ord, Show,Typeable, Data)
 
+isLetBound :: BindType -> Bool
+isLetBound x = x==LetBound
+
 data PrologMode = PrologGround | PrologVariable
   deriving ( Eq, Ord, Show,Typeable, Data)
 
@@ -299,19 +302,36 @@ withLabel f x = x {unLabel = f (nodeId x) (unLabel x) }
 type LAssertDecl = Labeled AssertDecl
 data AssertDecl
   = AssertBool LExp
-  | AssertRefine LExp LRefineOp LExp
-  | AssertTauPrio LExp LTauRefineOp LExp LExp
-  | AssertModelCheck LExp LFDRModels
+  | AssertRefine   {-Not-} LExp LRefineOp    LExp
+  | AssertTauPrio  {-Not-} LExp LTauRefineOp LExp LExp
+  | AssertModelCheck Not LExp LFDRModels   (Maybe FdrExt)
   deriving ( Eq, Ord, Show,Typeable,Data)
+
+type Not = Bool
 
 type LFDRModels = Labeled FDRModels
 data FDRModels
-  = DeadlockFreeF
-  | DeadlockFreeFD
-  | DeterministicF
-  | DeterministicFD
+  = DeadlockFree
+  | Deterministic
   | LivelockFree
   deriving ( Eq, Ord, Show,Typeable,Data)
+
+type LFDRModelsO = Labeled FDRModelsO
+data FDRModelsO
+  = DeadlockFreeF
+  | DeadlockFreeFD
+  | DeadlockFreeT
+  | DeterministicF
+  | DeterministicFD
+  | DeterministicT
+  | LivelockFreeO
+  deriving ( Eq, Ord, Show,Typeable,Data)
+
+data FdrExt 
+  = F 
+  | FD
+  | T
+  deriving ( Eq, Ord, Show,Typeable,Data) 
 
 type LTauRefineOp = Labeled TauRefineOp 
 data TauRefineOp

@@ -245,14 +245,29 @@ instance PP AssertDecl where
   pp (AssertBool expr) = pp expr
   pp (AssertRefine expr1 op expr2) = pp expr1 <+> pp op <+> pp expr2
   pp (AssertTauPrio expr1 op expr2 expr3) = pp expr1 <+> pp op <+> pp expr2 <+> text ":[tau priority over]:" <+> pp expr3
-  pp (AssertModelCheck expr m) = pp expr <+> pp m 
+  pp (AssertModelCheck n expr m mb) = (if n then text "not " else text "") <>  
+                    (pp expr <+> text ":[" <+> pp m <+> case mb of
+                                           Nothing  -> text ""
+                                           Just fdr -> pp fdr) <+> text "]"
+
+instance PP FdrExt where
+  pp F  = text "[F]"
+  pp FD = text "[FD]"
+  pp T  = text "[T]"
 
 instance PP FDRModels where
+  pp DeadlockFree  = text "deadlock free"
+  pp Deterministic = text "deterministic"
+  pp LivelockFree  = text "livelock free"
+
+instance PP FDRModelsO where
   pp DeadlockFreeF = text ":[ deadlock free [F] ]"
   pp DeadlockFreeFD = text ":[ deadlock free [FD] ]"
+  pp DeadlockFreeT  = text ":[ deadlock free [T] ]"
   pp DeterministicF = text ":[ deterministic [F] ]"
   pp DeterministicFD = text ":[ deterministic [FD] ]"
-  pp LivelockFree = text ":[ livelock free ]"
+  pp DeterministicT  = text ":[ deterministic [T] ]"
+  pp LivelockFreeO = text ":[ livelock free ]"
 
 instance PP RefineOp where 
   pp Trace = text "[T="
