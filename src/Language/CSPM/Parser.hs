@@ -849,16 +849,16 @@ topDeclList = do
     <|> singleList parseChannel
     <|> singleList parsePrint
     <?> "top-level declaration"  
- 
+
+  assertPolarity = fmap (odd . length) $ many $ token T_not
+
   assertListRef = withLoc $ do
     token T_assert
-    nots <- many $ token T_not
+    negated <- assertPolarity
     p1 <- parseExp
     op <- refineOp
     p2 <- parseExp
-    case even $ length nots of
-      True  -> return $ AssertRefine False p1 op p2
-      False -> return $ AssertRefine True  p1 op p2
+    return $ AssertRefine negated p1 op p2
 
   assertBool = withLoc $ do
     token T_assert
@@ -867,7 +867,7 @@ topDeclList = do
 
   assertTauPrio = withLoc $ do
     token T_assert
-    nots <- many $ token T_not
+    negated <- assertPolarity
     p1 <- parseExp
     op <- tauRefineOp
     p2 <- parseExp
@@ -875,9 +875,7 @@ topDeclList = do
     token T_priority
     many $ token T_over
     set <- parseExp
-    case even $ length nots of
-      True  -> return $ AssertTauPrio False p1 op p2 set
-      False -> return $ AssertTauPrio True  p1 op p2 set
+    return $ AssertTauPrio negated p1 op p2 set
      where
       tauRefineOp :: PT LTauRefineOp
       tauRefineOp = withLoc $ do 
@@ -889,33 +887,30 @@ topDeclList = do
 
   assertIntFDRChecks = withLoc $ do
     token T_assert
-    nots    <- many $ token T_not
+    negated <- assertPolarity
     p       <- parseExp
     model   <- fdrModel
     extmode <- many $ extsMode
-    case even $ length nots of
-      True  -> return $ AssertModelCheck False  p model (case extmode of 
-                                                         (h:_) -> Just h
-                                                         _     -> Nothing)
-      False -> return $ AssertModelCheck True  p model (case extmode of 
-                                                         (h:_) -> Just h
-                                                         _     -> Nothing)
+    let ext = case extmode of
+        (h:_) -> Just h
+         _     -> Nothing
+    return $ AssertModelCheck negated p model ext
       where
-       fdrModel :: PT FDRModels
-       fdrModel = do
+       fdrModel :: PT LFDRModels
+       fdrModel = withLoc $ do
         tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
         case tok of 
          T_deadlock  -> do
-                         many1 $ token T_free
-                         return DeadlockFree
+             many1 $ token T_free
+             return DeadlockFree
          T_deterministic -> return Deterministic
          T_livelock  -> do
-                         many1 $ token T_free
-                         return LivelockFree
-         _               -> fail "Modus is not supported by this parser."
+             many1 $ token T_free
+             return LivelockFree
+         _ -> fail "Modus is not supported by this parser."
   
-       extsMode :: PT FdrExt
-       extsMode =  tokenPrimExDefault test
+       extsMode :: PT LFdrExt
+       extsMode =  withLoc $ tokenPrimExDefault test
          where 
           test tok = case tokenClass tok of
                   T_F   -> Just F

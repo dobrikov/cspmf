@@ -302,12 +302,10 @@ withLabel f x = x {unLabel = f (nodeId x) (unLabel x) }
 type LAssertDecl = Labeled AssertDecl
 data AssertDecl
   = AssertBool LExp
-  | AssertRefine   Not LExp LRefineOp    LExp
-  | AssertTauPrio  Not LExp LTauRefineOp LExp LExp
-  | AssertModelCheck Not LExp FDRModels   (Maybe FdrExt)
+  | AssertRefine   Bool LExp LRefineOp    LExp
+  | AssertTauPrio  Bool LExp LTauRefineOp LExp LExp
+  | AssertModelCheck Bool LExp LFDRModels   (Maybe LFdrExt)
   deriving ( Eq, Ord, Show,Typeable,Data)
-
-type Not = Bool
 
 type LFDRModels = Labeled FDRModels
 data FDRModels
@@ -316,6 +314,7 @@ data FDRModels
   | LivelockFree
   deriving ( Eq, Ord, Show,Typeable,Data)
 
+type LFdrExt = Labeled FdrExt
 data FdrExt 
   = F 
   | FD

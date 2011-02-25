@@ -249,11 +249,11 @@ instance PP AssertDecl where
                     (pp expr1 <+> pp op <+> pp expr2 <+> text ":[tau priority over]:" <+> pp expr3)
   pp (AssertModelCheck n expr m mb) = (if n then text "not " else text "") <>  
                     (pp expr <+> text ":[" <+> pp m <+> case mb of
-                                           Nothing  -> case m of 
+                                           Nothing  -> case unLabel m of
                                                         Deterministic -> text "[FD]"
                                                         DeadlockFree  -> text "[FD]"
                                                         _             -> text ""
-                                           Just fdr -> case m of
+                                           Just fdr -> case unLabel m of
                                                         LivelockFree -> text ""
                                                         _            -> pp fdr) <+> text "]"
 
