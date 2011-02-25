@@ -243,12 +243,19 @@ printIdent ident =
 
 instance PP AssertDecl where
   pp (AssertBool expr) = pp expr
-  pp (AssertRefine expr1 op expr2) = pp expr1 <+> pp op <+> pp expr2
-  pp (AssertTauPrio expr1 op expr2 expr3) = pp expr1 <+> pp op <+> pp expr2 <+> text ":[tau priority over]:" <+> pp expr3
+  pp (AssertRefine n expr1 op expr2) = (if n then text "not " else text "") <>
+                    (pp expr1 <+> pp op <+> pp expr2)
+  pp (AssertTauPrio n expr1 op expr2 expr3) = (if n then text "not " else text "") <> 
+                    (pp expr1 <+> pp op <+> pp expr2 <+> text ":[tau priority over]:" <+> pp expr3)
   pp (AssertModelCheck n expr m mb) = (if n then text "not " else text "") <>  
                     (pp expr <+> text ":[" <+> pp m <+> case mb of
-                                           Nothing  -> text ""
-                                           Just fdr -> pp fdr) <+> text "]"
+                                           Nothing  -> case m of 
+                                                        Deterministic -> text "[FD]"
+                                                        DeadlockFree  -> text "[FD]"
+                                                        _             -> text ""
+                                           Just fdr -> case m of
+                                                        LivelockFree -> text ""
+                                                        _            -> pp fdr) <+> text "]"
 
 instance PP FdrExt where
   pp F  = text "[F]"
@@ -259,15 +266,6 @@ instance PP FDRModels where
   pp DeadlockFree  = text "deadlock free"
   pp Deterministic = text "deterministic"
   pp LivelockFree  = text "livelock free"
-
-instance PP FDRModelsO where
-  pp DeadlockFreeF = text ":[ deadlock free [F] ]"
-  pp DeadlockFreeFD = text ":[ deadlock free [FD] ]"
-  pp DeadlockFreeT  = text ":[ deadlock free [T] ]"
-  pp DeterministicF = text ":[ deterministic [F] ]"
-  pp DeterministicFD = text ":[ deterministic [FD] ]"
-  pp DeterministicT  = text ":[ deterministic [T] ]"
-  pp LivelockFreeO = text ":[ livelock free ]"
 
 instance PP RefineOp where 
   pp Trace = text "[T="

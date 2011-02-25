@@ -40,23 +40,7 @@ $idchar    = [$alpha $digit \' \_]
 @hexadecimal = $hexit+
 
 @string  = $graphic # [\"\\] | " " $whitechar
-@alphaString = [$alpha $digit]
-@str = $whitechar+ @alphaString+
-@assertExts = "[FD]" | "[F]" | "[T]" | ""
-@assertCoreDeadlock    = "deadlock" @str* $whitechar+ "free" @str* $whitechar*
-                       | "deadlock-free" @str* $whitechar*
-@assertCoreDeadlockF   = @assertCoreDeadlock "[F]" @str* 
-@assertCoreDeadlockFD  = @assertCoreDeadlock "[FD]" @str* 
-@assertCoreDeadlockT   = @assertCoreDeadlock "[T]" @str* 
-@assertCoreDeterm      = "deterministic" @str*
-@assertCoreDetermF     = @assertCoreDeterm $whitechar+ "[F]"  @str*
-@assertCoreDetermFD    = @assertCoreDeterm $whitechar+ "[FD]" @str*
-@assertCoreDetermT     = @assertCoreDeterm $whitechar+ "[T]"  @str*  
-@assertCoreDivergence  = "divergence-free" (@str* $whitechar+ @assertExts)? @str*  
-                       | "divergence" @str* $whitechar+ "free" (@str* $whitechar+ @assertExts)? @str*
-@assertCoreLivelock    = "livelock"   @str* $whitechar+ "free" (@str* $whitechar+ @assertExts)? @str*
-                       | "livelock-free" (@str* $whitechar+ @assertExts)? @str*
-@assertTau             = "tau" (@str* $whitechar+)? "priority" @str*
+@str = $graphic # [ \[ \] ]  
 
 csp :-
 
@@ -118,17 +102,8 @@ csp :-
 <0> "[V=" { mkL T_revivalTesting }
 <0> "[VD=" { mkL T_revivalTestingDiv }
 <0> "[TP=" { mkL T_tauPriorityOp }
-<0> ":[" $whitechar* @assertTau $whitechar* "]:"           { mkL T_TauPriorityOver }
-<0> ":[" $whitechar* @assertCoreDeadlockFD $whitechar* "]" { mkL T_deadlockFreeFD  }
-<0> ":[" $whitechar* @assertCoreDeadlockT  $whitechar* "]" { mkL T_deadlockFreeT   }
-<0> ":[" $whitechar* @assertCoreDeadlockF  $whitechar* "]" { mkL T_deadlockFreeF   }
-<0> ":[" $whitechar* @assertCoreDeadlock   $whitechar* "]" { mkL T_deadlockFreeFD  }
-<0> ":[" $whitechar* @assertCoreDetermFD   $whitechar* "]" { mkL T_deterministicFD }
-<0> ":[" $whitechar* @assertCoreDetermF    $whitechar* "]" { mkL T_deterministicF  }
-<0> ":[" $whitechar* @assertCoreDeterm     $whitechar* "]" { mkL T_deterministicFD }
-<0> ":[" $whitechar* @assertCoreDetermT    $whitechar* "]" { mkL T_deterministicT  }
-<0> ":[" $whitechar* @assertCoreDivergence $whitechar* "]" { mkL T_livelockFree    }
-<0> ":[" $whitechar* @assertCoreLivelock   $whitechar* "]" { mkL T_livelockFree    }
+<0> ":[" { begin ref } -- jump to the other lexer specification ref
+
 -- symbols
 <0> "^" { mkL T_hat }
 <0> "#" { mkL T_hash }
@@ -198,6 +173,21 @@ csp :-
 
 <0> \" @string* \"              { mkL L_String }
 
+<ref> "deadlock"      { mkL T_deadlock  }
+<ref> "deterministic" { mkL T_deterministic }
+<ref> "livelock"      { mkL T_livelock  }
+<ref> "divergence"    { mkL T_livelock  }
+<ref> "free"          { mkL T_free      }
+<ref> "[FD]"          { mkL T_FD        }
+<ref> "[F]"           { mkL T_F         }
+<ref> "[T]"           { mkL T_T         }
+<ref> "tau"           { mkL T_tau       }
+<ref> "priority"      { mkL T_priority  }
+<ref> "over"          { mkL T_over      }
+<ref> "]:"            { begin 0         }
+<ref> "]"             { begin 0         }
+<ref> $white+         { skip            }
+<ref> @str            { skip            }
 
 {
 alexMonadScan = do

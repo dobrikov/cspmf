@@ -114,6 +114,7 @@ data PrimToken
   | T_closeBrace   -- "}"
   | T_openBrack    -- "["
   | T_closeBrack   -- "]"
+  | T_startAssert  -- ":["
   | T_openOxBrack  -- "[|"
   | T_closeOxBrack -- "|]"
   | T_openBrackBrack  -- "[["
@@ -132,15 +133,14 @@ data PrimToken
   | T_revivalTesting -- "[V="
   | T_revivalTestingDiv -- "[VD="
   | T_tauPriorityOp -- "[TP="
-  | T_TauPriorityOver
-  | T_deadlockFreeF
-  | T_deadlockFreeT
-  | T_deadlockFreeFD
-  | T_deterministicF
-  | T_deterministicFD
-  | T_deterministicT
-  | T_livelockFree
+  | T_tau
+  | T_priority
+  | T_over
+  | T_deadlock
+  | T_deterministic
+  | T_livelock
+  | T_free
   | T_F
-  | T_FD
   | T_T
+  | T_FD
   deriving (Show,Eq,Ord,Typeable, Data)

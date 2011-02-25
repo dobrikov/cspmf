@@ -182,40 +182,6 @@ refineOp = withLoc $ do
     T_revivalTestingDiv -> return RevivalTestingDiv
     T_tauPriorityOp -> return TauPriorityOp
     _              -> fail "Unexpected Token"
-
-fdrModelO :: PT LFDRModelsO
-fdrModelO = withLoc $ do 
-  tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
-  case tok of
-    T_deadlockFreeF   -> return DeadlockFreeF
-    T_deadlockFreeFD  -> return DeadlockFreeFD
-    T_deadlockFreeT   -> return DeadlockFreeT
-    T_deterministicF  -> return DeterministicF
-    T_deterministicFD -> return DeterministicFD
-    T_deterministicT  -> return DeterministicT
-    T_livelockFree    -> return LivelockFreeO
-    _                 -> fail "Unexpected Token"
-
-fdrModel :: PT LFDRModels
-fdrModel = withLoc $ do 
-  tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
-  case tok of
-    T_deadlockFreeF   -> return DeadlockFree
-    T_deadlockFreeFD  -> return DeadlockFree
-    T_deadlockFreeT   -> return DeadlockFree
-    T_deterministicF  -> return Deterministic
-    T_deterministicFD -> return Deterministic
-    T_deterministicT  -> return Deterministic
-    T_livelockFree    -> return LivelockFree
-    _                 -> fail "Unexpected Token"
-
-tauRefineOp :: PT LTauRefineOp
-tauRefineOp = withLoc $ do 
-  tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
-  case tok of
-    T_trace  -> return TauTrace
-    T_Refine -> return TauRefine
-    _        -> fail "Unexpected Token"
   
 anyBuiltIn :: PT Const
 anyBuiltIn = do
@@ -335,7 +301,6 @@ lsBody = liftM2 (,) parseRangeExp (optionMaybe parseComprehension)
       s <- parseExp_noPrefix
       token T_dotdot
       return $ RangeOpen s
-
 
 closureExp :: PT LExp
 closureExp = withLoc $ do
@@ -887,10 +852,13 @@ topDeclList = do
  
   assertListRef = withLoc $ do
     token T_assert
+    nots <- many $ token T_not
     p1 <- parseExp
     op <- refineOp
     p2 <- parseExp
-    return $ AssertRefine p1 op p2
+    case even $ length nots of
+      True  -> return $ AssertRefine False p1 op p2
+      False -> return $ AssertRefine True  p1 op p2
 
   assertBool = withLoc $ do
     token T_assert
@@ -899,46 +867,66 @@ topDeclList = do
 
   assertTauPrio = withLoc $ do
     token T_assert
+    nots <- many $ token T_not
     p1 <- parseExp
     op <- tauRefineOp
     p2 <- parseExp
-    token T_TauPriorityOver
+    token T_tau
+    token T_priority
+    many $ token T_over
     set <- parseExp
-    return $ AssertTauPrio p1 op p2 set
+    case even $ length nots of
+      True  -> return $ AssertTauPrio False p1 op p2 set
+      False -> return $ AssertTauPrio True  p1 op p2 set
+     where
+      tauRefineOp :: PT LTauRefineOp
+      tauRefineOp = withLoc $ do 
+        tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
+        case tok of
+         T_trace  -> return TauTrace
+         T_Refine -> return TauRefine
+         _        -> fail "Unexpected Token"
 
   assertIntFDRChecks = withLoc $ do
     token T_assert
-    p <- parseExp
-    model <- fdrModelO 
-    case unLabel model of
-      DeadlockFreeF   -> return $ AssertModelCheck False p (labeled DeadlockFree)  (Just F)
-      DeadlockFreeFD  -> return $ AssertModelCheck False p (labeled DeadlockFree)  (Just FD)
-      DeadlockFreeT   -> return $ AssertModelCheck False p (labeled DeadlockFree)  (Just T)
-      DeterministicF  -> return $ AssertModelCheck False p (labeled Deterministic) (Just F)
-      DeterministicFD -> return $ AssertModelCheck False p (labeled Deterministic) (Just FD)
-      DeterministicT  -> return $ AssertModelCheck False p (labeled Deterministic) (Just T)
-      _               -> return $ AssertModelCheck False p (labeled LivelockFree)  Nothing
-
-  assertNotIntFDRChecks = withLoc $ do
-    token T_assert
-    token T_not
-    p <- parseExp
-    model <- fdrModelO 
-    case unLabel model of
-      DeadlockFreeF   -> return $ AssertModelCheck True p (labeled DeadlockFree)  (Just F)
-      DeadlockFreeFD  -> return $ AssertModelCheck True p (labeled DeadlockFree)  (Just FD)
-      DeadlockFreeT   -> return $ AssertModelCheck True p (labeled DeadlockFree)  (Just T)
-      DeterministicF  -> return $ AssertModelCheck True p (labeled Deterministic) (Just F)
-      DeterministicFD -> return $ AssertModelCheck True p (labeled Deterministic) (Just FD)
-      DeterministicT  -> return $ AssertModelCheck True p (labeled Deterministic) (Just T)
-      _               -> return $ AssertModelCheck True p (labeled LivelockFree)  Nothing
- 
+    nots    <- many $ token T_not
+    p       <- parseExp
+    model   <- fdrModel
+    extmode <- many $ extsMode
+    case even $ length nots of
+      True  -> return $ AssertModelCheck False  p model (case extmode of 
+                                                         (h:_) -> Just h
+                                                         _     -> Nothing)
+      False -> return $ AssertModelCheck True  p model (case extmode of 
+                                                         (h:_) -> Just h
+                                                         _     -> Nothing)
+      where
+       fdrModel :: PT FDRModels
+       fdrModel = do
+        tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
+        case tok of 
+         T_deadlock  -> do
+                         many1 $ token T_free
+                         return DeadlockFree
+         T_deterministic -> return Deterministic
+         T_livelock  -> do
+                         many1 $ token T_free
+                         return LivelockFree
+         _               -> fail "Modus is not supported by this parser."
+  
+       extsMode :: PT FdrExt
+       extsMode =  tokenPrimExDefault test
+         where 
+          test tok = case tokenClass tok of
+                  T_F   -> Just F
+                  T_FD  -> Just FD
+                  T_T   -> Just T
+                  _     -> Nothing
 
   parseAssert :: PT LAssertDecl
-  parseAssert =  try assertNotIntFDRChecks
-             <|> try assertIntFDRChecks 
+  parseAssert =  try assertTauPrio
+             <|> try assertIntFDRChecks
              <|> try assertListRef
-             <|> try assertTauPrio
              <|> assertBool
              <?> "assert Declaration"
 
@@ -982,7 +970,7 @@ topDeclList = do
     token T_nametype
     i <- ident
     token_is
-    t<-typeExp
+    t <- typeExp
     return $ NameType i t
 
   parseChannel :: PT LDecl
