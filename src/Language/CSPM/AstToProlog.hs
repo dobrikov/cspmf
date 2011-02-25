@@ -244,20 +244,21 @@ td decl = case unLabel decl of
     mkChannel Nothing  i = nTerm "channel" [ plNameTerm i, nTerm "type" [term $ atom "dotUnitType" ]]
     mkChannel (Just t) i = nTerm "channel" [ plNameTerm i, nTerm "type" [mkTypeDef t]]
 
+
+
     mkAssert :: LAssertDecl -> [Term]
     mkAssert ass = case unLabel ass of
       AssertBool e -> [ nTerm "assertBool" [te e] ]
-      AssertRefine p1 m p2
-        -> [ nTerm "assertRef" [te p1, termShow m, te p2, plLoc decl] ]
-      AssertTauPrio p1 m p2 e
-        -> [ nTerm "assertTauPrio" [te p1, termShow m, te p2, te e, plLoc decl] ]
-      AssertModelCheck p m
-        -> [ nTerm "assertModelCheck" [te p, termShow m] ]
-
+      AssertRefine b p1 m p2
+        -> [ nTerm "assertRef" [aTerm $ show b, te p1, termShow m, te p2, plLoc decl] ]
+      AssertTauPrio b p1 m p2 e
+        -> [ nTerm "assertTauPrio" [aTerm $ show b, te p1, termShow m, te p2, te e, plLoc decl] ]
+      AssertModelCheck b p m (Just ext)
+        -> [ nTerm "assertModelCheckExt" [aTerm $ show b, te p, termShow m, termShow ext] ]
+      AssertModelCheck b p m Nothing
+        -> [ nTerm "assertModelCheck" [aTerm $ show b, te p, termShow m ] ]
     termShow :: Show a => Labeled a -> Term
     termShow = aTerm . show . unLabel
-
-
 
 plName :: LIdent -> Atom
 plName l
@@ -314,7 +315,7 @@ mkSrcLoc loc =  case loc of
     iatom = atom
 
 
--- | Translate a "AstAnnotation" with "UnqiueIdent"ifier (i.e. a Symboltable)
+-- | Translate a "AstAnnotation" with "UnqiueIdentifier" (i.e. a Symboltable)
 -- into a "Doc" containing Prolog facts
 mkSymbolTable :: AstAnnotation UniqueIdent -> Doc
 mkSymbolTable ids 
