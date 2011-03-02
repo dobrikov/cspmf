@@ -12,12 +12,13 @@ import Language.CSPM.AstToProlog (cspToProlog,mkSymbolTable)
 --import Language.CSPM.DLL.Version (versionStr,versionNum)
 import Language.Prolog.PrettyPrint.Direct
 
+import System.Environment(getArgs)
 import Control.Exception
 import System.Exit
 import System.CPUTime
 import Text.PrettyPrint
 
-{-
+
 main :: IO ()
 main = do
   args <- getArgs
@@ -28,7 +29,7 @@ main = do
     _ -> do
       putStrLn "Start with two arguments (input filename and output filename)"
       exitFailure
--}
+
 
 -- | translateToProlog reads a CSP-M spec from inFile
 -- and writes the Prolog representation to outFile.
