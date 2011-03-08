@@ -14,12 +14,12 @@ License:             BSD3
 category:            Language,Formal Methods,Concurrency
 License-File:        LICENSE
 Author:              Marc Fontaine
-Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>
+Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>,me@dobrikov.biz
 Homepage:            http://www.stups.uni-duesseldorf.de/~fontaine/csp
 Stability:           maintained
 Tested-With:         GHC == 7.0.1
 
-cabal-Version:       >= 1.8
+cabal-Version:       >= 1.10
 build-type: Simple
 Extra-source-files:
 
@@ -30,6 +30,7 @@ flag testing {
 
 
 library
+  Default-Language: Haskell2010
   if flag(testing) {
     buildable: False
   }
