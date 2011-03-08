@@ -4,15 +4,14 @@
 -- Copyright   :  (c) Fontaine 2008 - 2011
 -- License     :  BSD3
 -- 
--- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
+-- Maintainer  :  fontaine@cs.uni-duesseldorf.de,me@dobrikov.biz
 -- Stability   :  experimental
 -- Portability :  GHC-only
 --
--- This modules defines a Parser for CSPM
+-- This modules defines a Parser for CSP-M
 -- 
 -----------------------------------------------------------------------------
 {- todo:
-* add Autoversion to packet
 * add wrappers for functions that throw dynamic exceptions
 -}
 
@@ -892,8 +891,8 @@ topDeclList = do
     model   <- fdrModel
     extmode <- many $ extsMode
     let ext = case extmode of
-        (h:_) -> Just h
-         _     -> Nothing
+          (h:_) -> Just h
+          _     -> Nothing
     return $ AssertModelCheck negated p model ext
       where
        fdrModel :: PT LFDRModels
@@ -981,8 +980,7 @@ topDeclList = do
 
   typeTuple = inSpan TypeTuple $ inParens $ sepBy1Comma parseExp
 
-  typeDot = inSpan TypeDot $
-    sepBy1 parseExpBase $ token T_dot
+  typeDot = inSpan TypeDot $ sepBy1 parseExpBase $ token T_dot
 
   parsePrint :: PT LDecl
   parsePrint = withLoc $ do
