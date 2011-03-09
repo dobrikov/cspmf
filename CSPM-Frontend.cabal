@@ -58,6 +58,7 @@ library
     Language.CSPM.AstUtils
     Language.CSPM.TokenClasses
     Language.CSPM.PrettyPrinter
+    Language.CSPM.LexHelper
 --    Language.CSPM.PatternCompiler
 --    Language.CSPM.TestScript
     Text.ParserCombinators.Parsec.ExprM
@@ -66,4 +67,4 @@ library
 --    Language.CSPM.Version
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper
-    Language.CSPM.LexHelper
+    

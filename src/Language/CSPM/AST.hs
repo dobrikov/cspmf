@@ -109,6 +109,7 @@ data Module a = Module {
 
 data FromParser deriving Typeable
 instance Data FromParser
+instance Eq FromParser
 
 castModule :: Module a -> Module b
 castModule (Module t d s) = Module t d s

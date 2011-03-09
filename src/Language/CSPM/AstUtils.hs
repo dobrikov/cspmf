@@ -20,6 +20,7 @@ module Language.CSPM.AstUtils
   ,showAst
   ,computeFreeNames
   ,getModuleAsserts
+  ,annulNodeId
   )
 where
 
@@ -56,6 +57,12 @@ removeParens ast
       Parens e -> e
       _ -> x
 
+annulNodeId :: Data a => Labeled (Module a) -> Labeled (Module a)
+annulNodeId ast 
+  = everywhere (mkT nID) ast
+  where
+    nID :: NodeId -> NodeId
+    nID _ = NodeId { unNodeId = 0 }
 -- | unUniqueIdent replaces the all UIdent with the Ident of the the new name, thus forgetting
 -- | additional information like the bindingside, etc.
 -- | Usefull to get a smaller AST. 

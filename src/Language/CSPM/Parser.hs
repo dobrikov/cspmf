@@ -12,6 +12,7 @@
 -- 
 -----------------------------------------------------------------------------
 {- todo:
+* add Autoversion to packet
 * add wrappers for functions that throw dynamic exceptions
 -}
 
@@ -749,7 +750,7 @@ parsePatternCore =
     varPat = inSpan VarPat ident
     singleSetPat = try $ inSpan SingleSetPat $ inBraces parsePattern
     emptySetPat = withLoc ( token T_openBrace >> token T_closeBrace >> return EmptySetPat )
-    listPatEnum =  inSpan ListEnumPat $ between token_lt token_gt (sepByComma parsePattern)
+    listPatEnum = inSpan ListEnumPat $ between token_lt token_gt (sepByComma parsePattern)
     tuplePatEnum = inSpan TuplePat $ inParens (sepByComma parsePattern)
 
 
@@ -891,8 +892,14 @@ topDeclList = do
     model   <- fdrModel
     extmode <- many $ extsMode
     let ext = case extmode of
-          (h:_) -> Just h
-          _     -> Nothing
+               []    -> case unLabel model of
+                         DeadlockFree -> Just (labeled FD)
+                         Deterministic -> Just (labeled FD)
+                         _ -> Nothing
+               (h:_) -> case unLabel model of
+                         LivelockFree -> Nothing
+                         _ -> Just h
+--               _     -> Nothing
     return $ AssertModelCheck negated p model ext
       where
        fdrModel :: PT LFDRModels
@@ -980,7 +987,8 @@ topDeclList = do
 
   typeTuple = inSpan TypeTuple $ inParens $ sepBy1Comma parseExp
 
-  typeDot = inSpan TypeDot $ sepBy1 parseExpBase $ token T_dot
+  typeDot = inSpan TypeDot $
+    sepBy1 parseExpBase $ token T_dot
 
   parsePrint :: PT LDecl
   parsePrint = withLoc $ do

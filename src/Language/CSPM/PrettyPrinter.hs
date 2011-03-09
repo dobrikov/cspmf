@@ -4,7 +4,7 @@
 -- Copyright   :  (c) Ivaylo Dobrikov 2010
 -- License     :  BSD
 -- 
--- Maintainer  :  me@dobrikov.biz
+-- Maintainer  :  Ivaylo Dobrikov (me@dobrikov.biz)
 -- Stability   :  experimental
 -- Portability :  GHC-only
 -- 
@@ -27,10 +27,10 @@ dropCsp str = fst $ break (== '.') str
 runPretty :: FilePath -> IO ()
 runPretty f = 
  do 
-  str      <- parseFile f
+  ast      <- parseFile f
   let fileName = dropCsp f
-  writeFile (fileName ++ ".ast") (show str)
-  writeFile (fileName ++ "Pretty.csp") (toPrettyString str) 
+  writeFile (fileName ++ ".ast") (show ast)
+  writeFile (fileName ++ "Pretty.csp") (toPrettyString ast) 
 
 toPrettyString :: Module a -> String
 toPrettyString = render . pp
@@ -60,6 +60,13 @@ separateElemsWith list s = hsep $ punctuate s (map pp list)
 catElemsWith :: (PP t) => [t] -> Doc -> Doc
 catElemsWith list s = hcat $ punctuate s $ map pp list
 
+catElemsWith' :: [LPattern] -> Doc
+catElemsWith' []     = text ""
+catElemsWith' [x]    = pp x
+catElemsWith' (h:t) = (case unLabel h of
+   DotPat _ -> parens $ pp h
+   _        -> pp h) <> dot <> catElemsWith' t 
+
 printFunBind :: LIdent -> [FunCase] -> Doc
 printFunBind ident lcase = vcat $ map (printIdent (unLabel ident) <>) (map printCase lcase) 
 
@@ -67,7 +74,11 @@ printCase :: FunCase -> Doc
 printCase c = 
    case c of 
     FunCaseI pat  expr -> ((parens $ catElemsWith pat comma) <+> equals <+> pp expr)
-    FunCase (pat:_) expr -> ((parens $ catElemsWith pat comma) <+> equals <+> pp expr) 
+    FunCase  list expr -> (recursivePat list) <+> equals <+> pp expr 
+
+recursivePat :: FunArgs -> Doc
+recursivePat [] = text ""
+recursivePat (h:t) = (parens $ catElemsWith h comma) <> recursivePat t
 
 instance PP Decl where
   pp (PatBind     pat    expr)         = pp pat  <+> equals <+> (pp expr)
@@ -100,6 +111,10 @@ typeDef typ = case unLabel typ of
                TypeTuple lexp ->  parens $ catElemsWith lexp comma
                TypeDot   lexp ->  catElemsWith lexp dot
 
+--printCallFun :: [[Exp]] -> PP Exp
+printCallFun []    = text ""
+printCallFun (h:t) = (parens $ separateElemsWith h comma) <> printCallFun t
+
 instance PP Exp where
   pp (Var     ident)                     = printIdent $ unLabel ident
   pp (IntExp  i)                         = integer i
@@ -112,9 +127,10 @@ instance PP Exp where
   pp (Ifte    expr1  expr2 expr3)           = text "" $$ (nest 2 (text "if")) <+> pp expr1
                                                                 $$ nest 4 (text "then") <+> pp expr2 
                                                                         $$ nest 4 (text "else" <+> pp expr3)
-  pp (CallFunction expr   [lexp])         = pp expr   <> (parens $ separateElemsWith lexp comma)
+  pp (CallFunction expr   list)          = pp expr  <> printCallFun list
   pp (CallBuiltIn  built [lexp])         = pp built <> (parens $ separateElemsWith lexp comma)
-  pp (Lambda lpat expr)                   = text "\\" <+> (separateElemsWith lpat comma <+> text "@") <+> pp expr
+--  pp (CallFunction _ _)                  = text ""
+  pp (Lambda lpat expr)                  = text "\\" <+> (separateElemsWith lpat comma <+> text "@") <+> pp expr
   pp Stop                                = text "STOP"
   pp Skip                                = text "SKIP"
   pp CTrue                               = text "true"
@@ -122,6 +138,8 @@ instance PP Exp where
   pp Events                              = text "Events"
   pp BoolSet                             = text "Bool"
   pp IntSet                              = text "Int"
+  pp ProcSet                             = text ""
+  pp (ProcException _ _ _)               = text ""
 --  pp ProcSet 
   pp (TupleExp lexp)                     = parens $ separateElemsWith lexp comma
   pp (Parens   expr)                      = parens $ pp expr
@@ -215,7 +233,7 @@ instance PP Pattern where
   pp (ConstrPat ident)  = printIdent $ unLabel ident
   pp (Also pat)         = ppAlso (Also pat)
   pp (Append pat)       = catElemsWith pat (text "^")
-  pp (DotPat pat)       = catElemsWith pat (dot)
+  pp (DotPat pat)       = catElemsWith' pat
   pp (SingleSetPat pat) = text "{" <+> (pp pat) <+> text "}"  
   pp EmptySetPat        = text "{ }"
   pp (ListEnumPat pat)  = text "<" <+>  separateElemsWith pat comma <+> text ">"
@@ -229,9 +247,12 @@ ppAlso :: Pattern -> Doc
 ppAlso (Also [])    = text ""
 ppAlso (Also (h:t)) = 
    case unLabel h of
-     DotPat _ -> text "(" <> (pp h) <> text ")" <> text "@@" <> ppAlso (Also t)
-     Append _ -> text "(" <> (pp h) <> text ")" <> text "@@" <> ppAlso (Also t)
-     _        -> pp h <> text "@@" <> ppAlso (Also t)
+     DotPat _ -> if length t > 0 then {-text "(" <>-} (pp h) {-<> text ")"-} <> text "@@" <> ppAlso (Also t)
+                                 else pp h
+     Append _ -> if length t > 0 then {-text "(" <>-} (pp h) {-<> text ")"-} <> text "@@" <> ppAlso (Also t)
+                                 else pp h
+     _        -> if length t > 0 then pp h <> text "@@" <> ppAlso (Also t)
+                                 else pp h
 ppAlso _ = text ""
 
 -- disticts the cases for different syntax-records for the Ident datatype
