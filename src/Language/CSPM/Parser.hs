@@ -4,7 +4,7 @@
 -- Copyright   :  (c) Fontaine 2008 - 2011
 -- License     :  BSD3
 -- 
--- Maintainer  :  fontaine@cs.uni-duesseldorf.de,me@dobrikov.biz
+-- Maintainer  :  fontaine@cs.uni-duesseldorf.de, me@dobrikov.biz
 -- Stability   :  experimental
 -- Portability :  GHC-only
 --
@@ -12,7 +12,6 @@
 -- 
 -----------------------------------------------------------------------------
 {- todo:
-* add Autoversion to packet
 * add wrappers for functions that throw dynamic exceptions
 -}
 
@@ -71,7 +70,7 @@ data PState
  = PState {
   lastTok        :: Token
  ,gtCounter      :: Int
- ,gtMode         :: GtMode
+ ,gtLimit        :: Maybe Int
  ,nodeIdSupply   :: NodeId
  } deriving Show
 
@@ -79,17 +78,9 @@ initialPState :: PState
 initialPState = PState {
    lastTok = Token.tokenSentinel 
   ,gtCounter = 0
-  ,gtMode = GtNoLimit
+  ,gtLimit = Nothing
   ,nodeIdSupply = mkNodeId 0
   }
-
-setGtMode :: GtMode-> PState -> PState
-setGtMode mode env = env {gtMode = mode}
-
-countGt :: PState -> PState
-countGt env = env {gtCounter = gtCounter env +1 }
-
-data GtMode=GtNoLimit | GtLimit Int deriving Show
 
 mkLabeledNode :: SrcLoc -> t -> PT (Labeled t)
 mkLabeledNode loc node = do
@@ -469,13 +460,7 @@ procTable :: OpTable
      ,infixM (nfun2 T_ge      F_GE ) AssocLeft
      ,infixM (nfun2 T_le      F_LE ) AssocLeft
      ,infixM (nfun2 T_lt      F_LT ) AssocLeft
-     ,infixM (do
-        s <- getNextPos
-        gtSym
-        e <- getLastPos
-        op <- mkLabeledNode (mkSrcSpan s e) (BuiltIn F_GT)
-        return $ (\a b-> mkLabeledNode (posFromTo a b) $ Fun2 op a b)
-      ) AssocLeft
+     ,infixM (inSpan BuiltIn (gtSym >> return F_GT ) >>= nfun2b) AssocLeft
     ]
    ,[ prefixM ( token T_not >> unOp NotExp )]
    ,[ infixM ( token T_and >> binOp AndExp) AssocLeft ]
@@ -504,10 +489,10 @@ procTable :: OpTable
     return $ (\a -> mkLabeledNode pos $ Fun1 fkt a)
 
   nfun2 :: TokenClasses.PrimToken -> Const -> PT (LExp -> LExp -> PT LExp)
-  nfun2 tok cst = do
-    fkt <- biOp tok cst
-    pos<-getLastPos 
---   return $ \a b -> mkLabeledNode (posFromTo a b) $ Fun2 fkt a b
+  nfun2 tok cst = biOp tok cst >>= nfun2b
+
+  nfun2b fkt = do
+    pos <- getLastPos
     return $ \a b -> mkLabeledNode (mkSrcPos pos) $ Fun2 fkt a b
 
   binOp :: (LExp -> LExp -> Exp) -> PT (LExp -> LExp -> PT LExp)
@@ -538,7 +523,22 @@ procTable :: OpTable
     epos <- getLastPos
     return $ (\a b  -> mkLabeledNode (mkSrcSpan spos epos) $ ProcException al a b)
 
-
+-- this is complicated and meight as well be buggy !
+  gtSym :: PT ()
+  gtSym = try $ do
+    token T_gt
+    updateState (\env -> env {gtCounter = gtCounter env +1 })  --we count the occurences of gt-symbols
+    next <- testFollows parseExp  -- and accept it only if it is followed by an expression
+    case next of
+      Nothing -> fail "Gt token not followed by an expression"
+      Just _  -> do                 --
+        mode <- getStates gtLimit
+        case mode of
+          Nothing -> return ()
+          Just x  -> do
+            cnt <- getStates gtCounter
+            if cnt < x then return ()
+                       else fail "(Gt token belongs to sequence expression)"
 
 parseExp :: PT LExp
 parseExp =
@@ -557,6 +557,7 @@ parseExp_noPrefix = parseDotExpOf parseExp_noPrefix_NoDot
      parseExp_noPrefix_NoDot = buildExpressionParser opTable parseExpBase
 
 -- todo :: parseExpBase does include STOP and SKIP 
+
 parseExp_noProc :: PT LExp
 parseExp_noProc
   = parseDotExpOf $ buildExpressionParser baseTable parseExpBase
@@ -584,23 +585,6 @@ funApplyImplicit = do
   pos <-getPos
   return $ (\fkt -> mkLabeledNode pos $ CallFunction fkt args )
 
-
--- this is complicated and meight as well be buggy !
-gtSym :: PT ()
-gtSym = try $ do
-  token T_gt
-  updateState countGt  --we count the occurences of gt-symbols
-  next <- testFollows parseExp  -- and accept it only if it is followed by an expression
-  case next of
-    Nothing -> fail "Gt token not followed by an expression"
-    (Just _) -> do                 --
-      mode <- getStates gtMode
-      case mode of
-        GtNoLimit -> return ()
-        (GtLimit x) -> do
-          cnt <- getStates gtCounter
-          if cnt < x then return ()
-                     else fail "(Gt token belongs to sequence expression)"
 {-
 parse an sequenceexpression <...>
 we have to be carefull not to parse the end of sequence ">"
@@ -637,13 +621,15 @@ attention: this can be nested !!
 
 parseWithGtLimit :: Int -> PT a -> PT a
 parseWithGtLimit maxGt parser = do
-  oldLimit <- getStates gtMode
-  updateState $ setGtMode $ GtLimit maxGt
+  oldLimit <- getStates gtLimit
+  setGtLimit $ Just maxGt
   res <- optionMaybe parser
-  updateState $ setGtMode oldLimit
+  setGtLimit oldLimit
   case res of
     Just p -> return p
     Nothing -> fail "contents of sequence expression"
+  where
+    setGtLimit g = updateState $ \env -> env {gtLimit = g}
 
 proc_op_aparallel :: PT (LExp -> LExp -> PT LExp)
 proc_op_aparallel = try $ do
@@ -750,7 +736,7 @@ parsePatternCore =
     varPat = inSpan VarPat ident
     singleSetPat = try $ inSpan SingleSetPat $ inBraces parsePattern
     emptySetPat = withLoc ( token T_openBrace >> token T_closeBrace >> return EmptySetPat )
-    listPatEnum = inSpan ListEnumPat $ between token_lt token_gt (sepByComma parsePattern)
+    listPatEnum =  inSpan ListEnumPat $ between token_lt token_gt (sepByComma parsePattern)
     tuplePatEnum = inSpan TuplePat $ inParens (sepByComma parsePattern)
 
 
@@ -987,8 +973,7 @@ topDeclList = do
 
   typeTuple = inSpan TypeTuple $ inParens $ sepBy1Comma parseExp
 
-  typeDot = inSpan TypeDot $
-    sepBy1 parseExpBase $ token T_dot
+  typeDot = inSpan TypeDot $ sepBy1 parseExpBase $ token T_dot
 
   parsePrint :: PT LDecl
   parsePrint = withLoc $ do

@@ -154,7 +154,6 @@ csp :-
 <0> "="  { mkL T_is }
 <0> "[[" { mkL T_openBrackBrack }
 <0> "]]" { mkL T_closeBrackBrack }
-
 <0> $white+			{ skip }
 <0> "--".*			{ mkL L_LComment }
 "{-"				{ block_comment }
