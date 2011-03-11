@@ -142,8 +142,8 @@ NEWSPEC(num) =
    num > 0 & |~| cc :CUSTOMER @ leaveBank. cc -> NEWSPEC(num-1)
 
 
- assert SPEC [T= BankSystem
- assert SPEC [F= BankSystem
+assert SPEC [T= BankSystem
+assert SPEC [F= BankSystem
 
 assert SPEC2 [T= BankSystem
 assert SPEC2 [F= BankSystem
