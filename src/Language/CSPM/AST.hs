@@ -305,7 +305,7 @@ data AssertDecl
   = AssertBool LExp
   | AssertRefine   Bool LExp LRefineOp    LExp
   | AssertTauPrio  Bool LExp LTauRefineOp LExp LExp
-  | AssertModelCheck Bool LExp LFDRModels   (Maybe LFdrExt)
+  | AssertModelCheck Bool LExp LFDRModels (Maybe LFdrExt)
   deriving ( Eq, Ord, Show,Typeable,Data)
 
 type LFDRModels = Labeled FDRModels

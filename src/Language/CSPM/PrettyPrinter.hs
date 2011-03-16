@@ -263,20 +263,16 @@ printIdent ident =
    UIdent _ -> text $ realName $ unUIdent ident 
 
 instance PP AssertDecl where
-  pp (AssertBool expr) = pp expr
-  pp (AssertRefine n expr1 op expr2) = (if n then text "not " else text "") <>
-                    (pp expr1 <+> pp op <+> pp expr2)
-  pp (AssertTauPrio n expr1 op expr2 expr3) = (if n then text "not " else text "") <> 
-                    (pp expr1 <+> pp op <+> pp expr2 <+> text ":[tau priority over]:" <+> pp expr3)
-  pp (AssertModelCheck n expr m mb) = (if n then text "not " else text "") <>  
-                    (pp expr <+> text ":[" <+> pp m <+> case mb of
-                                           Nothing  -> case unLabel m of
-                                                        Deterministic -> text "[FD]"
-                                                        DeadlockFree  -> text "[FD]"
-                                                        _             -> text ""
-                                           Just fdr -> case unLabel m of
-                                                        LivelockFree -> text ""
-                                                        _            -> pp fdr) <+> text "]"
+  pp a = case a of
+     AssertBool expr -> pp expr
+     AssertRefine n expr1 op expr2
+       -> negated n $ pp expr1 <+> pp op <+> pp expr2
+     AssertTauPrio n expr1 op expr2 expr3
+       -> negated n $ pp expr1 <+> pp op <+> pp expr2 <+> text ":[tau priority over]:" <+> pp expr3
+     AssertModelCheck n expr m mb
+       -> negated n $ pp expr <+> text ":[" <+> pp m <+> maybe empty pp mb <+> text "]"
+    where
+      negated ar doc = if ar then text "not" <+> doc else doc
 
 instance PP FdrExt where
   pp F  = text "[F]"

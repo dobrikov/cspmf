@@ -877,15 +877,10 @@ topDeclList = do
     p       <- parseExp
     model   <- fdrModel
     extmode <- many $ extsMode
-    let ext = case extmode of
-               []    -> case unLabel model of
-                         DeadlockFree -> Just (labeled FD)
-                         Deterministic -> Just (labeled FD)
-                         _ -> Nothing
-               (h:_) -> case unLabel model of
-                         LivelockFree -> Nothing
-                         _ -> Just h
---               _     -> Nothing
+    ext     <-  case extmode of
+               []   -> return Nothing
+               [x]  -> return $ Just x
+               _    -> fail "More than one model extension."
     return $ AssertModelCheck negated p model ext
       where
        fdrModel :: PT LFDRModels
