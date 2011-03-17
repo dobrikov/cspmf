@@ -29,13 +29,15 @@ module Language.CSPM.Rename
   ,RenameError (..)
   ,RenameInfo (..)
   ,ModuleFromRenaming
+  ,FromRenaming
   )
 where
 import Language.CSPM.AST hiding (prologMode,bindType)
 import qualified Language.CSPM.AST as AST
 import qualified Language.CSPM.SrcLoc as SrcLoc
 
-import Data.Generics.Basics (Data)
+import Data.Generics.Basics (Data(..))
+import Data.Data (mkDataType)
 import Data.Generics.Schemes (everywhere)
 import Data.Generics.Aliases (mkT)
 import Data.Typeable (Typeable)
@@ -51,6 +53,10 @@ import qualified Data.IntMap as IntMap
 
 data FromRenaming deriving Typeable
 instance Data FromRenaming
+  where
+    gunfold = error "instance Data FromRenaming gunfold"
+    toConstr = error "instance Data FromRenaming toConstr"
+    dataTypeOf _ = mkDataType "Language.CSPM.Rename.FromRenaming" []
 
 type ModuleFromRenaming = Module FromRenaming
 {-# DEPRECATED applyRenaming, getRenaming "use renameModule instead" #-}
@@ -84,7 +90,7 @@ type UniqueName = Int
 
 data RenameInfo = RenameInfo
   {
-    nameSupply :: UniqueName
+    nameSupply :: Int
 -- used to check that we do not bind a name twice inside a pattern
    ,localBindings :: Bindings  
    ,visible  :: Bindings       -- everything that is visible

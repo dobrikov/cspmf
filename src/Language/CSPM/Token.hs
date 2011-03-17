@@ -8,7 +8,7 @@
 -- Stability   :  provisional
 -- Portability :  GHC-only
 --
--- This module contains the datatype Tokens.
+-- This module contains the data type Tokens and some helper functions
 
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 
@@ -24,7 +24,7 @@ import Data.Ix
 import Control.Exception (Exception)
 
 newtype TokenId = TokenId {unTokenId :: Int}
-  deriving (Show,Eq,Ord,Enum,Ix, Typeable, Data)
+  deriving (Show, Eq, Ord, Enum, Ix, Typeable, Data)
 
 mkTokenId :: Int -> TokenId
 mkTokenId = TokenId
@@ -59,7 +59,7 @@ data Token = Token
   , tokenLen    :: Int
   , tokenClass  :: PrimToken
   , tokenString :: String
-  } deriving (Show,Eq,Ord, Typeable, Data)
+  } deriving (Show, Eq, Ord, Typeable, Data)
 
 tokenSentinel :: Token
 tokenSentinel = Token
@@ -73,5 +73,4 @@ showPosn :: AlexPosn -> String
 showPosn (AlexPn _ line col) = show line ++ ':': show col
 
 showToken :: Token -> String
-showToken Token {tokenString=str} = "'"++str++"'"
-
+showToken Token {tokenString = str} = "'" ++ str ++ "'"

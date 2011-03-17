@@ -3,7 +3,6 @@ module Language.CSPM.LexHelper
    lexInclude
   ,lexPlain
   ,filterIgnoredToken
-  ,tokenIsIgnored
   ,tokenIsComment
 )
 where
@@ -12,11 +11,8 @@ import qualified Language.CSPM.Lexer as Lexer (scanner)
 import Language.CSPM.Token (Token(..), LexError(..))
 import Language.CSPM.TokenClasses (PrimToken(..))
 import qualified Data.Set as Set
---import qualified Language.CSPM.Token as Token
---  (Token(..), LexError(..))
 
-{- todo : use an error monad -}
-
+-- | lex a String and process CSP-M include statements
 lexInclude :: String -> IO (Either LexError [Token])
 lexInclude src = do
   case Lexer.scanner src of
@@ -27,6 +23,7 @@ lexInclude src = do
         Left err -> return $ Left err
         Right t -> return $ Right t
 
+-- | lex a String 
 lexPlain :: String -> Either LexError [Token]
 lexPlain src = fmap reverse $ Lexer.scanner src
 
@@ -53,25 +50,28 @@ processIncludeAndReverse tokens = picl_acc tokens []
       }
   picl_acc (h:rest) acc = picl_acc rest $ h:acc
 
--- consumes newlines 
-soakNewLines :: [Token] -> [Token]
-soakNewLines = worker
+-- | remove newlines, that do not end a declaration from the token stream.
+-- | For example newlines next to binary operators.
+soakNewlines :: [Token] -> [Token]
+soakNewlines = worker
   where 
     worker [] = []
     worker [x] = case tokenClass x of
-       L_NewLine -> []
+       L_Newline -> []
        _         -> [x] 
     worker (h1:h2:t) = case (tokenClass h1, tokenClass h2) of
-       (L_NewLine, L_NewLine) -> worker (h1:t)
-       (L_NewLine, _) | isH2NewLineConsumer -> worker $ h2:t
-       (L_NewLine, _) -> h1 : worker (h2:t)
-       (_, L_NewLine) | isH1NewLineConsumer -> worker $ h1:t
-       (_, L_NewLine) -> h1:worker (h2:t)
-       _   -> h1:worker (h2:t)
+       (L_Newline, L_Newline) -> worker (h1:t)
+       (L_Newline, _) | isH2NewLineConsumer -> worker $ h2:t
+       (L_Newline, _) -> h1 : (worker  $ h2:t)
+       (_, L_Newline) | isH1NewLineConsumer -> worker $ h1:t
+       (_, L_Newline) -> h1: (worker $ h2:t)
+       _   -> h1: (worker $ h2:t)
       where
         isH2NewLineConsumer = tokenClass h2 `Set.member` consumeNLBeforeToken
         isH1NewLineConsumer = tokenClass h1 `Set.member` consumeNLAfterToken
-    binaryOperators =  Set.fromList [T_is, T_hat, T_hash, T_times, T_slash, 
+
+    binaryOperators =
+     [T_is, T_hat, T_hash, T_times, T_slash, 
       T_percent, T_plus, T_minus, T_eq, T_neq,
       T_ge, T_le, T_not, T_amp, T_semicolon,
       T_comma, T_triangle, T_box, T_rhd, T_exp,
@@ -84,21 +84,23 @@ soakNewLines = worker
       T_or, T_Refine, T_trace,T_failure, T_failureDivergence,
       T_refusalTesting, T_refusalTestingDiv, T_revivalTesting, 
       T_revivalTestingDiv,T_tauPriorityOp, T_within]
-    consumeNLBeforeToken = Set.fromList [T_closeParen, T_gt,
-                        T_closeBrace, T_closeBrackBrack, T_closePBrace] 
-                           `Set.union` binaryOperators
-    consumeNLAfterToken =  Set.fromList [T_openParen, T_openBrace, T_lt]
-                           `Set.union` binaryOperators
+    consumeNLBeforeToken 
+      = Set.fromList (
+            [T_closeParen, T_gt, T_closeBrace, T_closeBrackBrack, T_closePBrace] 
+         ++ binaryOperators)
+    consumeNLAfterToken
+      = Set.fromList ( [T_openParen, T_openBrace, T_lt] ++ binaryOperators)
 
+-- | Remove comments and newlines, that are not the end of a declaration.
 filterIgnoredToken :: [Token] -> [Token]
-filterIgnoredToken = filter (not . tokenIsIgnored)
+filterIgnoredToken = soakNewlines . removeComments
 
-tokenIsIgnored :: Token -> Bool
-tokenIsIgnored (Token _ _ _ L_LComment _) = True
-tokenIsIgnored (Token _ _ _ L_BComment _) = True
-tokenIsIgnored _ = False
+-- | Remove comments from the token stream.
+removeComments :: [Token] -> [Token]
+removeComments = filter (not . tokenIsComment)
 
+-- | Is the token a line-comment or block-comment ?
 tokenIsComment :: Token -> Bool
-tokenIsComment (Token _ _ _ L_LComment _) = True
-tokenIsComment (Token _ _ _ L_BComment _) = True
-tokenIsComment _ = False
+tokenIsComment t = tc == L_LComment || tc == L_BComment
+  where tc = tokenClass t
+

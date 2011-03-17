@@ -1,14 +1,14 @@
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Language.CSPM.TokenClasses
--- Copyright   :  (c) Fontaine 2008
+-- Copyright   :  (c) Fontaine 2008 - 2011
 -- License     :  BSD
 -- 
 -- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
 -- Stability   :  provisional
 -- Portability :  GHC-only
 --
--- This module contains the datatype Tokens.
+-- This module contains the data type PrimToken.
 
 {-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
 
@@ -19,6 +19,7 @@ import Data.Typeable (Typeable)
 import Data.Generics.Basics (Data)
 import Data.Generics.Instances ()
 
+-- | The token classes of the CSP-M lexer
 data PrimToken
   = L_Integer
   | L_String
@@ -27,6 +28,7 @@ data PrimToken
   | L_BComment
   | L_EOF
   | L_Include
+  | L_Newline
 -- keywords
   | T_channel
   | T_datatype

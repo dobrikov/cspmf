@@ -11,17 +11,12 @@
 -- This modules defines a Parser for CSP-M
 -- 
 -----------------------------------------------------------------------------
-{- todo:
-* add wrappers for functions that throw dynamic exceptions
--}
-
 {-# LANGUAGE DeriveDataTypeable #-}
 
 module Language.CSPM.Parser
 (
   parse
  ,ParseError(..)
- ,PState() -- need to export this to satisfy haddock
 )
 where
 import Language.CSPM.AST
@@ -36,7 +31,7 @@ import Language.CSPM.LexHelper (filterIgnoredToken)
 import Text.ParserCombinators.Parsec.ExprM
 
 import Text.ParserCombinators.Parsec
-  hiding (parse,eof,notFollowedBy,anyToken,label,ParseError,errorPos,token)
+  hiding (parse,eof,notFollowedBy,anyToken,label,ParseError,errorPos,token,newline)
 import Text.ParserCombinators.Parsec.Pos (newPos)
 import qualified Text.ParserCombinators.Parsec.Error as ParsecError
 import Data.Typeable (Typeable)
@@ -45,7 +40,7 @@ import Data.List
 import Prelude hiding (exp)
 import Control.Exception (Exception)
 
-type PT a= GenParser Token PState a
+type PT a = GenParser Token PState a
 
 -- | The 'parse' function parses a List of 'Token'.
 -- It returns a 'ParseError' or a 'Labled' 'Module'.
@@ -58,6 +53,7 @@ parse filename tokenList
   = wrapParseError tokenList $
       runParser (parseModule tokenList) initialPState filename $ filterIgnoredToken tokenList
 
+-- | ParseError data type. This is an instance of Excpetion
 data ParseError = ParseError {
    parseErrorMsg :: String
   ,parseErrorToken :: Token
@@ -135,9 +131,9 @@ inSpan constr exp = do
 parseModule :: [Token.Token] -> PT ModuleFromParser
 parseModule tokenList = do
   s <- getNextPos
-  many newLine
+  many newline
   decl<-topDeclList
-  many newLine 
+  many newline 
   eof <?> "end of module"
   e <- getLastPos
   return $ Module {
@@ -161,6 +157,9 @@ builtInFunctions = Set.fromList
         T_Seq, T_null, T_head, T_tail, T_concat,
         T_elem, T_length, T_CHAOS ]
 -}
+
+newline :: PT ()
+newline = token L_Newline
 
 refineOp :: PT LRefineOp
 refineOp = withLoc $ do 
@@ -230,7 +229,7 @@ sepBy1Comma :: PT x -> PT [x]
 sepBy1Comma a = sepBy1 a commaSeperator
 
 sepByNewLine :: PT x -> PT [x]
-sepByNewLine d = sepBy d newLine
+sepByNewLine d = sepBy d newline
 
 parseComprehension :: PT [LCompGen]
 parseComprehension = token T_mid >> sepByComma (compGenerator <|> compGuard )
@@ -333,10 +332,10 @@ litPat = inSpan IntPat intLit
 letExp :: PT LExp
 letExp = withLoc $ do
   token T_let
-  decl <- parseDeclList
+  declList <- sepByNewLine (funBind <|> patBind)
   token T_within
   exp <- parseExp
-  return $ Let decl exp            
+  return $ Let declList exp            
 
 ifteExp :: PT LExp
 ifteExp = withLoc $ do
@@ -532,14 +531,31 @@ procTable :: OpTable
     epos <- getLastPos
     return $ (\a b  -> mkLabeledNode (mkSrcSpan spos epos) $ ProcException al a b)
 
+{-
+We count the occurences of gt-symbols
+and accept it only if it is followed by an expression.
+If a gtLimit is set, we only accept a maximum number of gt symbols
+-}
+  gtSym :: PT ()
+  gtSym = try $ do
+    token T_gt
+    updateState (\env -> env {gtCounter = gtCounter env +1 })
+    next <- testFollows parseExp
+    case next of
+      Nothing -> fail "Gt token not followed by an expression"
+      Just _  -> do
+        mode <- getStates gtLimit
+        case mode of
+          Nothing -> return ()
+          Just x  -> do
+            cnt <- getStates gtCounter
+            if cnt < x then return ()
+                       else fail "(Gt token belongs to sequence expression)"
 
 
 parseExp :: PT LExp
-parseExp =
-  (parseDotExpOf $
-    buildExpressionParser procTable parseProcReplicatedExp
---    buildExpressionParser opTable parseProcReplicatedExp
-  )
+parseExp
+  = (parseDotExpOf $ buildExpressionParser procTable parseProcReplicatedExp)
   <?> "expression"
 
 
@@ -578,23 +594,6 @@ funApplyImplicit = do
   pos <-getPos
   return $ (\fkt -> mkLabeledNode pos $ CallFunction fkt args )
 
-
--- this is complicated and meight as well be buggy !
-gtSym :: PT ()
-gtSym = try $ do
-  token T_gt
-  updateState countGt  --we count the occurences of gt-symbols
-  next <- testFollows parseExp  -- and accept it only if it is followed by an expression
-  case next of
-    Nothing -> fail "Gt token not followed by an expression"
-    (Just _) -> do                 --
-      mode <- getStates gtMode
-      case mode of
-        GtNoLimit -> return ()
-        (GtLimit x) -> do
-          cnt <- getStates gtCounter
-          if cnt < x then return ()
-                     else fail "(Gt token belongs to sequence expression)"
 {-
 parse an sequenceexpression <...>
 we have to be carefull not to parse the end of sequence ">"
@@ -625,29 +624,31 @@ betweenLtGt parser = do
       return s
 {-
 parse an expression which contains as most count Greater-symbols (">"
-used to leave the last ">" as end of sequence
+the last ">" is left as end of sequence
 attention: this can be nested !!
 -}
 
 parseWithGtLimit :: Int -> PT a -> PT a
 parseWithGtLimit maxGt parser = do
-  oldLimit <- getStates gtMode
-  updateState $ setGtMode $ GtLimit maxGt
+  oldLimit <- getStates gtLimit
+  setGtLimit $ Just maxGt
   res <- optionMaybe parser
-  updateState $ setGtMode oldLimit
+  setGtLimit oldLimit
   case res of
     Just p -> return p
     Nothing -> fail "contents of sequence expression"
+  where
+    setGtLimit g = updateState $ \env -> env {gtLimit = g}
 
 proc_op_aparallel :: PT (LExp -> LExp -> PT LExp)
 proc_op_aparallel = try $ do
   s <- getNextPos
   token T_openBrack
-  a1<-parseExp_noPrefix
+  a1 <- parseExp_noPrefix
   token T_parallel
-  a2<-parseExp_noPrefix
+  a2 <- parseExp_noPrefix
   token T_closeBrack
-  e<-getLastPos
+  e <- getLastPos
   return $ (\p1 p2 -> mkLabeledNode (mkSrcSpan s e ) $ ProcAParallel a1 a2 p1 p2 )
 
 proc_op_lparallel :: PT (LExp -> LExp -> PT LExp)
@@ -780,33 +781,11 @@ parseFktCurryPat = many1 parseFktCspPat
 parseFktCspPat :: PT [LPattern]
 parseFktCspPat = inParens $ sepByComma parsePattern
 
-singleList :: PT a -> PT [a]
-singleList a = do
-  av <-a
-  return [av]
-
-{-
-returns a list of decls
-because funBind can't easily parse a single function
-ToDo : PatBinds are actually different from varbind
-example x={} with patbind will not be polymorphic
--}
-
---channels and datatype declarations are only permitted at the top-level
-localDeclList :: PT [LDecl]
-localDeclList = do
-   decl <- sepByNewLine localDecl
-   return decl
-  where
-    localDecl = funBind <|> patBind
-
 topDeclList :: PT [LDecl]
-topDeclList = do
-  decl <- sepByNewLine parseDecl
-  return decl
+topDeclList = sepByNewLine topDecl 
  where
-  parseDecl :: PT LDecl
-  parseDecl =
+  topDecl :: PT LDecl
+  topDecl =
           funBind
       <|> patBind
       <|> parseAssertDecl
@@ -869,13 +848,9 @@ topDeclList = do
        fdrModel = withLoc $ do
         tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
         case tok of 
-         T_deadlock  -> do
-             many1 $ token T_free
-             return DeadlockFree
+         T_deadlock  -> token T_free >> return DeadlockFree
          T_deterministic -> return Deterministic
-         T_livelock  -> do
-             many1 $ token T_free
-             return LivelockFree
+         T_livelock  -> token T_free >> return LivelockFree
          _ -> fail "Modus is not supported by this parser."
   
        extsMode :: PT LFdrExt

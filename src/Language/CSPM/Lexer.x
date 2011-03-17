@@ -156,10 +156,10 @@ csp :-
 <0> "="  { mkL T_is }
 <0> "[[" { mkL T_openBrackBrack }
 <0> "]]" { mkL T_closeBrackBrack }
-<0> $nl  { mkL L_NewLine}
-<0> $whitechar'+			{ skip }
-<0> "--".*			{ mkL L_LComment }
-"{-"			{ block_comment }
+<0> $nl  { mkL L_Newline}
+<0> $whitechar'+ { skip }
+<0> "--".* { mkL L_LComment }
+"{-"    { block_comment }
 
 -- Fixme : tread this properly
 

@@ -14,7 +14,7 @@
 
 module Language.CSPM.PrettyPrinter
 (
- pp
+ PP (..)
 ,prettyPrintFile
 )
 where
@@ -128,7 +128,7 @@ instance PP Exp where
       ]
     CallFunction expr list -> pp expr  <> printFunArgs list
     CallBuiltIn  builtin [expr] -> pp builtin <> (parens $ hsepPunctuate comma expr)
-    CallBuiltIn  builtin _ -> error "pp Exp: builtin must exactly have one argument"
+    CallBuiltIn  _ _ -> error "pp Exp: builtin must exactly have one argument"
     Lambda pat expr -> text "\\" <+> hsepPunctuate comma pat <+> text "@" <+> pp expr
     Stop    -> text "STOP"
     Skip    -> text "SKIP"

@@ -15,7 +15,7 @@ module Language.CSPM.Utils
  ,handleLexError
  ,handleParseError
  ,handleRenameError
- ,parseFile,testFrontend,parseString)
+ ,parseFile, benchmarkFrontend, parseString)
 where
 
 import Language.CSPM.Parser (ParseError(..), parse)
@@ -48,19 +48,21 @@ handleRenameError handler proc = Exception.catch proc handler
 parseFile :: FilePath -> IO ModuleFromParser
 parseFile fileName = do
   src <- readFile fileName
-  parseString src fileName
-{-
-  tokenList <- Lexer.lexInclude src >>= eitherToExc
-  eitherToExc $ parse fileName tokenList
--}
+  parseNamedString fileName src
 
-parseString :: String -> String -> IO ModuleFromParser
-parseString str name = do
+-- | Small test function which just parses a String.
+parseString :: String -> IO ModuleFromParser
+parseString = parseNamedString "no-file-name"
+
+parseNamedString :: FilePath -> String -> IO ModuleFromParser
+parseNamedString name str = do
   tokenList <- Lexer.lexInclude str >>= eitherToExc
   eitherToExc $ parse name tokenList
 
-testFrontend :: FilePath -> IO (ModuleFromParser, ModuleFromRenaming)
-testFrontend fileName = do
+-- | Lex and parse File.
+-- | Return the module and print some timing infos
+benchmarkFrontend :: FilePath -> IO (ModuleFromParser, ModuleFromRenaming)
+benchmarkFrontend fileName = do
   src <- readFile fileName
 
   putStrLn $ "Reading File " ++ fileName
