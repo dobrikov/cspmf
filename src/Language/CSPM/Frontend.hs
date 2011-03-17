@@ -39,17 +39,16 @@ module Language.CSPM.Frontend
   ,unUniqueIdent
   ,showAst
   ,computeFreeNames
-  ,annulNodeId
+  ,setNodeIdsZero
   --
   ,RenameError (..)
   ,eitherToExc
   ,handleLexError
   ,handleParseError
   ,handleRenameError
+  -- PrettyPrinter
   ,pp
-  ,dropCsp
-  ,toPrettyString
-  ,runPretty
+  ,prettyPrintFile
 )
 where
 
@@ -64,12 +63,12 @@ import Language.CSPM.AST
 import Language.CSPM.SrcLoc (SrcLoc(..))
 import Language.CSPM.AstUtils 
   (removeSourceLocations, removeModuleTokens, removeParens
-  ,unUniqueIdent, showAst, computeFreeNames, annulNodeId)
+  ,unUniqueIdent, showAst, computeFreeNames, setNodeIdsZero)
 
 import qualified Language.CSPM.LexHelper as Lexer
   (lexInclude, lexPlain, filterIgnoredToken)
 
-import Language.CSPM.PrettyPrinter (pp, dropCsp, toPrettyString, runPretty)
+import Language.CSPM.PrettyPrinter (pp,prettyPrintFile)
 import Language.CSPM.Utils
   (eitherToExc, handleLexError, handleParseError, handleRenameError
   ,parseFile, testFrontend)

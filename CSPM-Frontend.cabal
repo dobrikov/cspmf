@@ -1,5 +1,5 @@
 Name:                CSPM-Frontend
-Version:             0.6.6.0
+Version:             0.6.7.0
 
 Synopsis:            A CSP-M parser compatible with FDR-2.91
 
@@ -45,7 +45,7 @@ library
     ,syb >= 0.3 && < 0.4
 
   GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s -Wall
-  Extensions: DeriveDataTypeable
+  Other-Extensions: DeriveDataTypeable
   Hs-Source-Dirs:       src,dist/build/autogen
   Exposed-modules:
     Language.CSPM.Frontend
