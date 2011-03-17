@@ -5,7 +5,6 @@ module Language.CSPM.LexHelper
   ,filterIgnoredToken
   ,tokenIsIgnored
   ,tokenIsComment
-  ,soakNewLines
 )
 where
 

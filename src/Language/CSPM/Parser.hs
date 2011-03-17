@@ -32,7 +32,7 @@ import qualified Language.CSPM.Token as Token
 import qualified Language.CSPM.SrcLoc as SrcLoc
 import Language.CSPM.SrcLoc (SrcLoc)
 
-import Language.CSPM.LexHelper (filterIgnoredToken, soakNewLines)
+import Language.CSPM.LexHelper (filterIgnoredToken)
 import Text.ParserCombinators.Parsec.ExprM
 
 import Text.ParserCombinators.Parsec
@@ -55,10 +55,8 @@ parse ::
    -> [Token]
    -> Either ParseError ModuleFromParser
 parse filename tokenList
-  = wrapParseError tList $
-      runParser (parseModule tList) initialPState filename $ soakNewLines $ filterIgnoredToken tokenList
-    where
-     tList = soakNewLines tokenList
+  = wrapParseError tokenList $
+      runParser (parseModule tokenList) initialPState filename $ filterIgnoredToken tokenList
 
 data ParseError = ParseError {
    parseErrorMsg :: String
@@ -72,7 +70,7 @@ data PState
  = PState {
   lastTok        :: Token
  ,gtCounter      :: Int
- ,gtMode         :: GtMode
+ ,gtLimit        :: Maybe Int
  ,nodeIdSupply   :: NodeId
  } deriving Show
 
@@ -80,17 +78,9 @@ initialPState :: PState
 initialPState = PState {
    lastTok = Token.tokenSentinel 
   ,gtCounter = 0
-  ,gtMode = GtNoLimit
+  ,gtLimit = Nothing
   ,nodeIdSupply = mkNodeId 0
   }
-
-setGtMode :: GtMode-> PState -> PState
-setGtMode mode env = env {gtMode = mode}
-
-countGt :: PState -> PState
-countGt env = env {gtCounter = gtCounter env +1 }
-
-data GtMode=GtNoLimit | GtLimit Int deriving Show
 
 mkLabeledNode :: SrcLoc -> t -> PT (Labeled t)
 mkLabeledNode loc node = do
@@ -227,9 +217,6 @@ lIdent =
 ident :: PT LIdent
 ident   = withLoc (lIdent >>= return . Ident)
 
-newLine :: PT ()
-newLine = token L_NewLine
-
 varExp :: PT LExp
 varExp= withLoc (ident >>= return . Var)
 
@@ -346,7 +333,7 @@ litPat = inSpan IntPat intLit
 letExp :: PT LExp
 letExp = withLoc $ do
   token T_let
-  decl <- localDeclList
+  decl <- parseDeclList
   token T_within
   exp <- parseExp
   return $ Let decl exp            
@@ -872,15 +859,10 @@ topDeclList = do
     p       <- parseExp
     model   <- fdrModel
     extmode <- many $ extsMode
-    let ext = case extmode of
-               []    -> case unLabel model of
-                         DeadlockFree -> Just (labeled FD)
-                         Deterministic -> Just (labeled FD)
-                         _ -> Nothing
-               (h:_) -> case unLabel model of
-                         LivelockFree -> Nothing
-                         _ -> Just h
---               _     -> Nothing
+    ext     <-  case extmode of
+               []   -> return Nothing
+               [x]  -> return $ Just x
+               _    -> fail "More than one model extension."
     return $ AssertModelCheck negated p model ext
       where
        fdrModel :: PT LFDRModels
