@@ -12,7 +12,11 @@ import Language.CSPM.Token (Token(..), LexError(..))
 import Language.CSPM.TokenClasses (PrimToken(..))
 import qualified Data.Set as Set
 
--- | lex a String and process CSP-M include statements
+-- | lex a String .
+lexPlain :: String -> Either LexError [Token]
+lexPlain src = fmap reverse $ Lexer.scanner src
+
+-- | lex a String and process CSP-M include statements.
 lexInclude :: String -> IO (Either LexError [Token])
 lexInclude src = do
   case Lexer.scanner src of
@@ -23,10 +27,7 @@ lexInclude src = do
         Left err -> return $ Left err
         Right t -> return $ Right t
 
--- | lex a String 
-lexPlain :: String -> Either LexError [Token]
-lexPlain src = fmap reverse $ Lexer.scanner src
-
+-- | Monsterfunction : todo refactor
 processIncludeAndReverse :: [Token] -> IO (Either LexError [Token] )
 processIncludeAndReverse tokens = picl_acc tokens []
   where 
@@ -51,7 +52,7 @@ processIncludeAndReverse tokens = picl_acc tokens []
   picl_acc (h:rest) acc = picl_acc rest $ h:acc
 
 -- | remove newlines, that do not end a declaration from the token stream.
--- | For example newlines next to binary operators.
+-- For example newlines next to binary operators.
 soakNewlines :: [Token] -> [Token]
 soakNewlines = worker
   where 
@@ -103,4 +104,3 @@ removeComments = filter (not . tokenIsComment)
 tokenIsComment :: Token -> Bool
 tokenIsComment t = tc == L_LComment || tc == L_BComment
   where tc = tokenClass t
-

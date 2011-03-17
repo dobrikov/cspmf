@@ -32,7 +32,7 @@ module Language.CSPM.Rename
   ,FromRenaming
   )
 where
-import Language.CSPM.AST hiding (prologMode,bindType)
+import Language.CSPM.AST hiding (prologMode, bindType)
 import qualified Language.CSPM.AST as AST
 import qualified Language.CSPM.SrcLoc as SrcLoc
 
@@ -49,27 +49,32 @@ import Data.Set (Set)
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 import qualified Data.IntMap as IntMap
+import Data.List as List
 
-
-data FromRenaming deriving Typeable
 instance Data FromRenaming
   where
     gunfold = error "instance Data FromRenaming gunfold"
     toConstr = error "instance Data FromRenaming toConstr"
     dataTypeOf _ = mkDataType "Language.CSPM.Rename.FromRenaming" []
 
+-- | A module that has gone through renaming
 type ModuleFromRenaming = Module FromRenaming
 {-# DEPRECATED applyRenaming, getRenaming "use renameModule instead" #-}
 
--- | 'renameModule' renames a 'Module'
+-- | Tag that a module has gone through renameing.
+data FromRenaming deriving Typeable
+
+-- | 'renameModule' renames a 'Module'.
+-- | (also calls mergeFunBinds)
 renameModule ::
      ModuleFromParser
   -> Either RenameError (ModuleFromRenaming, RenameInfo)
 renameModule m = do
-  st <- execStateT (rnModule m) initialRState
+  let m' = mergeFunBinds m
+  st <- execStateT (rnModule m') initialRState
   return
     (
-     applyRenamingNew m (identDefinition st) (identUse st)
+     applyRenamingNew m' (identDefinition st) (identUse st)
     ,st)
 
 -- | 'getRenaming' computes two 'AstAnnotation's.
@@ -88,6 +93,7 @@ type RM x = StateT RenameInfo (Either RenameError) x
 
 type UniqueName = Int
 
+-- | Gather all information about an renaming. 
 data RenameInfo = RenameInfo
   {
     nameSupply :: Int
@@ -482,3 +488,27 @@ applyRenamingNew ast defIdent usedIdent
         VarID -> p
         _ -> ConstrPat x
     patchVarPat x = x
+
+-- | If function is defined via pattern matching for serveral cases,
+-- | the parser returns each case as a individual declaration.
+-- | mergeFunBinds merges contiguous cases of the same function into one declaration.
+mergeFunBinds :: ModuleFromParser -> ModuleFromParser
+mergeFunBinds m = m {moduleDecls = mergeDecls}
+  where
+    mergeDecls = map joinGroup $ List.groupBy sameFunction $ moduleDecls m
+
+    sameFunction a b = case (unLabel a, unLabel b) of
+       (FunBind n1 _, FunBind n2 _) -> unLabel n1 == unLabel n2
+       _ -> False
+
+    joinGroup :: [LDecl] -> LDecl
+    joinGroup l@(firstCase : _) = case unLabel firstCase of
+      FunBind fname _ -> setNode firstCase $ FunBind fname $ map getFunCase l
+      _ -> firstCase
+    joinGroup [] = error "unreachable : groupBy empty group ?"
+
+    getFunCase :: LDecl -> FunCase
+    getFunCase d = case unLabel d of
+      FunBind _ [funCase] -> funCase
+      FunBind _ _ -> error "mergeFunBinds: function already has several cases !"
+      _ -> error "mergeFunBinds : internal error"

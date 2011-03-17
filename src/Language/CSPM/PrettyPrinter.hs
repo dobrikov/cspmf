@@ -32,6 +32,7 @@ prettyPrintFile f = do
   writeFile (f ++ ".ast") (show ast)
   writeFile (f ++ ".pretty") $ render $ pp ast
 
+-- | The pretty print class used for AST types
 class PP x where
   pp :: x -> Doc
 
