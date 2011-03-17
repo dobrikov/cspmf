@@ -32,7 +32,7 @@ import qualified Language.CSPM.Token as Token
 import qualified Language.CSPM.SrcLoc as SrcLoc
 import Language.CSPM.SrcLoc (SrcLoc)
 
-import Language.CSPM.LexHelper (filterIgnoredToken)
+import Language.CSPM.LexHelper (filterIgnoredToken, soakNewLines)
 import Text.ParserCombinators.Parsec.ExprM
 
 import Text.ParserCombinators.Parsec
@@ -55,8 +55,10 @@ parse ::
    -> [Token]
    -> Either ParseError ModuleFromParser
 parse filename tokenList
-  = wrapParseError tokenList $
-      runParser (parseModule tokenList) initialPState filename $ filterIgnoredToken tokenList
+  = wrapParseError tList $
+      runParser (parseModule tList) initialPState filename $ soakNewLines $ filterIgnoredToken tokenList
+    where
+     tList = soakNewLines tokenList
 
 data ParseError = ParseError {
    parseErrorMsg :: String
@@ -70,7 +72,7 @@ data PState
  = PState {
   lastTok        :: Token
  ,gtCounter      :: Int
- ,gtLimit        :: Maybe Int
+ ,gtMode         :: GtMode
  ,nodeIdSupply   :: NodeId
  } deriving Show
 
@@ -78,9 +80,17 @@ initialPState :: PState
 initialPState = PState {
    lastTok = Token.tokenSentinel 
   ,gtCounter = 0
-  ,gtLimit = Nothing
+  ,gtMode = GtNoLimit
   ,nodeIdSupply = mkNodeId 0
   }
+
+setGtMode :: GtMode-> PState -> PState
+setGtMode mode env = env {gtMode = mode}
+
+countGt :: PState -> PState
+countGt env = env {gtCounter = gtCounter env +1 }
+
+data GtMode=GtNoLimit | GtLimit Int deriving Show
 
 mkLabeledNode :: SrcLoc -> t -> PT (Labeled t)
 mkLabeledNode loc node = do
@@ -134,15 +144,17 @@ inSpan constr exp = do
 
 parseModule :: [Token.Token] -> PT ModuleFromParser
 parseModule tokenList = do
- s <- getNextPos
- decl<-topDeclList 
- eof <?> "end of module"
- e <- getLastPos
- return $ Module {
-   moduleDecls = decl
-  ,moduleTokens = Just tokenList
-  ,moduleSrcLoc = mkSrcSpan s e
- }
+  s <- getNextPos
+  many newLine
+  decl<-topDeclList
+  many newLine 
+  eof <?> "end of module"
+  e <- getLastPos
+  return $ Module {
+    moduleDecls = decl
+   ,moduleTokens = Just tokenList
+   ,moduleSrcLoc = mkSrcSpan s e
+  }
 
 token :: TokenClasses.PrimToken -> PT ()
 token t = tokenPrimExDefault tokenTest
@@ -198,12 +210,10 @@ anyBuiltIn = do
     T_CHAOS  -> return F_CHAOS
     _        -> fail "not a built-in function"
 
-
 blockBuiltIn :: PT a
 blockBuiltIn = do
   bi <- try anyBuiltIn
   fail $ "can not use built-in '"++ show bi ++ "' here" -- todo fix: better error -message
-
 
 lIdent :: PT String
 lIdent =
@@ -217,6 +227,9 @@ lIdent =
 ident :: PT LIdent
 ident   = withLoc (lIdent >>= return . Ident)
 
+newLine :: PT ()
+newLine = token L_NewLine
+
 varExp :: PT LExp
 varExp= withLoc (ident >>= return . Var)
 
@@ -228,6 +241,9 @@ sepByComma a = sepBy a commaSeperator
 
 sepBy1Comma :: PT x -> PT [x]
 sepBy1Comma a = sepBy1 a commaSeperator
+
+sepByNewLine :: PT x -> PT [x]
+sepByNewLine d = sepBy d newLine
 
 parseComprehension :: PT [LCompGen]
 parseComprehension = token T_mid >> sepByComma (compGenerator <|> compGuard )
@@ -330,7 +346,7 @@ litPat = inSpan IntPat intLit
 letExp :: PT LExp
 letExp = withLoc $ do
   token T_let
-  decl <- parseDeclList
+  decl <- localDeclList
   token T_within
   exp <- parseExp
   return $ Let decl exp            
@@ -460,7 +476,13 @@ procTable :: OpTable
      ,infixM (nfun2 T_ge      F_GE ) AssocLeft
      ,infixM (nfun2 T_le      F_LE ) AssocLeft
      ,infixM (nfun2 T_lt      F_LT ) AssocLeft
-     ,infixM (inSpan BuiltIn (gtSym >> return F_GT ) >>= nfun2b) AssocLeft
+     ,infixM (do
+        s <- getNextPos
+        gtSym
+        e <- getLastPos
+        op <- mkLabeledNode (mkSrcSpan s e) (BuiltIn F_GT)
+        return $ (\a b-> mkLabeledNode (posFromTo a b) $ Fun2 op a b)
+      ) AssocLeft
     ]
    ,[ prefixM ( token T_not >> unOp NotExp )]
    ,[ infixM ( token T_and >> binOp AndExp) AssocLeft ]
@@ -489,10 +511,10 @@ procTable :: OpTable
     return $ (\a -> mkLabeledNode pos $ Fun1 fkt a)
 
   nfun2 :: TokenClasses.PrimToken -> Const -> PT (LExp -> LExp -> PT LExp)
-  nfun2 tok cst = biOp tok cst >>= nfun2b
-
-  nfun2b fkt = do
-    pos <- getLastPos
+  nfun2 tok cst = do
+    fkt <- biOp tok cst
+    pos<-getLastPos 
+--   return $ \a b -> mkLabeledNode (posFromTo a b) $ Fun2 fkt a b
     return $ \a b -> mkLabeledNode (mkSrcPos pos) $ Fun2 fkt a b
 
   binOp :: (LExp -> LExp -> Exp) -> PT (LExp -> LExp -> PT LExp)
@@ -523,22 +545,7 @@ procTable :: OpTable
     epos <- getLastPos
     return $ (\a b  -> mkLabeledNode (mkSrcSpan spos epos) $ ProcException al a b)
 
--- this is complicated and meight as well be buggy !
-  gtSym :: PT ()
-  gtSym = try $ do
-    token T_gt
-    updateState (\env -> env {gtCounter = gtCounter env +1 })  --we count the occurences of gt-symbols
-    next <- testFollows parseExp  -- and accept it only if it is followed by an expression
-    case next of
-      Nothing -> fail "Gt token not followed by an expression"
-      Just _  -> do                 --
-        mode <- getStates gtLimit
-        case mode of
-          Nothing -> return ()
-          Just x  -> do
-            cnt <- getStates gtCounter
-            if cnt < x then return ()
-                       else fail "(Gt token belongs to sequence expression)"
+
 
 parseExp :: PT LExp
 parseExp =
@@ -557,7 +564,6 @@ parseExp_noPrefix = parseDotExpOf parseExp_noPrefix_NoDot
      parseExp_noPrefix_NoDot = buildExpressionParser opTable parseExpBase
 
 -- todo :: parseExpBase does include STOP and SKIP 
-
 parseExp_noProc :: PT LExp
 parseExp_noProc
   = parseDotExpOf $ buildExpressionParser baseTable parseExpBase
@@ -585,6 +591,23 @@ funApplyImplicit = do
   pos <-getPos
   return $ (\fkt -> mkLabeledNode pos $ CallFunction fkt args )
 
+
+-- this is complicated and meight as well be buggy !
+gtSym :: PT ()
+gtSym = try $ do
+  token T_gt
+  updateState countGt  --we count the occurences of gt-symbols
+  next <- testFollows parseExp  -- and accept it only if it is followed by an expression
+  case next of
+    Nothing -> fail "Gt token not followed by an expression"
+    (Just _) -> do                 --
+      mode <- getStates gtMode
+      case mode of
+        GtNoLimit -> return ()
+        (GtLimit x) -> do
+          cnt <- getStates gtCounter
+          if cnt < x then return ()
+                     else fail "(Gt token belongs to sequence expression)"
 {-
 parse an sequenceexpression <...>
 we have to be carefull not to parse the end of sequence ">"
@@ -621,15 +644,13 @@ attention: this can be nested !!
 
 parseWithGtLimit :: Int -> PT a -> PT a
 parseWithGtLimit maxGt parser = do
-  oldLimit <- getStates gtLimit
-  setGtLimit $ Just maxGt
+  oldLimit <- getStates gtMode
+  updateState $ setGtMode $ GtLimit maxGt
   res <- optionMaybe parser
-  setGtLimit oldLimit
+  updateState $ setGtMode oldLimit
   case res of
     Just p -> return p
     Nothing -> fail "contents of sequence expression"
-  where
-    setGtLimit g = updateState $ \env -> env {gtLimit = g}
 
 proc_op_aparallel :: PT (LExp -> LExp -> PT LExp)
 proc_op_aparallel = try $ do
@@ -749,36 +770,14 @@ patBind = withLoc $ do
   exp <-parseExp
   return $ PatBind pat exp
 
--- parse all fundefs and merge consecutive case alternatives
-funBind :: PT [LDecl]
-funBind = do
-  flist <-many1 sfun
-  -- group functioncases by the name of the function
-  let flgr = groupBy
-              (\a b -> (unIdent $ unLabel $ fst $ a) == (unIdent $ unLabel $ fst b))
-              flist
-  mapM mkFun flgr
-  where 
-     mkFun :: [(LIdent,(FunArgs,LExp))] -> PT LDecl
-     mkFun l = do
-        let
-          fname = fst $ head l
-          pos = srcLoc fname
-          cases = map ((uncurry FunCase) . snd  ) l
-        mkLabeledNode pos $ FunBind fname cases
-
 -- parse a single function-case
-sfun :: PT (LIdent,(FunArgs,LExp))
-sfun = do
-  (fname,patl) <- try sfunHead
+funBind :: PT LDecl
+funBind = try $ do
+  fname <- ident
+  patl <- parseFktCurryPat
   token_is <?> "rhs of function clause"
   exp <-parseExp
-  return (fname,(patl,exp))
-  where
-    sfunHead = do    
-      fname <- ident
-      patl <- parseFktCurryPat
-      return (fname,patl)
+  mkLabeledNode (srcLoc fname) $ FunBind fname [FunCase patl exp]
 
 {-
 in CSP f(x)(y), f(x,y) , f((x,y)) are all different
@@ -794,12 +793,6 @@ parseFktCurryPat = many1 parseFktCspPat
 parseFktCspPat :: PT [LPattern]
 parseFktCspPat = inParens $ sepByComma parsePattern
 
-parseDeclList :: PT [LDecl]
-parseDeclList = do
-  decl<- many1 parseDecl
-  return $ concat decl
-
-
 singleList :: PT a -> PT [a]
 singleList a = do
   av <-a
@@ -811,31 +804,33 @@ because funBind can't easily parse a single function
 ToDo : PatBinds are actually different from varbind
 example x={} with patbind will not be polymorphic
 -}
-parseDecl :: PT [LDecl]
-parseDecl =
-       funBind
-   <|> singleList patBind 
-   <?> "declaration"
+
+--channels and datatype declarations are only permitted at the top-level
+localDeclList :: PT [LDecl]
+localDeclList = do
+   decl <- sepByNewLine localDecl
+   return decl
+  where
+    localDecl = funBind <|> patBind
 
 topDeclList :: PT [LDecl]
 topDeclList = do
-  decl<- many1 topDecl
-  return $ concat decl
-  where
-
-  topDecl :: PT [LDecl]
-  topDecl =
-        funBind
-    <|> singleList patBind
-    <|> singleList parseAssertDecl
-    <|> singleList parseTransparent
-    <|> singleList parseDatatype
-    <|> singleList parseSubtype
-    <|> singleList parseNametype
-    <|> singleList parseChannel
-    <|> singleList parsePrint
-    <?> "top-level declaration"  
-
+  decl <- sepByNewLine parseDecl
+  return decl
+ where
+  parseDecl :: PT LDecl
+  parseDecl =
+          funBind
+      <|> patBind
+      <|> parseAssertDecl
+      <|> parseTransparent
+      <|> parseDatatype
+      <|> parseSubtype
+      <|> parseNametype
+      <|> parseChannel
+      <|> parsePrint
+      <?> "top-level declaration"
+     
   assertPolarity = fmap (odd . length) $ many $ token T_not
 
   assertListRef = withLoc $ do
@@ -877,10 +872,15 @@ topDeclList = do
     p       <- parseExp
     model   <- fdrModel
     extmode <- many $ extsMode
-    ext     <-  case extmode of
-               []   -> return Nothing
-               [x]  -> return $ Just x
-               _    -> fail "More than one model extension."
+    let ext = case extmode of
+               []    -> case unLabel model of
+                         DeadlockFree -> Just (labeled FD)
+                         Deterministic -> Just (labeled FD)
+                         _ -> Nothing
+               (h:_) -> case unLabel model of
+                         LivelockFree -> Nothing
+                         _ -> Just h
+--               _     -> Nothing
     return $ AssertModelCheck negated p model ext
       where
        fdrModel :: PT LFDRModels
@@ -1119,7 +1119,6 @@ pprintParsecError err
       "expecting" "unexpected" "end of input"
         (ParsecError.errorMessages err)
 
-
 wrapParseError ::
      [Token]
   -> Either ParsecError.ParseError ModuleFromParser
@@ -1133,7 +1132,6 @@ wrapParseError tl (Left err) = Left $ ParseError {
   where 
     tokId = Token.mkTokenId $ sourceColumn $ ParsecError.errorPos err
     errorTok = maybe Token.tokenSentinel id  $ find (\t -> tokenId t ==  tokId) tl
-
 
 token_is :: PT ()
 token_is = token T_is

@@ -1,6 +1,6 @@
 ----------------------------------------------------------------------------
 -- |
--- Module      :  Language.CSPM.PrettyPrinterNew
+-- Module      :  Language.CSPM.PrettyPrinter
 -- Copyright   :  (c) Ivaylo Dobrikov 2010
 -- License     :  BSD
 -- 
@@ -264,9 +264,9 @@ ppAlso :: Pattern -> Doc
 ppAlso (Also [])    = text ""
 ppAlso (Also (h:t)) = 
    case unLabel h of
-     DotPat _ -> if length t > 0 then {-text "(" <>-} (pp h) {-<> text ")"-} <> text "@@" <> ppAlso (Also t)
+     DotPat _ -> if length t > 0 then (pp h) <> text "@@" <> ppAlso (Also t)
                                  else pp h
-     Append _ -> if length t > 0 then {-text "(" <>-} (pp h) {-<> text ")"-} <> text "@@" <> ppAlso (Also t)
+     Append _ -> if length t > 0 then (pp h) <> text "@@" <> ppAlso (Also t)
                                  else pp h
      _        -> if length t > 0 then pp h <> text "@@" <> ppAlso (Also t)
                                  else pp h

@@ -15,8 +15,8 @@ import Language.CSPM.TokenClasses
 import Language.CSPM.AlexWrapper
 }
 
-$whitechar = [\ \t\n\r\f\v]
-
+$whitechar = [\ \t\r\n\f\v]
+$whitechar' = [\ \t\r\f\v]
 $digit     = 0-9
 
 $symbol = [\!\#\$\%\&\*\+\.\/\<\=\>\?\@\\\^\|\-\~\(\)\,\;\[\]\`\{\}\_\:\']
@@ -28,8 +28,8 @@ $small     = [a-z]
 $alpha     = [$small $large]
 
 $graphic   = [$small $large $symbol $digit]
-$graphic1   = [$small $large $symbol1 $digit]
-$octit	   = 0-7
+$graphic1  = [$small $large $symbol1 $digit]
+$octit     = 0-7
 $hexit     = [0-9 A-F a-f]
 $idchar    = [$alpha $digit \' \_]
 
@@ -41,6 +41,8 @@ $idchar    = [$alpha $digit \' \_]
 
 @string  = $graphic # [\"\\] | " " $whitechar
 @str = $graphic # [ \[ \] ]  
+@w = $whitechar*
+$nl = [\n]
 
 csp :-
 
@@ -116,7 +118,7 @@ csp :-
 <0> "!=" { mkL T_neq }
 <0> ">=" { mkL T_ge }
 <0> "<=" { mkL T_le }
-<0> "<" { mkL T_lt }
+<0> "<"    { mkL T_lt }
 <0> ">" { mkL T_gt }
 <0> "&" { mkL T_amp }
 <0> ";" { mkL T_semicolon }
@@ -154,9 +156,10 @@ csp :-
 <0> "="  { mkL T_is }
 <0> "[[" { mkL T_openBrackBrack }
 <0> "]]" { mkL T_closeBrackBrack }
-<0> $white+			{ skip }
+<0> $nl  { mkL L_NewLine}
+<0> $whitechar'+			{ skip }
 <0> "--".*			{ mkL L_LComment }
-"{-"				{ block_comment }
+"{-"			{ block_comment }
 
 -- Fixme : tread this properly
 
