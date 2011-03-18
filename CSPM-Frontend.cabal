@@ -17,7 +17,7 @@ Author:              Marc Fontaine
 Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>,me@dobrikov.biz
 Homepage:            http://www.stups.uni-duesseldorf.de/~fontaine/csp
 Stability:           maintained
-Tested-With:         GHC == 7.0.1
+Tested-With:         GHC == 7.0.2
 
 cabal-Version:       >= 1.10
 build-type: Simple
@@ -38,21 +38,17 @@ library
   Hs-Source-Dirs:       src
   Exposed-modules:
     Language.CSPM.Frontend
-    Language.CSPM.Utils
-    Language.CSPM.AST
     Language.CSPM.Parser
-    Language.CSPM.Rename
-    Language.CSPM.Token
+    Language.CSPM.AST
+    Language.CSPM.PrettyPrinter
     Language.CSPM.SrcLoc
+    Language.CSPM.Rename
+    Language.CSPM.Utils
+    Language.CSPM.Token
     Language.CSPM.AstUtils
     Language.CSPM.TokenClasses
-    Language.CSPM.PrettyPrinter
     Language.CSPM.LexHelper
---    Language.CSPM.PatternCompiler
---    Language.CSPM.TestScript
-    Text.ParserCombinators.Parsec.ExprM
   Other-modules:
---    Paths_CSPM_Frontend
---    Language.CSPM.Version
+    Text.ParserCombinators.Parsec.ExprM
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper
