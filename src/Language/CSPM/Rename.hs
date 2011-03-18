@@ -493,9 +493,17 @@ applyRenamingNew ast defIdent usedIdent
 -- | the parser returns each case as a individual declaration.
 -- | mergeFunBinds merges contiguous cases of the same function into one declaration.
 mergeFunBinds :: ModuleFromParser -> ModuleFromParser
-mergeFunBinds m = m {moduleDecls = mergeDecls}
+mergeFunBinds = everywhere (mkT patchModule . mkT patchLet)
   where
-    mergeDecls = map joinGroup $ List.groupBy sameFunction $ moduleDecls m
+    patchModule :: ModuleFromParser -> ModuleFromParser
+    patchModule m = m {moduleDecls = mergeDecls $ moduleDecls m}
+
+    patchLet :: Exp -> Exp
+    patchLet (Let decls expr) = Let (mergeDecls decls) expr
+    patchLet x = x
+
+    mergeDecls :: [LDecl] -> [LDecl]
+    mergeDecls = map joinGroup . List.groupBy sameFunction
 
     sameFunction a b = case (unLabel a, unLabel b) of
        (FunBind n1 _, FunBind n2 _) -> unLabel n1 == unLabel n2
