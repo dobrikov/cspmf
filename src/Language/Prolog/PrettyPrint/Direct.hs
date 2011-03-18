@@ -1,14 +1,26 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Language.Prolog.PrettyPrint.Direct
+-- Copyright   :  (c) Fontaine 2010 - 2011
+-- License     :  BSD3
+--
+-- Maintainer  :  fontaine@cs.uni-duesseldorf.de
+-- Stability   :  experimental
+-- Portability :  GHC-only
+--
+-- A very simple DSL for generating for Prolog-Syntax.
+-- Just some newtypes and smart-constructors.
+--
+-----------------------------------------------------------------------------
 {-
-A very simple prettyprinter for Prolog-Syntax
-Just some newtypes and smart-constructors
-
-this is all buggy
-todo:
- separate package for Prolog-Syntax
- todo :: remove overloading /classes from Module (for TERM and CLAUSE)
- for atom, overloading is probably ok
- make seperate nonoverloaded functions for building terms
+--  this is all buggy
+-- todo:
+--  separate package for Prolog-Syntax
+--  todo :: remove overloading /classes from Module (for TERM and CLAUSE)
+--  for atom, overloading is probably ok
+--  make seperate nonoverloaded functions for building terms.
 -}
+
 {-# LANGUAGE TypeSynonymInstances , FlexibleInstances, UndecidableInstances  #-}
 {-# LANGUAGE OverlappingInstances #-}
 

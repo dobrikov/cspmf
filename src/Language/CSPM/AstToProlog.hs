@@ -8,7 +8,7 @@
 -- Stability   :  experimental
 -- Portability :  GHC-only
 --
--- Translation of an AST into Prolog terms, suitable for the ProB CSP-Interpreter
+-- Translation of an AST into Prolog terms, suitable for the ProB CSPM-Interpreter
 -- 
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-warnings-deprecations #-}
@@ -286,6 +286,7 @@ uniquePlName i = newName i
 plLoc :: Labeled x -> Term
 plLoc = mkSrcLoc . srcLoc
 
+-- | Translate a source location to Prolog
 mkSrcLoc :: SrcLoc.SrcLoc -> Term
 mkSrcLoc loc =  case loc of
   SrcLoc.TokPos {} ->  nTerm "src_position" 

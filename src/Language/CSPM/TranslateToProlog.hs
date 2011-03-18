@@ -1,3 +1,17 @@
+-----------------------------------------------------------------------------
+-- |
+-- Module      :  Language.CSPM.TranslateToProlog
+-- Copyright   :  (c) Fontaine 2010 - 2011
+-- License     :  BSD3
+--
+-- Maintainer  :  fontaine@cs.uni-duesseldorf.de
+-- Stability   :  experimental
+-- Portability :  GHC-only
+--
+-- Translate a CSPM-specification to Prolog.
+-- This is the interface used by Prolog
+-----------------------------------------------------------------------------
+
 {-# LANGUAGE ScopedTypeVariables #-}
 module Language.CSPM.TranslateToProlog
 (
@@ -9,13 +23,32 @@ import Language.CSPM.Frontend as Frontend
 import qualified Language.CSPM.SrcLoc as SrcLoc
 import qualified Language.CSPM.Token as Token (lexEMsg,lexEPos,alexLine,alexCol,alexPos)
 import Language.CSPM.AstToProlog (cspToProlog,mkSymbolTable)
---import Language.CSPM.DLL.Version (versionStr,versionNum)
 import Language.Prolog.PrettyPrint.Direct
 
 import Control.Exception
 import System.Exit
 import System.CPUTime
 import Text.PrettyPrint
+
+-- | 'translateToProlog' reads a CSPM specification from inFile
+-- and writes the Prolog representation to outFile.
+-- It handles all lexer and parser errors and catches all exceptions.
+translateToProlog ::
+     FilePath -- ^ filename input
+  -> FilePath -- ^ filename output
+  -> IO ()
+translateToProlog inFile outFile = do
+  res <- handle catchAllExceptions
+          $ handleLexError lexErrorHandler
+             $ handleParseError parseErrorHandler
+               $ handleRenameError renameErrorHandler $ mainWork inFile
+  (r :: Either SomeException ()) <- try $ writeFile outFile res
+  case r of
+    Right () -> return ()
+    Left err -> do
+      putStrLn "output-file not written"
+      putStrLn $ show err
+      exitFailure
 
 {-
 main :: IO ()
@@ -29,23 +62,6 @@ main = do
       putStrLn "Start with two arguments (input filename and output filename)"
       exitFailure
 -}
-
--- | translateToProlog reads a CSP-M spec from inFile
--- and writes the Prolog representation to outFile.
--- It handles all exceptions
-translateToProlog :: FilePath -> FilePath -> IO ()
-translateToProlog inFile outFile = do
-  res <- handle catchAllExceptions
-          $ handleLexError lexErrorHandler
-             $ handleParseError parseErrorHandler
-               $ handleRenameError renameErrorHandler $ mainWork inFile
-  (r :: Either SomeException ()) <- try $ writeFile outFile res
-  case r of
-    Right () -> return ()
-    Left err -> do
-      putStrLn "output-file not written"
-      putStrLn $ show err
-      exitFailure
 
 mainWork :: FilePath -> IO String
 mainWork fileName = do
