@@ -92,7 +92,7 @@ soakNewlines = worker
     consumeNLAfterToken
       = Set.fromList ( [T_openParen, T_openBrace, T_lt] ++ binaryOperators)
 
--- | Remove comments and newlines, that are not the end of a declaration.
+-- | Remove comments and unneeded newlines.
 filterIgnoredToken :: [Token] -> [Token]
 filterIgnoredToken = soakNewlines . removeComments
 

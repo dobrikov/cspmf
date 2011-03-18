@@ -21,20 +21,8 @@ Tested-With:         GHC == 7.0.1
 
 cabal-Version:       >= 1.10
 build-type: Simple
-Extra-source-files:
-
-flag testing {
-  description : Testing mode
-  default:     False
-}
-
 
 library
-  Default-Language: Haskell2010
-  if flag(testing) {
-    buildable: False
-  }
-
   Build-Depends:
     base >=4.0 && < 5.0
     ,containers >= 0.4 && < 0.5
@@ -44,9 +32,10 @@ library
     ,mtl (>= 2.0 && < 2.1 ) || (>= 1.1 && < 1.2)
     ,syb >= 0.3 && < 0.4
 
-  GHC-Options: -funbox-strict-fields -O2 -fasm -optl-Wl,-s -Wall
+  Default-Language: Haskell2010
   Other-Extensions: DeriveDataTypeable
-  Hs-Source-Dirs:       src,dist/build/autogen
+  GHC-Options: -funbox-strict-fields -O2 -Wall
+  Hs-Source-Dirs:       src
   Exposed-modules:
     Language.CSPM.Frontend
     Language.CSPM.Utils
@@ -67,4 +56,3 @@ library
 --    Language.CSPM.Version
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper
-    
