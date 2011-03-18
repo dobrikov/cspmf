@@ -13,8 +13,8 @@ Description:
 License:             BSD3
 category:            Language,Formal Methods,Concurrency
 License-File:        LICENSE
-Author:              Marc Fontaine
-Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>,me@dobrikov.biz
+Author:              Marc Fontaine 2007 - 2011
+Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>, me@dobrikov.biz
 Homepage:            http://www.stups.uni-duesseldorf.de/~fontaine/csp
 Stability:           maintained
 Tested-With:         GHC == 7.0.2

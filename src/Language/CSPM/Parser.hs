@@ -131,9 +131,9 @@ inSpan constr exp = do
 parseModule :: [Token.Token] -> PT ModuleFromParser
 parseModule tokenList = do
   s <- getNextPos
-  many newline
+  skipMany newline
   decl<-topDeclList
-  many newline 
+  skipMany newline 
   eof <?> "end of module"
   e <- getLastPos
   return $ Module {
@@ -785,17 +785,18 @@ topDeclList :: PT [LDecl]
 topDeclList = sepByNewLine topDecl 
  where
   topDecl :: PT LDecl
-  topDecl =
-          funBind
-      <|> patBind
-      <|> parseAssertDecl
-      <|> parseTransparent
-      <|> parseDatatype
-      <|> parseSubtype
-      <|> parseNametype
-      <|> parseChannel
-      <|> parsePrint
-      <?> "top-level declaration"
+  topDecl = choice
+      [
+        funBind
+      , patBind
+      , parseAssertDecl
+      , parseTransparent
+      , parseDatatype
+      , parseSubtype
+      , parseNametype
+      , parseChannel
+      , parsePrint
+      ] <?> "top-level declaration"
      
   assertPolarity = fmap (odd . length) $ many $ token T_not
 
@@ -820,7 +821,7 @@ topDeclList = sepByNewLine topDecl
     p2 <- parseExp
     token T_tau
     token T_priority
-    many $ token T_over
+    token T_over
     set <- parseExp
     return $ AssertTauPrio negated p1 op p2 set
      where
@@ -936,17 +937,18 @@ topDeclList = sepByNewLine topDecl
 {- Replicated Expressions in Prefix form -}
 
 parseProcReplicatedExp :: PT LProc
-parseProcReplicatedExp = do
+parseProcReplicatedExp
+  = choice
+    [ 
       procRep T_semicolon   ProcRepSequence
-  <|> procRep T_sqcap ProcRepInternalChoice
-  <|> procRep T_box   ProcRepExternalChoice
-  <|> procRep T_interleave ProcRepInterleave
-  <|> procRepAParallel
-  <|> procRepLinkParallel
-  <|> procRepSharing
-  <|> parsePrefixExp -- two calls make exponential blowup !
---  <|> parseExpBase   -- 
-  <?> "parseProcReplicatedExp"
+    , procRep T_sqcap ProcRepInternalChoice
+    , procRep T_box   ProcRepExternalChoice
+    , procRep T_interleave ProcRepInterleave
+    , procRepAParallel
+    , procRepLinkParallel
+    , procRepSharing
+    , parsePrefixExp
+    ] <?> "parseProcReplicatedExp"
   where
   -- todo : refactor all these to using inSpan
   procRep :: TokenClasses.PrimToken -> (LCompGenList -> LProc -> Exp) -> PT LProc
