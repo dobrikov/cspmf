@@ -821,7 +821,7 @@ topDeclList = sepByNewLine topDecl
     p2 <- parseExp
     token T_tau
     token T_priority
-    token T_over
+    optional $ token T_over
     set <- parseExp
     return $ AssertTauPrio negated p1 op p2 set
      where
