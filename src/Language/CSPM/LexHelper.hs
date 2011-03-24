@@ -2,7 +2,7 @@ module Language.CSPM.LexHelper
 (
    lexInclude
   ,lexPlain
-  ,filterIgnoredToken
+  ,removeIgnoredToken
   ,tokenIsComment
 )
 where
@@ -51,8 +51,16 @@ processIncludeAndReverse tokens = picl_acc tokens []
       }
   picl_acc (h:rest) acc = picl_acc rest $ h:acc
 
--- | remove newlines, that do not end a declaration from the token stream.
--- For example newlines next to binary operators.
+-- | Remove comments and unneeded newlines.
+removeIgnoredToken :: [Token] -> [Token]
+removeIgnoredToken = soakNewlines . removeComments
+  where
+    -- | Remove comments from the token stream.
+    removeComments :: [Token] -> [Token]
+    removeComments = filter (not . tokenIsComment)
+
+    -- | remove newlines, that do not end a declaration from the token stream.
+    -- For example newlines next to binary operators.
 soakNewlines :: [Token] -> [Token]
 soakNewlines = worker
   where 
@@ -92,15 +100,7 @@ soakNewlines = worker
     consumeNLAfterToken
       = Set.fromList ( [T_openParen, T_openBrace, T_lt] ++ binaryOperators)
 
--- | Remove comments and unneeded newlines.
-filterIgnoredToken :: [Token] -> [Token]
-filterIgnoredToken = soakNewlines . removeComments
-
--- | Remove comments from the token stream.
-removeComments :: [Token] -> [Token]
-removeComments = filter (not . tokenIsComment)
-
--- | Is the token a line-comment or block-comment ?
+-- | Is the token a line-comment, block-comment or a Pragma?
 tokenIsComment :: Token -> Bool
-tokenIsComment t = tc == L_LComment || tc == L_BComment
+tokenIsComment t = tc == L_LComment || tc == L_BComment || tc == L_Pragma
   where tc = tokenClass t

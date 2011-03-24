@@ -31,7 +31,7 @@ module Language.CSPM.Frontend
 -- Language.CSPM.LexHelper
   ,Lexer.lexInclude
   ,Lexer.lexPlain
-  ,Lexer.filterIgnoredToken
+  ,Lexer.removeIgnoredToken
 
 -- Language.CSPM.AST
   ,Module
@@ -77,7 +77,7 @@ import Language.CSPM.AstUtils
   (removeSourceLocations, removeModuleTokens, removeParens
   ,unUniqueIdent, showAst, computeFreeNames, setNodeIdsZero)
 import qualified Language.CSPM.LexHelper as Lexer
-  (lexInclude, lexPlain, filterIgnoredToken)
+  (lexInclude, lexPlain, removeIgnoredToken)
 import Language.CSPM.PrettyPrinter (pp, prettyPrintFile)
 import Language.CSPM.Utils
   (eitherToExc, handleLexError, handleParseError, handleRenameError

@@ -11,7 +11,7 @@
 -- This modules defines a Parser for CSP-M
 -- 
 -----------------------------------------------------------------------------
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, RecordWildCards #-}
 
 module Language.CSPM.Parser
 (
@@ -27,7 +27,7 @@ import qualified Language.CSPM.Token as Token
 import qualified Language.CSPM.SrcLoc as SrcLoc
 import Language.CSPM.SrcLoc (SrcLoc)
 
-import Language.CSPM.LexHelper (filterIgnoredToken)
+import Language.CSPM.LexHelper (removeIgnoredToken)
 import Text.ParserCombinators.Parsec.ExprM
 
 import Text.ParserCombinators.Parsec
@@ -37,6 +37,7 @@ import qualified Text.ParserCombinators.Parsec.Error as ParsecError
 import Data.Typeable (Typeable)
 import Control.Monad.State
 import Data.List
+import Data.Maybe
 import Prelude hiding (exp)
 import Control.Exception (Exception)
 
@@ -51,7 +52,11 @@ parse ::
    -> Either ParseError ModuleFromParser
 parse filename tokenList
   = wrapParseError tokenList $
-      runParser (parseModule tokenList) initialPState filename $ filterIgnoredToken tokenList
+      runParser
+        (parseModule tokenList)
+        initialPState
+        filename
+        (removeIgnoredToken tokenList)
 
 -- | ParseError data type. This is an instance of Excpetion
 data ParseError = ParseError {
@@ -128,19 +133,34 @@ inSpan constr exp = do
   e <- getLastPos
   mkLabeledNode (mkSrcSpan s e) $ constr l
 
-parseModule :: [Token.Token] -> PT ModuleFromParser
+parseModule :: [Token] -> PT ModuleFromParser
 parseModule tokenList = do
   s <- getNextPos
   skipMany newline
-  decl<-topDeclList
+  moduleDecls <- topDeclList
   skipMany newline 
   eof <?> "end of module"
   e <- getLastPos
-  return $ Module {
-    moduleDecls = decl
-   ,moduleTokens = Just tokenList
-   ,moduleSrcLoc = mkSrcSpan s e
-  }
+  moduleComments <- fmap catMaybes $ forM tokenList getComment
+  let
+    moduleTokens = Just tokenList
+    moduleSrcLoc = mkSrcSpan s e
+    modulePragmas = mapMaybe getPragma tokenList
+  return $ Module { .. }
+  where
+    getComment :: Token -> PT (Maybe LComment)
+    getComment t = case tokenClass t of
+      L_LComment -> mkComm LineComment
+      L_BComment -> mkComm BlockComment
+      L_Pragma -> mkComm PragmaComment
+      _ -> return Nothing
+      where
+        mkComm constr = liftM Just
+           $ mkLabeledNode (mkSrcPos t) (constr $ tokenString t)
+    getPragma :: Token -> Maybe String
+    getPragma t = case tokenClass t of
+      L_Pragma -> Just $ take (tokenLen t - 6) $ drop 3 $ tokenString t
+      _ -> Nothing
 
 token :: TokenClasses.PrimToken -> PT ()
 token t = tokenPrimExDefault tokenTest

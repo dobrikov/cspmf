@@ -26,6 +26,7 @@ data PrimToken
   | L_Ident
   | L_LComment
   | L_BComment
+  | L_Pragma
   | L_EOF
   | L_Include
   | L_Newline

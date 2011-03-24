@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 module Language.CSPM.AlexWrapper
 where
 
@@ -5,47 +6,53 @@ import Language.CSPM.Token
 import Language.CSPM.TokenClasses
 
 import Data.Char
+import Data.List
 
-type AlexInput = (AlexPosn,     -- current position,
-                  Char,         -- previous char
-                  String)       -- current input string
+type AlexInput
+  = (AlexPosn     -- current position
+    ,Char         -- previous char
+    ,String)      -- current input string
 
 data AlexState = AlexState {
-	alex_pos :: !AlexPosn,	-- position at current input location
-	alex_inp :: String,	-- the current input
-	alex_chr :: !Char,	-- the character before the input
-	alex_scd :: !Int, 	-- the current startcode
-	alex_cnt :: !Int 	-- nuber of tokens
-    }
-
--- Compile with -funbox-strict-fields for best results!
+   alex_pos :: !AlexPosn -- position at current input location
+  ,alex_inp :: String	-- the current input
+  ,alex_chr :: !Char	-- the character before the input
+  ,alex_scd :: !Int 	-- the current startcode
+  ,alex_cnt :: !Int 	-- number of tokens
+  }
 
 runAlex :: String -> Alex a -> Either LexError a
 runAlex input (Alex f) 
-   = case f (AlexState {alex_pos = alexStartPos,
- 			alex_inp = input,	
-			alex_chr = '\n',
-			alex_scd = 0,
-                        alex_cnt = 0}) of Left msg -> Left msg
-					  Right ( _, a ) -> Right a
+  = case f initState of
+     Left msg -> Left msg
+     Right ( _, a ) -> Right a
+  where
+    initState
+      = AlexState {
+       alex_pos = alexStartPos
+      ,alex_inp = input
+      ,alex_chr = '\n'
+      ,alex_scd = 0
+      ,alex_cnt = 0
+      }
 
 newtype Alex a = Alex { unAlex :: AlexState -> Either LexError (AlexState, a) }
 
 instance Monad Alex where
-  m >>= k  = Alex $ \s -> case unAlex m s of 
-				Left msg -> Left msg
-				Right (s',a) -> unAlex (k a) s'
+  m >>= k  = Alex $ \s -> case unAlex m s of
+                            Left msg -> Left msg
+                            Right (s',a) -> unAlex (k a) s'
   return a = Alex $ \s -> Right (s,a)
 
 alexGetInput :: Alex AlexInput
 alexGetInput
- = Alex $ \s@AlexState{alex_pos=pos,alex_chr=c,alex_inp=inp} -> 
-	Right (s, (pos,c,inp))
+ = Alex $ \s@AlexState{alex_pos=pos, alex_chr=c, alex_inp=inp} ->
+         Right (s, (pos,c,inp))
 
 alexSetInput :: AlexInput -> Alex ()
-alexSetInput (pos,c,inp)
+alexSetInput (pos, c, inp)
  = Alex $ \state -> case state {alex_pos=pos,alex_chr=c,alex_inp=inp} of
-		  s@(AlexState{}) -> Right (s, ())
+            s@(AlexState{}) -> Right (s, ())
 
 alexError :: String -> Alex a
 alexError message = Alex $ update where
@@ -57,15 +64,16 @@ alexGetStartCode = Alex $ \s@AlexState{alex_scd=sc} -> Right (s, sc)
 alexSetStartCode :: Int -> Alex ()
 alexSetStartCode sc = Alex $ \s -> Right (s{alex_scd=sc}, ())
 
--- increase token counter and return tokencount
-alexNextToken :: Alex (Int)
-alexNextToken = Alex $ \s@AlexState{alex_cnt=cnt} -> 
-	Right (s {alex_cnt=(cnt+1)}, cnt)
+-- increase token counter and return tokenCount
+alexCountToken :: Alex Int
+alexCountToken
+  = Alex $ \s -> Right (s {alex_cnt = succ $ alex_cnt s}, alex_cnt s)
 
-alexGetChar :: AlexInput -> Maybe (Char,AlexInput)
+alexGetChar :: AlexInput -> Maybe (Char, AlexInput)
 alexGetChar (_p,_c,[]) = Nothing
-alexGetChar (p,_c,(c:s))  = let p' = alexMove p c in p' `seq`
-                                Just (c, (p', c, s))
+alexGetChar ( p,_c,(c:s))
+  = let p' = alexMove p c
+    in p' `seq` Just (c, (p', c, s))
 
 -- -----------------------------------------------------------------------------
 -- Useful token actions
@@ -81,52 +89,56 @@ type AlexAction result = AlexInput -> Int -> result
 
 -- after the dfa calls mkL, we copy the position and string to the token
 mkL :: PrimToken -> AlexInput -> Int -> Alex Token
-mkL c (pos,_,str) len = do
-  cnt<-alexNextToken
-  return (Token (mkTokenId cnt) pos len c (take len str))
+mkL c (pos, _, str) len = do
+  cnt <- alexCountToken
+  return $ Token {
+    tokenId     = mkTokenId cnt
+  , tokenStart  = pos
+  , tokenLen    = len
+  , tokenClass  = c
+  , tokenString = take len str
+  }
 
 block_comment :: AlexInput -> Int -> Alex Token
-block_comment (startPos,_,_) _ = do
-  inputs <- alexGetInput
-  go 1 0 inputs inputs
+block_comment (startPos, _ , '\123':'-':input) 2 = do
+    case go 1 "-{" input of
+      Nothing -> Alex $ \_-> Left $ LexError {
+         lexEPos = startPos
+        ,lexEMsg = "Unclosed Blockcomment"
+        }
+      Just (acc, rest) -> do
+        cnt <- alexCountToken
+        let
+          tokenId = mkTokenId cnt
+          tokenString = reverse acc
+          tokenLen = length tokenString
+          tokenStart = startPos
+          tokenClass = case (tokenString, acc) of
+               ('\123':'-':'#':_, '\125':'-':'#':_) ->  L_Pragma
+               ('\123':'-':_    , '\125':'-':_    ) ->  L_BComment
+        alexSetInput (foldl' alexMove startPos tokenString, '\125', rest)
+        return $ Token {..}
   where
-    go :: Int  -> Int -> AlexInput -> AlexInput -> Alex Token 
-    go 0 count input (spos,_,str) = do
-                  alexSetInput input
-                  cnt<-alexNextToken
-                  return (Token (mkTokenId cnt) spos count L_BComment (take (count-2) str) )
-    go n count inputt i= do
-	  case alexGetChar inputt of
-	    Nothing  -> err inputt
-	    Just (c,input) -> do
-	      case c of
-	    	'-' -> do
-		  case alexGetChar input of
-		    Nothing  -> err input
-		    Just ('\125',input) -> go (n-1) (count+2) input i
-		    Just (_c,input)      -> go n (count+2) input i
-	     	'\123' -> do
-		  case alexGetChar input of
-		    Nothing  -> err input
-		    Just ('-',input) -> go (n+1) (count+2) input i
-		    Just (_c,input)   -> go n (count+2) input i
-	    	c -> go n (count+1) input i
-
-    err input = do alexSetInput input;
-                       lexError $ "Unclosed Blockcomment  (starting at :"
-                                   ++ (pprintAlexPosn startPos) ++") "
+    go 0 acc rest = Just (acc, rest)
+    go nested acc rest = case rest of
+      '-' : '\125' : r2 -> go (pred nested) ('\125': '-' : acc) r2
+      '\123' : '-'  : r2 -> go (succ nested) ('-'  : '\123': acc) r2
+      h:r2 -> go nested (h : acc) r2
+      [] -> Nothing
 
 lexError :: String -> Alex a
 lexError s = do
   (_p,_c,input) <- alexGetInput
-  alexError ( s ++ (if (not (null input))
-		     then " at " ++ myShowChar (head input)
-		     else " at end of file"))
+  let
+    pos = if not $ null input
+            then " at " ++ (showChar $ head input)
+            else " at end of file"
+  alexError $ s ++ pos
   where
-    myShowChar c = 
-     if isPrint c then show c
+    showChar c =
+     if isPrint c
+       then show c
        else "charcode " ++ (show $ ord c)
-
 
 alexEOF :: Alex Token
 alexEOF = return (Token (mkTokenId 0) (AlexPn 0 0 0) 0 L_EOF "")
@@ -134,4 +146,4 @@ alexEOF = return (Token (mkTokenId 0) (AlexPn 0 0 0) 0 L_EOF "")
 {- reverenced from Code generated by Alex -}
 
 alexInputPrevChar :: AlexInput -> Char
-alexInputPrevChar (_p,c,_s) = c
+alexInputPrevChar (_p, c, _s) = c
