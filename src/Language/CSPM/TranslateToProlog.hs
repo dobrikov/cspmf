@@ -80,7 +80,7 @@ mainWork fileName = do
   printDebug $ "parsetime : " ++ showTime(time_have_ast - time_have_tokens)
   
   time_start_renaming <- getCPUTime
-  (astNew,renaming) <- eitherToExc $ renameModule ast
+  (astNew, renaming) <- eitherToExc $ renameModule ast
   let
     plCode = cspToProlog astNew
     symbolTable = mkSymbolTable $ identDefinition renaming

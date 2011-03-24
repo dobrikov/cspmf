@@ -36,20 +36,18 @@ import qualified Data.IntMap as IntMap
 cspToProlog ::
   ModuleFromRenaming -- ^ the renamed Module
   -> Doc  -- ^ prolog facts
-cspToProlog ast = 
-  let
-     core = mkModule ast
-     header = 
-       (text ":- dynamic channel/2, bindval/3, agent/3.")
-       $+$ 
-       (text ":- dynamic agent_curry/3, symbol/4.")
-       $+$ 
-       (text ":- dynamic dataTypeDef/2, subTypeDef/2, nameType/2.")
-       $+$
-       (text ":- dynamic cspTransparent/1.")
-       $+$
-       (text ":- dynamic cspPrint/1.")
-   in header $+$ core
+cspToProlog ast = header $+$ core
+  where
+    core = mkModule ast
+    header = vcat [
+         text ":- dynamic channel/2, bindval/3, agent/3."
+        ,text ":- dynamic agent_curry/3, symbol/4."
+        ,text ":- dynamic dataTypeDef/2, subTypeDef/2, nameType/2."
+        ,text ":- dynamic cspTransparent/1."
+        ,text ":- dynamic cspPrint/1."
+        ,text ":- dynamic pragma/1."
+        ,text ":- dynamic comment/2."
+        ]
 
 plLocatedConstructs :: Set Const
 plLocatedConstructs = Set.fromList 
@@ -59,7 +57,22 @@ plLocatedConstructs = Set.fromList
 
 mkModule :: ModuleFromRenaming -> Doc
 mkModule m
-  = plPrg [declGroup $ map clause $ declList $ moduleDecls m]
+  = plPrg [
+      declGroup $ map clause $ declList $ moduleDecls m
+     ,declGroup $ map mkPragma  $ modulePragmas m
+     ,declGroup $ map mkComment $ moduleComments m
+     ]
+
+mkPragma :: String -> Clause
+mkPragma s = clause $ nTerm "pragma" [aTerm s]
+
+mkComment :: LComment -> Clause
+mkComment c = clause $ nTerm "comment" [com, plLoc c]
+  where
+    com = case unLabel c of
+      LineComment s ->  nTerm "lineComment" [aTerm s]
+      BlockComment s -> nTerm "blockComment" [aTerm s]
+      PragmaComment s -> nTerm "pragmaComment" [aTerm s]
 
 te :: LExp -> Term
 te expr = case unLabel expr of
