@@ -16,6 +16,7 @@ module Language.CSPM.PrettyPrinter
 (
  PP (..)
 ,prettyPrintFile
+,toPrettyString
 )
 where
 
@@ -41,6 +42,9 @@ instance (PP x) => PP (Labeled x) where
 
 instance PP (Module a) where
   pp m = vcat $ map pp (moduleDecls m)
+
+toPrettyString :: Module a -> String
+toPrettyString = render . pp
 
 -- help functions for the Instances of the Type-class PP
 dot :: Doc

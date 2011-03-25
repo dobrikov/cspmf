@@ -54,6 +54,7 @@ module Language.CSPM.Frontend
   ,removeSourceLocations
   ,removeParens
   ,removeModuleTokens
+  ,removePragmas
   ,unUniqueIdent
   ,showAst
   ,computeFreeNames
@@ -74,8 +75,8 @@ import Language.CSPM.AST
   (Labeled (..), Module (..), Bindings, castModule, ModuleFromParser)
 import Language.CSPM.SrcLoc (SrcLoc(..))
 import Language.CSPM.AstUtils 
-  (removeSourceLocations, removeModuleTokens, removeParens
-  ,unUniqueIdent, showAst, computeFreeNames, setNodeIdsZero)
+  (removeSourceLocations, removeModuleTokens, removePragmas
+  ,removeParens ,unUniqueIdent, showAst, computeFreeNames, setNodeIdsZero)
 import qualified Language.CSPM.LexHelper as Lexer
   (lexInclude, lexPlain, removeIgnoredToken)
 import Language.CSPM.PrettyPrinter (pp, prettyPrintFile)

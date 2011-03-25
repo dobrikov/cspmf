@@ -16,6 +16,7 @@ module Language.CSPM.AstUtils
    removeSourceLocations
   ,removeParens
   ,removeModuleTokens
+  ,removePragmas
   ,unUniqueIdent
   ,showAst
   ,computeFreeNames
@@ -41,6 +42,11 @@ removeSourceLocations ast
   where
     patchLabel :: SrcLoc.SrcLoc -> SrcLoc.SrcLoc
     patchLabel _ = SrcLoc.NoLocation
+
+-- 'removePragmas' removes all pragmas from the AST
+removePragmas :: Labeled (Module a) -> Labeled (Module a)
+removePragmas ast = ast {unLabel = m}
+  where m = (unLabel ast) {modulePragmas = []}
 
 -- | set the tokenlist in the module datatype to Nothing
 removeModuleTokens :: Labeled (Module a) -> Labeled (Module a)
