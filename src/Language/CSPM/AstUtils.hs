@@ -18,7 +18,6 @@ module Language.CSPM.AstUtils
   ,removeModuleTokens
   ,removePragmasAndComm
   ,unUniqueIdent
-  ,showAst
   ,computeFreeNames
   ,getModuleAsserts
   ,setNodeIdsZero
@@ -32,7 +31,7 @@ import qualified Data.IntMap as IntMap
 import Data.Data
 import Data.Maybe
 import Data.Generics.Schemes (everywhere,listify)
-import Data.Generics.Aliases (mkT,extQ)
+import Data.Generics.Aliases (mkT)
 --import Data.Generics.Basics (gmapQ,toConstr,showConstr)
 
 -- | 'removeSourceLocations' sets all locationsInfos to 'NoLocation'
@@ -82,22 +81,6 @@ unUniqueIdent ast
     patchIdent :: Ident -> Ident
     patchIdent (UIdent u) = Ident $ newName u
     patchIdent _ = error "unUniqueIdent : did not expect and 'Ident' in the AST"
-
--- | 'a show function that omits the node labeles.
--- | TODO : fix this is very buggy.
--- | this does not work for Compiles pattern / Arrays
-showAst :: Data a => Labeled a -> String
-showAst ast = gshow ast
-  where
-    gshow :: Data a => a -> String
-    gshow = mShow `extQ` (show :: String -> String)
-    mShow t = if (tyConString $ typeRepTyCon $ typeOf t) == "Language.CSPM.AST.Labeled"
-       then gmapQi 2 gshow t
-       else
-          "("
-       ++ showConstr (toConstr t)
-       ++ concat (gmapQ ((++) " " . gshow) t)
-       ++ ")"
 
 -- | Compute the "FreeNames" of an Expression.
 -- | This function does only work after renaming has been done.
