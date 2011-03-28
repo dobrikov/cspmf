@@ -198,7 +198,7 @@ alexMonadScan = do
   case alexScan inp sc of                    -- alexScan is jump to alexGenerated code
     AlexEOF -> alexEOF
     AlexError (pos,chr,h:rest)
-         -> lexError $ "lexical error"
+         -> lexError "lexical error"
     AlexSkip  inp' len -> do
 	alexSetInput inp'
 	alexMonadScan

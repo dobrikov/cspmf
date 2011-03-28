@@ -58,10 +58,10 @@ module Language.CSPM.Frontend
   ,unUniqueIdent
   ,computeFreeNames
   ,setNodeIdsZero
-
 -- PrettyPrinter
-  ,pp
-  ,prettyPrintFile
+  ,toPrettyString
+-- Versions
+  ,frontendVersion
 )
 where
 
@@ -78,7 +78,13 @@ import Language.CSPM.AstUtils
   ,removeParens ,unUniqueIdent, computeFreeNames, setNodeIdsZero)
 import qualified Language.CSPM.LexHelper as Lexer
   (lexInclude, lexPlain, removeIgnoredToken)
-import Language.CSPM.PrettyPrinter (pp, prettyPrintFile)
+import Language.CSPM.PrettyPrinter (toPrettyString)
 import Language.CSPM.Utils
   (eitherToExc, handleLexError, handleParseError, handleRenameError
   ,parseFile, benchmarkFrontend)
+import Paths_CSPM_Frontend (version)
+import Data.Version (Version)
+
+-- | The version of the CSPM-Frontend library
+frontendVersion :: Version
+frontendVersion = version
