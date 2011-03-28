@@ -282,7 +282,7 @@ printIdent :: Ident -> Doc
 printIdent ident = 
   case ident of 
    Ident _  -> text $ unIdent ident
-   UIdent _ -> text $ realName $ unUIdent ident 
+   UIdent _ -> text $ newName $ unUIdent ident
 
 instance PP AssertDecl where
   pp a = case a of
