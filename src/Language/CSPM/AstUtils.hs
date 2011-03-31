@@ -10,13 +10,10 @@
 --
 -- Some utility functions for converting the AST
 
-{-# LANGUAGE RankNTypes #-}
 module Language.CSPM.AstUtils
   (
    removeSourceLocations
   ,removeParens
-  ,removeModuleTokens
-  ,removePragmasAndComm
   ,unUniqueIdent
   ,computeFreeNames
   ,getModuleAsserts
@@ -32,29 +29,18 @@ import Data.Data
 import Data.Maybe
 import Data.Generics.Schemes (everywhere,listify)
 import Data.Generics.Aliases (mkT)
---import Data.Generics.Basics (gmapQ,toConstr,showConstr)
 
 -- | 'removeSourceLocations' sets all locationsInfos to 'NoLocation'
-removeSourceLocations :: Data a => Labeled (Module a) -> Labeled (Module a)
+removeSourceLocations :: Data a => a -> a
 removeSourceLocations ast 
   = everywhere (mkT patchLabel) ast
   where
     patchLabel :: SrcLoc.SrcLoc -> SrcLoc.SrcLoc
     patchLabel _ = SrcLoc.NoLocation
 
--- 'removePragmas' removes all pragmas from the AST
-removePragmasAndComm :: Labeled (Module a) -> Labeled (Module a)
-removePragmasAndComm ast = ast {unLabel = m}
-  where m = (unLabel ast) {moduleComments = [],
-                           modulePragmas = []}
-
--- | set the tokenlist in the module datatype to Nothing
-removeModuleTokens :: Labeled (Module a) -> Labeled (Module a)
-removeModuleTokens t = t {unLabel = m}
-  where m = (unLabel t ) {moduleTokens = Nothing}
-
--- | 'removeParens' removes all occurences of of Parens,i.e. explicit parentheses from the AST
-removeParens :: Data a => Labeled (Module a) -> Labeled (Module a)
+-- | 'removeParens' removes all occurences of of Parens,
+-- i.e. explicit parentheses from the AST
+removeParens :: Data a => a -> a
 removeParens ast 
   = everywhere (mkT patchExp) ast
   where
@@ -64,17 +50,17 @@ removeParens ast
       _ -> x
 
 -- | Set all NodeIds to zero.
-setNodeIdsZero :: Data a => Labeled (Module a) -> Labeled (Module a)
+setNodeIdsZero :: Data a => a -> a
 setNodeIdsZero ast 
   = everywhere (mkT nID) ast
   where
     nID :: NodeId -> NodeId
     nID _ = NodeId { unNodeId = 0 }
 
--- | unUniqueIdent replaces the all UIdent with the Ident of the the new name, thus forgetting
--- | additional information like the bindingside, etc.
--- | Usefull to get a smaller AST. 
-unUniqueIdent :: Data a => Labeled (Module a) -> Labeled (Module a)
+-- | unUniqueIdent replaces the all UIdent with the Ident of the the new name,
+-- thus forgetting additional information like the bindingside, etc.
+-- Usefull to get a smaller AST.
+unUniqueIdent :: Data a => a -> a
 unUniqueIdent ast
   = everywhere (mkT patchIdent) ast
   where
@@ -83,8 +69,8 @@ unUniqueIdent ast
     patchIdent _ = error "unUniqueIdent : did not expect and 'Ident' in the AST"
 
 -- | Compute the "FreeNames" of an Expression.
--- | This function does only work after renaming has been done.
--- | This implementation is inefficient.
+-- This function does only work after renaming has been done.
+-- This implementation is inefficient.
 computeFreeNames :: Data a => a -> FreeNames
 computeFreeNames syntax
   = IntMap.difference (IntMap.fromList used) (IntMap.fromList def)
