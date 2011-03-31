@@ -17,6 +17,9 @@ module Language.CSPM.Parser
 (
   parse
  ,ParseError(..)
+ ,testParser
+ ,parseExp
+ ,parsePattern
 )
 where
 import Language.CSPM.AST
@@ -57,6 +60,12 @@ parse filename tokenList
         initialPState
         filename
         (removeIgnoredToken tokenList)
+
+-- | Wrapper for testing sub parsers
+testParser :: PT a -> [Token] -> Either ParsecError.ParseError a
+testParser p tokenList
+  = runParser p initialPState ""
+       $ removeIgnoredToken tokenList
 
 -- | ParseError data type. This is an instance of Excpetion
 data ParseError = ParseError {
@@ -572,7 +581,7 @@ If a gtLimit is set, we only accept a maximum number of gt symbols
             if cnt < x then return ()
                        else fail "(Gt token belongs to sequence expression)"
 
-
+-- | Parser for CSP-M expressions
 parseExp :: PT LExp
 parseExp
   = (parseDotExpOf $ buildExpressionParser procTable parseProcReplicatedExp)
@@ -716,13 +725,11 @@ parseRename= withLoc $ do
   e2<-parseExp_noPrefix
   return $ Rename e1 e2
 
-
--- here starts the parser for pattern
-
+-- | Parser for CSP-M patterns
 parsePattern :: PT LPattern
 parsePattern = (<?> "pattern")  $ do
   sPos <- getNextPos
-  concList <- sepBy1 parsePatternAppend $ token T_atat
+  concList <- sepBy1 parsePatternDot $ token T_atat
   ePos <- getLastPos
   case concList of 
     [x] -> return x
@@ -731,7 +738,7 @@ parsePattern = (<?> "pattern")  $ do
 parsePatternAppend :: PT LPattern
 parsePatternAppend = do
   sPos <- getNextPos
-  concList <- sepBy1 parsePatternDot $ token T_hat
+  concList <- sepBy1 parsePatternCore $ token T_hat
   ePos <- getLastPos
   case concList of 
     [x] -> return x
@@ -740,7 +747,7 @@ parsePatternAppend = do
 parsePatternDot :: PT LPattern
 parsePatternDot = do
   s <- getNextPos
-  dList <- sepBy1 parsePatternCore $ token T_dot
+  dList <- sepBy1 parsePatternAppend $ token T_dot
   e <- getLastPos
   case dList of
       [p] -> return p

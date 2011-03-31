@@ -133,7 +133,7 @@ instance PP Exp where
       ]
     CallFunction expr list -> pp expr  <> printFunArgs list
     CallBuiltIn  builtin [expr] -> pp builtin <> (parens $ hsepPunctuate comma expr)
-    CallBuiltIn  _ _ -> error "pp Exp: builtin must exactly have one argument"
+    CallBuiltIn  _ _ -> error "pp Exp: builtin must have exactly one argument"
     Lambda pat expr -> text "\\" <+> hsepPunctuate comma pat <+> text "@" <+> pp expr
     Stop    -> text "STOP"
     Skip    -> text "SKIP"
@@ -149,7 +149,7 @@ instance PP Exp where
     OrExp a b       -> pp a<+> text "or" <+> pp b
     NotExp e        -> text "not" <+> pp e
     NegExp e        -> text " " <> text "-" <>  pp e
-    Fun1 builtin e  -> pp builtin <> pp e
+    Fun1 builtin e  -> pp builtin <> (parens $ pp e)
     Fun2 builtin a b -> pp a <+> pp builtin <+> pp b
     DotTuple l      -> hcatPunctuate dot l
     Closure e       -> text "{|" <+> hsepPunctuate comma e <+> text "|}"

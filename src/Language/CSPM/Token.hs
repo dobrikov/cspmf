@@ -66,7 +66,7 @@ tokenSentinel = Token
   { tokenId = mkTokenId (- 1)
   , tokenStart = AlexPn 0 0 0
   , tokenLen = 0
-  , tokenClass  =error "CSPLexer.x illegal access tokenSentinel"
+  , tokenClass  = error "CSPLexer.x illegal access tokenSentinel"
   , tokenString =error "CSPLexer.x illegal access tokenSentinel"}
 
 showPosn :: AlexPosn -> String
