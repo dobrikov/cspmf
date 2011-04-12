@@ -1,12 +1,23 @@
+----------------------------------------------------------------------------
+-- |
+-- Module      :  Language.CSPM.AlexWrapper
+-- 
+-- Stability   :  experimental
+-- Portability :  GHC-only
+--
+-- Wrapper functions for Alex
+
 {-# LANGUAGE RecordWildCards #-}
 module Language.CSPM.AlexWrapper
 where
 
 import Language.CSPM.Token
 import Language.CSPM.TokenClasses
+import Language.CSPM.UnicodeSymbols as UnicodeSymbols (lookupToken)
 
 import Data.Char
 import Data.List
+import Control.Monad
 
 type AlexInput
   = (AlexPosn     -- current position
@@ -70,11 +81,14 @@ alexCountToken
   = Alex $ \s -> Right (s {alex_cnt = succ $ alex_cnt s}, alex_cnt s)
 
 alexGetChar :: AlexInput -> Maybe (Char, AlexInput)
-alexGetChar (_p,_c,[]) = Nothing
-alexGetChar ( p,_c,(c:s))
+alexGetChar (_p, _c, []) = Nothing
+alexGetChar (p, _c, (c:s))
   = let p' = alexMove p c
-    in p' `seq` Just (c, (p', c, s))
-
+    in p' `seq` Just (adj_c, (p', adj_c, s))
+   where
+     adj_c | c == '\xac' = '\x04' -- special case for the not operator
+           | c <= '\xff' = c
+           | otherwise = '\x04'
 -- -----------------------------------------------------------------------------
 -- Useful token actions
 
@@ -89,7 +103,7 @@ type AlexAction result = AlexInput -> Int -> result
 
 -- after the dfa calls mkL, we copy the position and string to the token
 mkL :: PrimToken -> AlexInput -> Int -> Alex Token
-mkL c (pos, _, str) len = do
+mkL c (pos,_ , str) len = do
   cnt <- alexCountToken
   return $ Token {
     tokenId     = mkTokenId cnt
@@ -98,6 +112,22 @@ mkL c (pos, _, str) len = do
   , tokenClass  = c
   , tokenString = take len str
   }
+
+mk_Unicode_Token :: AlexInput -> Int -> Alex Token
+mk_Unicode_Token (pos,_ , str) len = do
+  when (len /= 1) $ error "internal error unicode symbol length not 1"
+  let symbol = head str
+  case UnicodeSymbols.lookupToken symbol of
+    Nothing -> lexError $ "unknown Unicode symbol : " ++ [symbol]
+    Just tokenClass -> do
+      cnt <- alexCountToken
+      return $ Token {
+         tokenId     = mkTokenId cnt
+       , tokenStart  = pos
+       , tokenLen    = 1
+       , tokenClass  = tokenClass
+       , tokenString = [symbol]
+       }
 
 block_comment :: AlexInput -> Int -> Alex Token
 block_comment (startPos, _ , '\123':'-':input) 2 = do

@@ -32,7 +32,7 @@ $graphic1  = [$small $large $symbol1 $digit]
 $octit     = 0-7
 $hexit     = [0-9 A-F a-f]
 $idchar    = [$alpha $digit \' \_]
-
+$unicodeSymbol = \x04
 @ident = $alpha $idchar*
 
 @decimal     = $digit+
@@ -45,6 +45,9 @@ $idchar    = [$alpha $digit \' \_]
 $nl = [\n]
 
 csp :-
+
+-- unicode symbols
+<0> $unicodeSymbol {mk_Unicode_Token }
 
 -- CSP-M Keywords
 <0> "channel"     { mkL T_channel  }
@@ -157,12 +160,9 @@ csp :-
 <0> "[[" { mkL T_openBrackBrack }
 <0> "]]" { mkL T_closeBrackBrack }
 <0> $nl  { mkL L_Newline}
-<0> $whitechar'+ { skip }
+<0> $whitechar'+ { mkL T_WhiteSpace }
 <0> "--".* { mkL L_LComment }
 "{-"    { block_comment }
-
--- Fixme : tread this properly
-
 
 <0> "include"                   { mkL L_Include }
 
@@ -188,7 +188,7 @@ csp :-
 <ref> "over"          { mkL T_over      }
 <ref> "]:"            { begin 0         }
 <ref> "]"             { begin 0         }
-<ref> $white+         { skip            }
+<ref> $white+         { mkL T_WhiteSpace}
 <ref> @str            { skip            }
 
 {

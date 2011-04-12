@@ -18,18 +18,20 @@ where
 import Data.Typeable (Typeable)
 import Data.Generics.Basics (Data)
 import Data.Generics.Instances ()
+import Data.Array (Ix)
 
 -- | The token classes of the CSP-M lexer
 data PrimToken
-  = L_Integer
-  | L_String
-  | L_Ident
+  = L_Newline
+  | T_WhiteSpace
   | L_LComment
   | L_BComment
   | L_Pragma
-  | L_EOF
   | L_Include
-  | L_Newline
+  | L_EOF
+  | L_Integer
+  | L_String
+  | L_Ident
 -- keywords
   | T_channel
   | T_datatype
@@ -146,4 +148,4 @@ data PrimToken
   | T_F
   | T_T
   | T_FD
-  deriving (Show,Eq,Ord,Typeable, Data)
+  deriving (Show,Eq,Ord,Enum,Ix,Bounded,Typeable,Data)

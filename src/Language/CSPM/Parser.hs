@@ -147,7 +147,6 @@ parseModule tokenList = do
   s <- getNextPos
   skipMany newline
   moduleDecls <- topDeclList
-  skipMany newline 
   eof <?> "end of module"
   e <- getLastPos
   moduleComments <- fmap catMaybes $ forM tokenList getComment

@@ -1,20 +1,41 @@
+{-# LANGUAGE TupleSections, RecordWildCards #-}
 module Language.CSPM.LexHelper
 (
    lexInclude
   ,lexPlain
   ,removeIgnoredToken
   ,tokenIsComment
+  ,unicodeTokenString
+  ,asciiTokenString
 )
 where
 
 import qualified Language.CSPM.Lexer as Lexer (scanner)
 import Language.CSPM.Token (Token(..), LexError(..))
 import Language.CSPM.TokenClasses (PrimToken(..))
+import Language.CSPM.UnicodeSymbols (lookupDefaultSymbol)
 import qualified Data.Set as Set
+import Data.Maybe
 
 -- | lex a String .
 lexPlain :: String -> Either LexError [Token]
 lexPlain src = fmap reverse $ Lexer.scanner src
+
+-- | Convert a token to a String.
+--   If the tokenClasss has a Unicode symbol return the default Unicode string.
+unicodeTokenString :: Token -> String
+unicodeTokenString token
+  = case lookupDefaultSymbol $ tokenClass token of
+      Just (unicodeSymbol, _) -> [unicodeSymbol]
+      Nothing -> tokenString token
+
+-- | Convert a token to a String.
+--   If the tokenClasss has a Unicode symbol return the default ASCII string.
+asciiTokenString :: Token -> String
+asciiTokenString token
+  = case lookupDefaultSymbol $ tokenClass token of
+      Just (_, symbol) -> symbol
+      Nothing -> tokenString token
 
 -- | lex a String and process CSP-M include statements.
 lexInclude :: String -> IO (Either LexError [Token])
@@ -51,27 +72,34 @@ processIncludeAndReverse tokens = picl_acc tokens []
       }
   picl_acc (h:rest) acc = picl_acc rest $ h:acc
 
--- | Remove comments and unneeded newlines.
+-- | Remove comments, whitespaces and unneeded newlines.
 removeIgnoredToken :: [Token] -> [Token]
 removeIgnoredToken = soakNewlines . removeComments
   where
     -- | Remove comments from the token stream.
     removeComments :: [Token] -> [Token]
-    removeComments = filter (not . tokenIsComment)
+    removeComments = filter (\t -> not (tokenIsComment t || isWhiteSpace t))
+    isWhiteSpace = (==) T_WhiteSpace . tokenClass
 
-    -- | remove newlines, that do not end a declaration from the token stream.
-    -- For example newlines next to binary operators.
+-- | Is the token a line-comment, block-comment or a Pragma?
+tokenIsComment :: Token -> Bool
+tokenIsComment t = tc == L_LComment || tc == L_BComment || tc == L_Pragma
+  where tc = tokenClass t
+
+
+-- | remove newlines, that do not end a declaration from the token stream.
+-- For example newlines next to binary operators.
+-- Remove all trailing newlines.
 soakNewlines :: [Token] -> [Token]
 soakNewlines = worker
-  where 
+  where
     worker [] = []
-    worker [x] = case tokenClass x of
-       L_Newline -> []
-       _         -> [x] 
+    worker [x] | tokenClass x ==L_Newline = []
+    worker [x] = [x]
     worker (h1:h2:t) = case (tokenClass h1, tokenClass h2) of
        (L_Newline, L_Newline) -> worker (h1:t)
        (L_Newline, _) | isH2NewLineConsumer -> worker $ h2:t
-       (L_Newline, _) -> h1 : (worker  $ h2:t)
+       (L_Newline, _) -> h1 : (worker $ h2:t)
        (_, L_Newline) | isH1NewLineConsumer -> worker $ h1:t
        (_, L_Newline) -> h1: (worker $ h2:t)
        _   -> h1: (worker $ h2:t)
@@ -80,7 +108,7 @@ soakNewlines = worker
         isH1NewLineConsumer = tokenClass h1 `Set.member` consumeNLAfterToken
 
     binaryOperators =
-     [T_is, T_hat, T_hash, T_times, T_slash, 
+     [T_is, T_hat, T_hash, T_times, T_slash,
       T_percent, T_plus, T_minus, T_eq, T_neq,
       T_ge, T_le, T_not, T_amp, T_semicolon,
       T_comma, T_triangle, T_box, T_rhd, T_exp,
@@ -91,7 +119,7 @@ soakNewlines = worker
       T_openOxBrack, T_closeOxBrack,T_openPBrace,
       T_openBrackBrack, T_if, T_then,T_else, T_let, T_and,
       T_or, T_Refine, T_trace,T_failure, T_failureDivergence,
-      T_refusalTesting, T_refusalTestingDiv, T_revivalTesting, 
+      T_refusalTesting, T_refusalTestingDiv, T_revivalTesting,
       T_revivalTestingDiv,T_tauPriorityOp, T_within]
     consumeNLBeforeToken 
       = Set.fromList (
@@ -99,8 +127,3 @@ soakNewlines = worker
          ++ binaryOperators)
     consumeNLAfterToken
       = Set.fromList ( [T_openParen, T_openBrace, T_lt] ++ binaryOperators)
-
--- | Is the token a line-comment, block-comment or a Pragma?
-tokenIsComment :: Token -> Bool
-tokenIsComment t = tc == L_LComment || tc == L_BComment || tc == L_Pragma
-  where tc = tokenClass t
