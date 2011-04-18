@@ -21,7 +21,7 @@ module Language.CSPM.AstToProlog
 )
 where
 
-import Language.CSPM.Frontend (ModuleFromRenaming)
+import Language.CSPM.Frontend (ModuleFromRenaming, frontendVersion)
 import Language.CSPM.AST
 import qualified Language.CSPM.SrcLoc as SrcLoc
 import Language.Prolog.PrettyPrint.Direct
@@ -30,6 +30,7 @@ import Text.PrettyPrint
 import Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Data.IntMap as IntMap
+import Data.Version
 
 -- | Translate a "LModule" into a "Doc" containing a number of Prolog facts.
 -- The LModule must be a renamed,i.e. contain only unique "Ident"ifier.
@@ -40,7 +41,8 @@ cspToProlog ast = header $+$ core
   where
     core = mkModule ast
     header = vcat [
-         text ":- dynamic channel/2, bindval/3, agent/3."
+         text ":- dynamic parserVersionNum/1, parserVersionStr/1."
+        ,text ":- dynamic channel/2, bindval/3, agent/3."
         ,text ":- dynamic agent_curry/3, symbol/4."
         ,text ":- dynamic dataTypeDef/2, subTypeDef/2, nameType/2."
         ,text ":- dynamic cspTransparent/1."
@@ -58,7 +60,11 @@ plLocatedConstructs = Set.fromList
 mkModule :: ModuleFromRenaming -> Doc
 mkModule m
   = plPrg [
-      declGroup $ map clause $ declList $ moduleDecls m
+      singleClause $ clause $ nTerm "parserVersionNum"
+        [pList $ map atom $ versionBranch $ frontendVersion]
+     ,singleClause $ clause $ nTerm "parserVersionStr"
+        [atom ("CSPM-Frontent-" ++ showVersion frontendVersion)]
+     ,declGroup $ map clause $ declList $ moduleDecls m
      ,declGroup $ map mkPragma  $ modulePragmas m
      ,declGroup $ map mkComment $ moduleComments m
      ]
