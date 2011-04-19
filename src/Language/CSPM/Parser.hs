@@ -872,7 +872,7 @@ topDeclList = sepByNewLine topDecl
                []   -> return Nothing
                [x]  -> return $ Just x
                _    -> fail "More than one model extension."
-    token T_closeBrack
+    token T_closeSpecialBrack
     return $ AssertModelCheck negated p model ext
       where
        fdrModel :: PT LFDRModels

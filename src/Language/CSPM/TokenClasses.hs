@@ -121,6 +121,7 @@ data PrimToken
   | T_closeBrack   -- "]"
   | T_openAssertBrack  -- ":["
   | T_closeAssertBrack -- "]:"
+  | T_closeSpecialBrack -- "]" used only for assert declarations
   | T_openOxBrack  -- "[|"
   | T_closeOxBrack -- "|]"
   | T_openBrackBrack  -- "[["

@@ -187,7 +187,7 @@ csp :-
 <ref> "priority"      { mkL T_priority  }
 <ref> "over"          { mkL T_over      }
 <ref> "]:"            { andBegin (mkL T_closeAssertBrack) 0 }
-<ref> "]"             { andBegin (mkL T_closeBrack) 0 }
+<ref> "]"             { andBegin (mkL T_closeSpecialBrack) 0 }
 <ref> $white+         { mkL T_WhiteSpace }
 <ref> @str            { skip            }
 
