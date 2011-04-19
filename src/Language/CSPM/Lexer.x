@@ -107,7 +107,7 @@ csp :-
 <0> "[V=" { mkL T_revivalTesting }
 <0> "[VD=" { mkL T_revivalTestingDiv }
 <0> "[TP=" { mkL T_tauPriorityOp }
-<0> ":[" { begin ref } -- jump to the other lexer specification ref
+<0> ":[" { andBegin (mkL T_openAssertBrack) ref} -- jump to the other lexer specification ref
 
 -- symbols
 <0> "^" { mkL T_hat }
@@ -186,9 +186,9 @@ csp :-
 <ref> "tau"           { mkL T_tau       }
 <ref> "priority"      { mkL T_priority  }
 <ref> "over"          { mkL T_over      }
-<ref> "]:"            { begin 0         }
-<ref> "]"             { begin 0         }
-<ref> $white+         { mkL T_WhiteSpace}
+<ref> "]:"            { andBegin (mkL T_closeAssertBrack) 0 }
+<ref> "]"             { andBegin (mkL T_closeBrack) 0 }
+<ref> $white+         { mkL T_WhiteSpace }
 <ref> @str            { skip            }
 
 {

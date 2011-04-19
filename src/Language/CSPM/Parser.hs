@@ -845,9 +845,11 @@ topDeclList = sepByNewLine topDecl
     p1 <- parseExp
     op <- tauRefineOp
     p2 <- parseExp
+    token T_openAssertBrack
     token T_tau
     token T_priority
     optional $ token T_over
+    token T_closeAssertBrack
     set <- parseExp
     return $ AssertTauPrio negated p1 op p2 set
      where
@@ -863,12 +865,14 @@ topDeclList = sepByNewLine topDecl
     token T_assert
     negated <- assertPolarity
     p       <- parseExp
+    token T_openAssertBrack
     model   <- fdrModel
     extmode <- many $ extsMode
     ext     <-  case extmode of
                []   -> return Nothing
                [x]  -> return $ Just x
                _    -> fail "More than one model extension."
+    token T_closeBrack
     return $ AssertModelCheck negated p model ext
       where
        fdrModel :: PT LFDRModels

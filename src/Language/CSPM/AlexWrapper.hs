@@ -96,7 +96,7 @@ type AlexAction result = AlexInput -> Int -> result
 
 -- perform an action for this token, and set the start code to a new value
 --andBegin :: AlexAction result -> Int -> AlexAction result
---andBegin action code input len = do alexSetStartCode code; action input len
+andBegin action code input len = do alexSetStartCode code; action input len
 
 --token :: (String -> Int -> token) -> AlexAction token
 --token t input len = return (t input len)

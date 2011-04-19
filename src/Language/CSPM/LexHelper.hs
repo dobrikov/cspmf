@@ -115,15 +115,15 @@ soakNewlines = worker
       T_sqcap, T_interleave, T_backslash, T_parallel,
       T_mid, T_at, T_atat, T_rightarrow, T_leftarrow,
       T_leftrightarrow, T_dot, T_dotdot, T_exclamation,
-      T_questionmark, T_colon, T_openBrack, T_closeBrack,
+      T_questionmark, T_colon, T_openBrack,
       T_openOxBrack, T_closeOxBrack,T_openPBrace,
       T_openBrackBrack, T_if, T_then,T_else, T_let, T_and,
       T_or, T_Refine, T_trace,T_failure, T_failureDivergence,
       T_refusalTesting, T_refusalTestingDiv, T_revivalTesting,
       T_revivalTestingDiv,T_tauPriorityOp, T_within]
-    consumeNLBeforeToken 
+    consumeNLBeforeToken
       = Set.fromList (
-            [T_closeParen, T_gt, T_closeBrace, T_closeBrackBrack, T_closePBrace] 
+            [T_closeParen, T_gt, T_closeBrace, T_closeBrackBrack, T_closeBrack, T_closePBrace]
          ++ binaryOperators)
     consumeNLAfterToken
       = Set.fromList ( [T_openParen, T_openBrace, T_lt] ++ binaryOperators)
