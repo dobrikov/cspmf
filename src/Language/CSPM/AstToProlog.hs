@@ -241,11 +241,11 @@ td decl = case unLabel decl of
       [p] -> nTerm "agent" [
               nTerm (plName ident) $ map tp p
              ,te e
-             ,plLoc ident]
+             ,plLoc e]
       l -> nTerm "agent_curry" [
               nTerm (plName ident) $ map (pList . map tp) l 
              ,te e
-             ,plLoc ident]
+             ,plLoc e]
     mkFunBind _ (FunCaseI {}) = error "unexpected case in mkFunBind: FunCaseI"
     mkConstructorList :: [LConstructor] -> Term
     mkConstructorList l = pList $ map mkConstructor l
