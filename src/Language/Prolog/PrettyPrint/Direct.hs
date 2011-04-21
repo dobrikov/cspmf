@@ -30,6 +30,7 @@ where
 
 import Text.PrettyPrint
 import Data.Char
+import Numeric (showHex)
 
 renderProlog :: Doc -> String
 renderProlog a = renderStyle (Style PageMode 60 1.5) a
@@ -50,11 +51,6 @@ instance ATOM Integer where atom = Atom . integer
 instance ATOM Int where atom = Atom . int
 instance ATOM Double where atom = Atom . double 
 instance ATOM Quote where atom (Quote s) = Atom $ text $ quoteString s
-
-quoteString :: String -> String
-quoteString a 
-  = "'"++(escapeQuote $ tail $ reverse $ tail $ reverse $ show a )++"'"
-
 
 class TERM t where term :: t -> Term
 
@@ -138,7 +134,17 @@ declGroup l = Decl $ vcat $ map unClause l
 plPrg :: [Decl] -> Doc
 plPrg l = vcat $ map unDecl l
 
-escapeQuote :: String -> String
-escapeQuote x = concatMap escapeQ x
-  where escapeQ '\'' = "\\'"
-        escapeQ c = [c]
+quoteString :: String -> String
+quoteString a
+  = "'" ++ concatMap escapeChar a ++ "'"
+  where
+    escapeChar a = if isBadChar a
+      then "\\x" ++ (showHex (ord a) "") ++ "\\"
+      else [a]
+
+    isBadChar a = case ord a of
+      x | x <= 31 -> True
+      _ | a == '\'' -> True
+      _ | a == '\\' -> True
+      x | x >= 127 -> True
+      _ -> False

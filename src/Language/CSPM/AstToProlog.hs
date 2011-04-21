@@ -292,11 +292,6 @@ plNameTerm l
     (VarID,PrologVariable) -> plVar ("_" ++ uniquePlName uIdent)
     (VarID,PrologGround)   -> term $ atom $ uniquePlName uIdent
     _             -> term $ plName l
-{-
-{- fix me , temporal hack, switchoff renaming for channel,etc-}
-    (FunID _,_)   -> term $ atom $ uniquePlName uIdent
-    (_,_)         -> term $ atom $ uniquePlName uIdent -- <- TODO,FIX BUG
--}
 
 uniquePlName :: UniqueIdent -> String
 uniquePlName i = newName i
