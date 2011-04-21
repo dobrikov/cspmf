@@ -27,6 +27,7 @@ import Language.Prolog.PrettyPrint.Direct
 
 import Control.Exception
 import System.Exit
+import System.IO
 import System.CPUTime
 import Text.PrettyPrint
 
@@ -44,10 +45,10 @@ translateToProlog inFile outFile = do
                $ handleRenameError renameErrorHandler $ mainWork inFile
   (r :: Either SomeException ()) <- try $ writeFile outFile res
   case r of
-    Right () -> return ()
+    Right () -> exitSuccess
     Left err -> do
-      putStrLn "output-file not written"
-      putStrLn $ show err
+      hPutStrLn stderr "output-file not written"
+      hPutStrLn stderr $ show err
       exitFailure
 
 {-
