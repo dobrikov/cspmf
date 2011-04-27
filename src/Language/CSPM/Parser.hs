@@ -149,22 +149,22 @@ parseModule tokenList = do
   moduleDecls <- topDeclList
   eof <?> "end of module"
   e <- getLastPos
-  moduleComments <- fmap catMaybes $ forM tokenList getComment
   let
     moduleTokens = Just tokenList
     moduleSrcLoc = mkSrcSpan s e
     modulePragmas = mapMaybe getPragma tokenList
+    moduleComments = mapMaybe getComment tokenList
   return $ Module { .. }
   where
-    getComment :: Token -> PT (Maybe LComment)
+    getComment :: Token -> Maybe LocComment
     getComment t = case tokenClass t of
-      L_LComment -> mkComm LineComment
-      L_BComment -> mkComm BlockComment
-      L_Pragma -> mkComm PragmaComment
-      _ -> return Nothing
+      L_LComment -> Just (LineComment str, loc)
+      L_BComment -> Just (BlockComment str, loc)
+      L_Pragma -> Just (PragmaComment str, loc)
+      _ -> Nothing
       where
-        mkComm constr = liftM Just
-           $ mkLabeledNode (mkSrcPos t) (constr $ tokenString t)
+        loc = mkSrcPos t
+        str = tokenString t
     getPragma :: Token -> Maybe String
     getPragma t = case tokenClass t of
       L_Pragma -> Just $ take (tokenLen t - 6) $ drop 3 $ tokenString t
@@ -823,7 +823,7 @@ topDeclList = sepByNewLine topDecl
       , parseChannel
       , parsePrint
       ] <?> "top-level declaration"
-     
+
   assertPolarity = fmap (odd . length) $ many $ token T_not
 
   assertListRef = withLoc $ do

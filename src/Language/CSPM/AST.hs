@@ -104,7 +104,7 @@ data Module a = Module {
    moduleDecls :: [LDecl]
   ,moduleTokens :: Maybe [Token]
   ,moduleSrcLoc :: SrcLoc
-  ,moduleComments :: [LComment]
+  ,moduleComments :: [LocComment]
   ,modulePragmas :: [Pragma]
   } deriving (Eq, Ord, Show, Typeable, Data)
 
@@ -387,7 +387,7 @@ data Const
   deriving (Eq, Ord, Show, Typeable, Data)
 
 type Pragma = String
-type LComment = Labeled Comment
+type LocComment = (Comment, SrcLoc)
 data Comment
   = LineComment String
   | BlockComment String
