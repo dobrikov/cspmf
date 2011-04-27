@@ -49,6 +49,8 @@ cspToProlog ast = header $+$ core
         ,text ":- dynamic cspPrint/1."
         ,text ":- dynamic pragma/1."
         ,text ":- dynamic comment/2."
+        ,text ":- dynamic assertBool/1, assertRef/5, assertTauPrio/6."
+        ,text ":- dynamic assertModelCheckExt/4, assertModelCheck/3."
         ]
 
 plLocatedConstructs :: Set Const
@@ -72,10 +74,10 @@ mkModule m
 mkPragma :: String -> Clause
 mkPragma s = clause $ nTerm "pragma" [aTerm s]
 
-mkComment :: LComment -> Clause
-mkComment c = clause $ nTerm "comment" [com, plLoc c]
+mkComment :: (Comment, SrcLoc.SrcLoc) -> Clause
+mkComment (c, loc) = clause $ nTerm "comment" [com, mkSrcLoc loc]
   where
-    com = case unLabel c of
+    com = case c of
       LineComment s ->  nTerm "lineComment" [aTerm s]
       BlockComment s -> nTerm "blockComment" [aTerm s]
       PragmaComment s -> nTerm "pragmaComment" [aTerm s]
@@ -295,7 +297,6 @@ plNameTerm l
 
 uniquePlName :: UniqueIdent -> String
 uniquePlName i = newName i
-
 
 plLoc :: Labeled x -> Term
 plLoc = mkSrcLoc . srcLoc
