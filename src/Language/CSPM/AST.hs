@@ -60,10 +60,11 @@ setNode l n = l {unLabel = n}
 
 type LIdent = Labeled Ident
 
-data Ident 
+data Ident
   = Ident  {unIdent :: String}
   | UIdent UniqueIdent
   deriving (Eq, Ord, Show, Typeable, Data)
+
 
 unUIdent :: Ident -> UniqueIdent
 unUIdent (UIdent u) = u
@@ -83,12 +84,16 @@ data UniqueIdent = UniqueIdent
   ,newName     :: String
   ,prologMode  :: PrologMode
   ,bindType    :: BindType
-  } deriving ( Eq, Ord, Show,Typeable, Data)
+  } deriving (Eq, Ord, Show, Typeable, Data)
 
 data IDType 
   = VarID | ChannelID | NameTypeID | FunID
   | ConstrID | DataTypeID | TransparentID
-  deriving ( Eq, Ord, Show,Typeable, Data)
+--  | BuiltInID
+  deriving (Eq, Ord, Show, Typeable, Data)
+
+data PrologMode = PrologGround | PrologVariable
+  deriving (Eq, Ord, Show, Typeable, Data)
 
 {- actually BindType and PrologMode are semantically aquivalent -}
 data BindType = LetBound | NotLetBound
@@ -96,9 +101,6 @@ data BindType = LetBound | NotLetBound
 
 isLetBound :: BindType -> Bool
 isLetBound x = x==LetBound
-
-data PrologMode = PrologGround | PrologVariable
-  deriving (Eq, Ord, Show, Typeable, Data)
 
 data Module a = Module {
    moduleDecls :: [LDecl]

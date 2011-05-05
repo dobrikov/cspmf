@@ -10,15 +10,9 @@
 --
 -- Compute the mapping between the using occurences and the defining occurences of all Identifier in a Module
 -- Also decide whether to use ground or non-ground- representaions for the translation to Prolog.
-{-
-todo : check that we do not bind variables when we pattern match against
-constructors : add a testcase for that
-todo :: maybe use SYB for gathering the renaming
-todo :: maybe also compute debruin-index/ freevariables
-fix topleveldecls to toplevel ? -> allready done by parser
--}
 
 {-# LANGUAGE EmptyDataDecls, DeriveDataTypeable, ViewPatterns #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Language.CSPM.Rename
   (
@@ -29,9 +23,11 @@ module Language.CSPM.Rename
   ,FromRenaming
   )
 where
+
 import Language.CSPM.AST hiding (prologMode, bindType)
 import qualified Language.CSPM.AST as AST
 import qualified Language.CSPM.SrcLoc as SrcLoc
+import Language.CSPM.BuiltIn as BuiltIn
 
 import Data.Generics.Basics (Data(..))
 import Data.Data (mkDataType)
@@ -83,27 +79,28 @@ type UniqueName = Int
 data RenameInfo = RenameInfo
   {
     nameSupply :: Int
-   ,localBindings :: Map String Ident  -- used to check that we do not bind a name twice inside a pattern
-   ,visible  :: Map String Ident      -- everything that is visible
-   ,identDefinition :: AstAnnotation Ident
-   ,identUse  :: AstAnnotation Ident
+   ,localBindings :: Map String UniqueIdent -- used to check that we do not bind a name twice inside a pattern
+   ,visible  :: Map String UniqueIdent      -- everything that is visible
+   ,identDefinition :: AstAnnotation UniqueIdent
+   ,identUse  :: AstAnnotation UniqueIdent
    ,usedNames :: Set String
    ,prologMode :: PrologMode -- could use a readermonad for prologMode and bindType
    ,bindType   :: BindType
   } deriving Show
 
 initialRState :: RenameInfo
-initialRState = RenameInfo
-  {
+initialRState = RenameInfo {..}
+  where
     nameSupply    = 0
-   ,localBindings = Map.empty
-   ,visible       = Map.empty
-   ,identDefinition = IntMap.empty
-   ,identUse        = IntMap.empty
-   ,usedNames       = Set.empty
-   ,prologMode      = PrologVariable
-   ,bindType        = NotLetBound
-  }
+    localBindings = Map.empty
+    visible       = Map.empty
+--    visible       = Map.fromList [(bi, BuiltInIdent bi), bi <- BuiltIn.builtIns]
+    identDefinition = IntMap.empty
+    identUse        = IntMap.empty
+    usedNames       = Set.empty
+--    usedNames       = Set.fromList Builtin.builtIns
+    prologMode      = PrologVariable
+    bindType        = NotLetBound
 
 data RenameError
   = RenameError {
@@ -118,7 +115,7 @@ instance Error RenameError where
   noMsg = RenameError { renameErrorMsg = "no Messsage", renameErrorLoc = SrcLoc.NoLocation }
   strMsg m = RenameError { renameErrorMsg = m, renameErrorLoc = SrcLoc.NoLocation }
 
-lookupVisible :: LIdent -> RM (Maybe Ident)
+lookupVisible :: LIdent -> RM (Maybe UniqueIdent)
 lookupVisible i = do
   vis <- gets visible
   return $ Map.lookup (unIdent $ unLabel i) vis
@@ -147,12 +144,12 @@ bindNewUniqueIdent iType lIdent = do
   vis <- lookupVisible lIdent
   case vis of
    Nothing -> addNewBinding
-   (Just x @ (UIdent u)) -> case (iType, idType u) of
+   (Just u) -> case (iType, idType u) of
       {- If there is a Constructor of Channel in scope and we try to bind a VarID
       this VarID is a pattern match for the existing binding -}
 
-      (VarID, ConstrID) -> useExistingBinding x
-      (VarID, ChannelID) -> useExistingBinding x
+      (VarID, ConstrID) -> useExistingBinding u
+      (VarID, ChannelID) -> useExistingBinding u
 
       (VarID, _) -> addNewBinding
       {- We throw an error if the csp-code tries to rebind a constructor or a channel ID -}
@@ -165,7 +162,7 @@ bindNewUniqueIdent iType lIdent = do
 
       (_, _) -> addNewBinding
   where
-    useExistingBinding ::Ident -> RM ()
+    useExistingBinding :: UniqueIdent -> RM ()
     useExistingBinding ident = do
       let ptr = unNodeId $ nodeId $ lIdent
       modify $ \s -> s
@@ -179,7 +176,7 @@ bindNewUniqueIdent iType lIdent = do
       (nameNew,unique) <- nextUniqueName origName
       plMode <- gets prologMode
       bType  <- gets bindType
-      let uIdent = UIdent $ UniqueIdent {
+      let uIdent = UniqueIdent {
          uniqueIdentId = unique
         ,bindingSide = nodeID
         ,bindingLoc  = srcLoc lIdent
@@ -425,8 +422,8 @@ rnTypeDef t = case unLabel t of
 
 applyRenaming ::
      ModuleFromParser
-  -> AstAnnotation Ident
-  -> AstAnnotation Ident
+  -> AstAnnotation UniqueIdent
+  -> AstAnnotation UniqueIdent
   -> ModuleFromRenaming
 applyRenaming ast defIdent usedIdent
   = castModule $ everywhere (mkT patchVarPat . mkT patchIdent) ast
@@ -435,8 +432,8 @@ applyRenaming ast defIdent usedIdent
     patchIdent l =
       let nodeID = unNodeId $ nodeId l in
       case (IntMap.lookup nodeID usedIdent, IntMap.lookup nodeID defIdent) of
-        (Just use, _)  -> setNode l use
-        (_, Just def)  -> setNode l def
+        (Just use, _)  -> setNode l $ UIdent use
+        (_, Just def)  -> setNode l $ UIdent def
         (Nothing, Nothing) -> error $
             "internal error: patchIdent nodeId not found:" ++ show nodeID
         (Just _ , Just _ ) -> error $
