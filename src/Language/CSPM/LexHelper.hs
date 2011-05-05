@@ -15,7 +15,6 @@ import Language.CSPM.Token (Token(..), LexError(..))
 import Language.CSPM.TokenClasses (PrimToken(..))
 import Language.CSPM.UnicodeSymbols (lookupDefaultSymbol)
 import qualified Data.Set as Set
-import Data.Maybe
 
 -- | lex a String .
 lexPlain :: String -> Either LexError [Token]

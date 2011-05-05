@@ -86,8 +86,8 @@ data UniqueIdent = UniqueIdent
   } deriving ( Eq, Ord, Show,Typeable, Data)
 
 data IDType 
-  = VarID | ChannelID | NameTypeID | FunID Int
-  | ConstrID String | DataTypeID | TransparentID
+  = VarID | ChannelID | NameTypeID | FunID
+  | ConstrID | DataTypeID | TransparentID
   deriving ( Eq, Ord, Show,Typeable, Data)
 
 {- actually BindType and PrologMode are semantically aquivalent -}

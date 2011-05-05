@@ -15,17 +15,14 @@ todo : check that we do not bind variables when we pattern match against
 constructors : add a testcase for that
 todo :: maybe use SYB for gathering the renaming
 todo :: maybe also compute debruin-index/ freevariables
-todo :: check idType in useIdent
 fix topleveldecls to toplevel ? -> allready done by parser
 -}
 
-{-# LANGUAGE EmptyDataDecls, DeriveDataTypeable #-}
+{-# LANGUAGE EmptyDataDecls, DeriveDataTypeable, ViewPatterns #-}
 
 module Language.CSPM.Rename
   (
    renameModule
-  ,getRenaming
-  ,applyRenaming
   ,RenameError (..)
   ,RenameInfo (..)
   ,ModuleFromRenaming
@@ -47,9 +44,11 @@ import Control.Monad.Error
 import Control.Monad.State
 import Data.Set (Set)
 import qualified Data.Map as Map
+import Data.Map (Map)
 import qualified Data.Set as Set
 import qualified Data.IntMap as IntMap
 import Data.List as List
+import Data.Maybe
 
 instance Data FromRenaming
   where
@@ -59,9 +58,8 @@ instance Data FromRenaming
 
 -- | A module that has gone through renaming
 type ModuleFromRenaming = Module FromRenaming
-{-# DEPRECATED applyRenaming, getRenaming "use renameModule instead" #-}
 
--- | Tag that a module has gone through renameing.
+-- | Tag that a module has gone through renaming.
 data FromRenaming deriving Typeable
 
 -- | 'renameModule' renames a 'Module'.
@@ -74,20 +72,8 @@ renameModule m = do
   st <- execStateT (rnModule m') initialRState
   return
     (
-     applyRenamingNew m' (identDefinition st) (identUse st)
+     applyRenaming m' (identDefinition st) (identUse st)
     ,st)
-
--- | 'getRenaming' computes two 'AstAnnotation's.
--- The first one contains all the defining occurences of identifier
--- The second one contains all the using occurences of identitier.
--- 'getRename' returns an 'RenameError' if the 'Module' contains unbound
--- identifiers or illegal redefinitions.
-getRenaming ::
-     ModuleFromParser
-  -> Either RenameError (Bindings, AstAnnotation UniqueIdent, AstAnnotation UniqueIdent)
-getRenaming m = do
-  st <- execStateT (rnModule m) initialRState
-  return (visible st,identDefinition st, identUse st)
 
 type RM x = StateT RenameInfo (Either RenameError) x
 
@@ -97,13 +83,12 @@ type UniqueName = Int
 data RenameInfo = RenameInfo
   {
     nameSupply :: Int
--- used to check that we do not bind a name twice inside a pattern
-   ,localBindings :: Bindings  
-   ,visible  :: Bindings       -- everything that is visible
-   ,identDefinition :: AstAnnotation UniqueIdent 
-   ,identUse  :: AstAnnotation UniqueIdent 
+   ,localBindings :: Map String Ident  -- used to check that we do not bind a name twice inside a pattern
+   ,visible  :: Map String Ident      -- everything that is visible
+   ,identDefinition :: AstAnnotation Ident
+   ,identUse  :: AstAnnotation Ident
    ,usedNames :: Set String
-   ,prologMode :: PrologMode
+   ,prologMode :: PrologMode -- could use a readermonad for prologMode and bindType
    ,bindType   :: BindType
   } deriving Show
 
@@ -133,64 +118,68 @@ instance Error RenameError where
   noMsg = RenameError { renameErrorMsg = "no Messsage", renameErrorLoc = SrcLoc.NoLocation }
   strMsg m = RenameError { renameErrorMsg = m, renameErrorLoc = SrcLoc.NoLocation }
 
+lookupVisible :: LIdent -> RM (Maybe Ident)
+lookupVisible i = do
+  vis <- gets visible
+  return $ Map.lookup (unIdent $ unLabel i) vis
+
+getOrigName :: LIdent -> String
+getOrigName = unIdent . unLabel
+
 bindNewTopIdent :: IDType -> LIdent -> RM ()
 bindNewTopIdent t i = do
-  let (Ident origName) = unLabel i
-  vis <- gets visible
-  case Map.lookup origName vis of
+  vis <- lookupVisible i
+  case vis of
     Nothing -> bindNewUniqueIdent t i
     Just _ -> throwError $ RenameError {
-      renameErrorMsg = "Redefinition of toplevel name " ++ origName
+      renameErrorMsg = "Redefinition of toplevel name " ++ getOrigName i
      ,renameErrorLoc = srcLoc i }
 
 bindNewUniqueIdent :: IDType -> LIdent -> RM ()
 bindNewUniqueIdent iType lIdent = do
-  let (Ident origName) = unLabel lIdent
-  local <- gets localBindings
+  let origName = getOrigName lIdent
   {- check that we do not bind a variable twice i.e. in a pattern -}
-  case Map.lookup origName local of
-    Nothing -> return ()
-    Just _ -> throwError $ RenameError {
+  local <- gets localBindings
+  when (isJust $ Map.lookup origName local) $
+    throwError $ RenameError {
        renameErrorMsg = "Redefinition of " ++ origName
        ,renameErrorLoc = srcLoc lIdent }
-{- 
-  If we have a Constructor in scope and try to bind
-  a VarID then we actually have a Constructor-Pattern.
-  Same situation for a channelIDs.
-  We throw an error if the csp-code tries to reuse a constructor
-  or a channel for i.e. a function.
--}
-  vis <- gets visible
-  case (Map.lookup origName vis,iType) of
-   (Just x ,VarID) -> case idType x of
-     ConstrID _ -> useExistingBinding x
-     ChannelID -> useExistingBinding x
-     _ -> addNewBinding
-   (Just x , _) -> case idType x of
-     ConstrID _-> throwError $ RenameError {
+  vis <- lookupVisible lIdent
+  case vis of
+   Nothing -> addNewBinding
+   (Just x @ (UIdent u)) -> case (iType, idType u) of
+      {- If there is a Constructor of Channel in scope and we try to bind a VarID
+      this VarID is a pattern match for the existing binding -}
+
+      (VarID, ConstrID) -> useExistingBinding x
+      (VarID, ChannelID) -> useExistingBinding x
+
+      (VarID, _) -> addNewBinding
+      {- We throw an error if the csp-code tries to rebind a constructor or a channel ID -}
+      (_    , ConstrID) -> throwError $ RenameError {
           renameErrorMsg = "Illigal reuse of Contructor " ++ origName
          ,renameErrorLoc = srcLoc lIdent }
-     ChannelID -> throwError $ RenameError {
+      (_    , ChannelID) -> throwError $ RenameError {
           renameErrorMsg = "Illigal reuse of Channel " ++ origName
          ,renameErrorLoc = srcLoc lIdent }
-     _ -> addNewBinding
-   (_, _ )  -> addNewBinding
+
+      (_, _) -> addNewBinding
   where
-    useExistingBinding :: UniqueIdent -> RM ()
-    useExistingBinding constr = do
+    useExistingBinding ::Ident -> RM ()
+    useExistingBinding ident = do
       let ptr = unNodeId $ nodeId $ lIdent
       modify $ \s -> s
-        { identDefinition = IntMap.insert ptr constr (identDefinition s) }
+        { identDefinition = IntMap.insert ptr ident $ identDefinition s }
 
     addNewBinding :: RM ()
     addNewBinding = do
-      let (Ident origName) = unLabel lIdent
+      let origName = unIdent $ unLabel lIdent
           nodeID = nodeId lIdent
     
       (nameNew,unique) <- nextUniqueName origName
       plMode <- gets prologMode
       bType  <- gets bindType
-      let uIdent = UniqueIdent {
+      let uIdent = UIdent $ UniqueIdent {
          uniqueIdentId = unique
         ,bindingSide = nodeID
         ,bindingLoc  = srcLoc lIdent
@@ -201,11 +190,10 @@ bindNewUniqueIdent iType lIdent = do
         ,AST.bindType   = bType  }
       modify $ \s -> s 
         { localBindings = Map.insert origName uIdent $ localBindings s
-        , visible       = Map.insert origName uIdent $ visible s }
-      modify $ \s -> s
-        { identDefinition = IntMap.insert 
+        , visible       = Map.insert origName uIdent $ visible s
+        , identDefinition = IntMap.insert
             (unNodeId nodeID) uIdent $ identDefinition s }
-      return ()
+
 
     nextUniqueName :: String -> RM (String,UniqueName)
     nextUniqueName oldName = do
@@ -230,27 +218,16 @@ localScope h = do
     ,localBindings = localBind }
   return res
 
-useIdent :: (Maybe IDType) -> LIdent -> RM ()
-useIdent expectedType lIdent = do
-  let (Ident origName) = unLabel lIdent
-      nodeID = nodeId lIdent
-  vis <- gets visible
-  case Map.lookup origName vis of
+useIdent :: LIdent -> RM ()
+useIdent lIdent = do
+  vis <- lookupVisible lIdent
+  case vis of
     Nothing -> throwError $ RenameError {
-       renameErrorMsg = "Unbound Identifier :" ++ origName
+       renameErrorMsg = "Unbound Identifier :" ++ getOrigName lIdent
        ,renameErrorLoc = srcLoc lIdent }
-    Just uniqueIdent -> do   -- todo check idType
-       case expectedType of
-         Nothing -> return ()
-         Just t  -> when (t /= idType uniqueIdent) $ do
-           throwError $ RenameError {
-              renameErrorMsg = "Typeerror :" ++ origName
-             ,renameErrorLoc = srcLoc lIdent }
-       modify $ \s -> s
+    Just defIdent -> modify $ \s -> s
          { identUse =  IntMap.insert 
-             (unNodeId nodeID) uniqueIdent $ identUse s }
-       return ()
-
+             (unNodeId $ nodeId lIdent) defIdent $ identUse s }
 {-
 rn just walks through the AST, without modifing it.
 The actual renamings are stored in a sepearte AstAnnotation inside the RM-Monad
@@ -268,7 +245,7 @@ rnExpList = mapM_ rnExp
 -- rename an expression
 rnExp :: LExp -> RM ()
 rnExp expression = case unLabel expression of
-  Var ident -> useIdent Nothing ident
+  Var ident -> useIdent ident
   IntExp _ -> nop
   SetExp a Nothing -> rnRange a
   SetExp a (Just comp) -> inCompGen comp (rnRange a)
@@ -374,33 +351,28 @@ rnCompGen g = case unLabel g of
   Guard e -> rnExp e
 
 reRename :: LRename -> RM ()
-reRename = r2 . unLabel
-  where r2 (Rename e1 e2) = rnExp e1 >> rnExp e2
+reRename (unLabel -> Rename e1 e2) = rnExp e1 >> rnExp e2
 
 rnLinkList :: LLinkList -> RM ()
-rnLinkList = rnLink2 . unLabel
-  where 
-    rnLink2 (LinkList l) = mapM_ rnLink l
-    rnLink2 (LinkListComprehension a b) = inCompGen a (mapM_ rnLink b)
-
-    rnLink = (\(Link a b) ->rnExp a >> rnExp b) . unLabel
-
+rnLinkList ll = case unLabel ll of
+  LinkList l -> mapM_ rnLink l
+  LinkListComprehension a b -> inCompGen a (mapM_ rnLink b)
+  where
+    rnLink (unLabel -> Link a b) = rnExp a >> rnExp b
 
 -- rename a recursive binding group
 rnDeclList :: [LDecl] -> RM ()
 rnDeclList declList = do
-  modify $ \s -> s {prologMode = PrologGround
-                   ,bindType   = LetBound}
+  modify $ \s -> s {prologMode = PrologGround ,bindType   = LetBound}
   forM_ declList declLHS
-  modify $ \s -> s {prologMode = PrologVariable
-                   ,bindType   = NotLetBound}
+  modify $ \s -> s {prologMode = PrologVariable ,bindType   = NotLetBound}
   forM_ declList declRHS
 
 declLHS :: LDecl -> RM ()
 declLHS d = case unLabel d of
   PatBind pat _ -> rnPattern pat
    --todo : proper type-checking/counting number of Funargs
-  FunBind i _ -> bindNewUniqueIdent (FunID (-1)) i
+  FunBind i _ -> bindNewUniqueIdent FunID i 
   Assert {} -> nop
   Transparent tl -> mapM_ (bindNewTopIdent TransparentID) tl
   SubType i clist -> do
@@ -414,14 +386,12 @@ declLHS d = case unLabel d of
   Print _ -> nop
   where
     rnConstructorLHS :: LConstructor -> RM ()
-    rnConstructorLHS a = do
-      let (Constructor c _ ) = unLabel a
-      bindNewTopIdent (ConstrID "someConstructor") c --Todo -- fix
+    rnConstructorLHS (unLabel -> Constructor c _)
+      = bindNewTopIdent ConstrID c
 
     rnSubtypeLHS :: LConstructor -> RM ()
-    rnSubtypeLHS a = do
-      let (Constructor c _ ) = unLabel a
-      useIdent Nothing c -- <- fix this Nothing <-> dont check
+    rnSubtypeLHS (unLabel -> Constructor c _) = useIdent c
+
 
 declRHS :: LDecl -> RM ()
 declRHS d = case unLabel d of
@@ -448,40 +418,29 @@ declRHS d = case unLabel d of
       rc (Constructor _ Nothing ) = nop
       rc (Constructor _ (Just t)) = rnTypeDef t
 
-
 rnTypeDef :: LTypeDef -> RM ()
 rnTypeDef t = case unLabel t of
   TypeTuple l -> rnExpList l
   TypeDot l -> rnExpList l
 
--- | 'applyRenaming' uses SYB to replace turn every 'Ident' in the 'Module' into to the
--- 'UIdent' version, i.e. set the 'UniqueIdent'.
--- At the same time, we also replace VarPat x with ConstrPat x if x an toplevel constant
--- It is an error if the 'Module' contains occurences of 'Ident' that are not covered by
--- the 'AstAnnotation's.
 applyRenaming ::
-     (Bindings,AstAnnotation UniqueIdent,AstAnnotation UniqueIdent)
-  -> ModuleFromParser
-  -> ModuleFromRenaming
-applyRenaming (_,defIdent,usedIdent) ast
-  = applyRenamingNew ast defIdent usedIdent
-
-applyRenamingNew ::
      ModuleFromParser
-  -> AstAnnotation UniqueIdent
-  -> AstAnnotation UniqueIdent
+  -> AstAnnotation Ident
+  -> AstAnnotation Ident
   -> ModuleFromRenaming
-applyRenamingNew ast defIdent usedIdent
+applyRenaming ast defIdent usedIdent
   = castModule $ everywhere (mkT patchVarPat . mkT patchIdent) ast
   where
     patchIdent :: LIdent -> LIdent
     patchIdent l =
       let nodeID = unNodeId $ nodeId l in
-      case IntMap.lookup nodeID usedIdent of
-        Just u -> l { unLabel = UIdent u}
-        Nothing -> case IntMap.lookup nodeID defIdent of
-          Just d -> l { unLabel = UIdent d}
-          Nothing -> error $ "internal error: patchIdent nodeId :" ++ show nodeID
+      case (IntMap.lookup nodeID usedIdent, IntMap.lookup nodeID defIdent) of
+        (Just use, _)  -> setNode l use
+        (_, Just def)  -> setNode l def
+        (Nothing, Nothing) -> error $
+            "internal error: patchIdent nodeId not found:" ++ show nodeID
+        (Just _ , Just _ ) -> error $
+            "internal error: patchIdent nodeId is defining and using:" ++ show nodeID
 
     patchVarPat :: Pattern -> Pattern
     patchVarPat p@(VarPat x) = case idType $ unUIdent $ unLabel x of
@@ -489,8 +448,8 @@ applyRenamingNew ast defIdent usedIdent
         _ -> ConstrPat x
     patchVarPat x = x
 
--- | If function is defined via pattern matching for serveral cases,
--- | the parser returns each case as a individual declaration.
+-- | If a function is defined via pattern matching for serveral cases,
+-- | the parser returns each case as an individual declaration.
 -- | mergeFunBinds merges contiguous cases of the same function into one declaration.
 mergeFunBinds :: ModuleFromParser -> ModuleFromParser
 mergeFunBinds = everywhere (mkT patchModule . mkT patchLet)
