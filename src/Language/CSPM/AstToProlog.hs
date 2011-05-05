@@ -27,6 +27,7 @@ import qualified Language.CSPM.SrcLoc as SrcLoc
 import Language.Prolog.PrettyPrint.Direct
 
 import Text.PrettyPrint
+import Data.Maybe
 import Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Data.IntMap as IntMap
@@ -333,30 +334,29 @@ mkSrcLoc loc =  case loc of
 
 -- | Translate a "AstAnnotation" with "UnqiueIdentifier" (i.e. a Symboltable)
 -- into a "Doc" containing Prolog facts
-mkSymbolTable :: AstAnnotation UniqueIdent -> Doc
+mkSymbolTable :: AstAnnotation Ident -> Doc
 mkSymbolTable ids 
-  = plPrg [declGroup $ map mkSymbol $ IntMap.elems ids]
+  = plPrg [declGroup $ mapMaybe mkSymbol $ IntMap.elems ids]
   where
-  mkSymbol :: UniqueIdent -> Clause
-  mkSymbol i = clause $ nTerm "symbol"
+  mkSymbol :: Ident -> Maybe Clause
+  mkSymbol (UIdent i) = Just $ clause $ nTerm "symbol"
    [aTerm $ uniquePlName i
    ,aTerm $ realName i
    ,mkSrcLoc $ bindingLoc i
    ,aTerm $ pprintIDType i
    ]
+  mkSymbol _ = Nothing
   pprintIDType :: UniqueIdent -> String
   pprintIDType i = case idType i of
     ChannelID -> "Channel"
     NameTypeID -> "Nametype"
-    (FunID x) -> "Funktion or Process ( Arity :"++show x ++")"
-    (ConstrID d)   -> "Constructor of Datatype "++d
+    FunID -> "Funktion or Process"
+    ConstrID   -> "Constructor of Datatype"
     DataTypeID     -> "Datatype"
     TransparentID  -> "Transparent function"
     VarID -> case prologMode i of
       PrologGround -> "Ident (Groundrep.)"
       PrologVariable -> "Ident (Prolog Variable)"
-
-
 
 -- | Map the abstract datatype LBuiltIn back to plain Strings for Prolog
 builtInToString :: LBuiltIn -> String

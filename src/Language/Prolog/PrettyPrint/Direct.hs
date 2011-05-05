@@ -135,13 +135,12 @@ plPrg :: [Decl] -> Doc
 plPrg l = vcat $ map unDecl l
 
 quoteString :: String -> String
-quoteString a
-  = "'" ++ concatMap escapeChar a ++ "'"
+quoteString s
+  = "'" ++ concatMap escapeChar s ++ "'"
   where
     escapeChar a = if isBadChar a
       then "\\x" ++ (showHex (ord a) "") ++ "\\"
       else [a]
-
     isBadChar a = case ord a of
       x | x <= 31 -> True
       _ | a == '\'' -> True
