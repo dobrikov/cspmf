@@ -27,7 +27,6 @@ import qualified Language.CSPM.SrcLoc as SrcLoc
 import Language.Prolog.PrettyPrint.Direct
 
 import Text.PrettyPrint
-import Data.Maybe
 import Data.Set (Set)
 import qualified Data.Set as Set
 import qualified Data.IntMap as IntMap
@@ -282,13 +281,6 @@ td decl = case unLabel decl of
     termShow :: Show a => Labeled a -> Term
     termShow = aTerm . show . unLabel
 
-plName :: LIdent -> Atom
-plName l
-  = let uIdent = unUIdent $ unLabel l in case idType uIdent of
-    TransparentID -> atom $ realName uIdent
-    VarID         -> error ("plName : " ++ show l)
-    _             -> atom $ uniquePlName uIdent
-
 plNameTerm :: LIdent -> Term
 plNameTerm l
   = let uIdent = unUIdent $ unLabel l in case (idType uIdent,prologMode uIdent) of
@@ -296,8 +288,16 @@ plNameTerm l
     (VarID,PrologGround)   -> term $ atom $ uniquePlName uIdent
     _             -> term $ plName l
 
+plName :: LIdent -> Atom
+plName l
+      = let uIdent = unUIdent $ unLabel l in case idType uIdent of
+       TransparentID -> atom $ realName uIdent
+       VarID         -> error ("plName : " ++ show l)
+       _             -> atom $ uniquePlName uIdent
+
 uniquePlName :: UniqueIdent -> String
 uniquePlName i = newName i
+
 
 plLoc :: Labeled x -> Term
 plLoc = mkSrcLoc . srcLoc
@@ -334,18 +334,17 @@ mkSrcLoc loc =  case loc of
 
 -- | Translate a "AstAnnotation" with "UnqiueIdentifier" (i.e. a Symboltable)
 -- into a "Doc" containing Prolog facts
-mkSymbolTable :: AstAnnotation Ident -> Doc
+mkSymbolTable :: AstAnnotation UniqueIdent -> Doc
 mkSymbolTable ids 
-  = plPrg [declGroup $ mapMaybe mkSymbol $ IntMap.elems ids]
+  = plPrg [declGroup $ map mkSymbol $ IntMap.elems ids]
   where
-  mkSymbol :: Ident -> Maybe Clause
-  mkSymbol (UIdent i) = Just $ clause $ nTerm "symbol"
+  mkSymbol :: UniqueIdent -> Clause
+  mkSymbol i = clause $ nTerm "symbol"
    [aTerm $ uniquePlName i
    ,aTerm $ realName i
    ,mkSrcLoc $ bindingLoc i
    ,aTerm $ pprintIDType i
    ]
-  mkSymbol _ = Nothing
   pprintIDType :: UniqueIdent -> String
   pprintIDType i = case idType i of
     ChannelID -> "Channel"
