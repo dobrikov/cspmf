@@ -89,7 +89,7 @@ data UniqueIdent = UniqueIdent
 data IDType 
   = VarID | ChannelID | NameTypeID | FunID
   | ConstrID | DataTypeID | TransparentID
---  | BuiltInID
+  | BuiltInID
   deriving (Eq, Ord, Show, Typeable, Data)
 
 data PrologMode = PrologGround | PrologVariable

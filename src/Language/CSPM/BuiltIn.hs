@@ -48,5 +48,5 @@ everything else in FDR is "built-in" but not syntax.
 -- | Todo: add more BuiltIns here are migrate the AST.
 builtIns :: [String]
 builtIns = [
---  ,"Proc"
+   "Proc"
   ]

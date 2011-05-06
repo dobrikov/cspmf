@@ -65,7 +65,7 @@ renameModule ::
   -> Either RenameError (ModuleFromRenaming, RenameInfo)
 renameModule m = do
   let m' = mergeFunBinds m
-  st <- execStateT (rnModule m') initialRState
+  st <- execStateT (initPrelude >> rnModule m') initialRState
   return
     (
      applyRenaming m' (identDefinition st) (identUse st)
@@ -94,13 +94,16 @@ initialRState = RenameInfo {..}
     nameSupply    = 0
     localBindings = Map.empty
     visible       = Map.empty
---    visible       = Map.fromList [(bi, BuiltInIdent bi), bi <- BuiltIn.builtIns]
     identDefinition = IntMap.empty
     identUse        = IntMap.empty
     usedNames       = Set.empty
---    usedNames       = Set.fromList Builtin.builtIns
     prologMode      = PrologVariable
     bindType        = NotLetBound
+
+initPrelude :: RM ()
+initPrelude
+    = forM_ BuiltIn.builtIns $ \bi -> do
+        bindNewTopIdent BuiltInID (labeled $ Ident bi)
 
 data RenameError
   = RenameError {
