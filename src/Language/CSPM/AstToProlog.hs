@@ -309,6 +309,9 @@ mkSrcLoc loc =  case loc of
       ,itt $ SrcLoc.getStartCol loc
       ,itt $ SrcLoc.getStartOffset loc
       ,itt $ SrcLoc.getTokenLen loc ]
+  SrcLoc.TriSpan s m e -> nTerm "src_span_pos"
+      [mkSrcLoc $ SrcLoc.mkTokSpan s e
+      ,mkSrcLoc $ SrcLoc.mkTokPos m ]
   SrcLoc.TokSpan {} -> nTerm "src_span"
       [itt $ SrcLoc.getStartLine loc
       ,itt $ SrcLoc.getStartCol loc
