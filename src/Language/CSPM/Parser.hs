@@ -468,10 +468,6 @@ baseTable :: OpTable
 procTable :: OpTable
 (baseTable, procTable) = (
    [
---   [ infixM ( cspSym "." >> binOp mkDotPair) AssocRight ]
---   ,
--- dot.expression moved to a seperate Step
--- ToDo : fix funApply and procRenaming
     [ postfixM funApplyImplicit ]
    ,[ postfixM procRenaming ]
    ,[ infixM (nfun2 T_hat     F_Concat ) AssocLeft,
@@ -494,7 +490,9 @@ procTable :: OpTable
         gtSym
         e <- getLastPos
         op <- mkLabeledNode (mkSrcSpan s e) (BuiltIn F_GT)
-        return $ (\a b-> mkLabeledNode (posFromTo a b) $ Fun2 op a b)
+        return $ (\a b-> mkLabeledNode
+            (SrcLoc.mkTrispan (SrcLoc.getStartToken a) opPos (SrcLoc.getEndToken b))
+            (Fun2 op a b)
       ) AssocLeft
     ]
    ,[ prefixM ( token T_not >> unOp NotExp )]
@@ -521,14 +519,15 @@ procTable :: OpTable
   nfun1 tok cst = do
     fkt <- biOp tok cst
     pos<-getPos
-    return $ (\a -> mkLabeledNode pos $ Fun1 fkt a)
+    return $ \a -> mkLabeledNode pos $ Fun1 fkt a
 
   nfun2 :: TokenClasses.PrimToken -> Const -> PT (LExp -> LExp -> PT LExp)
   nfun2 tok cst = do
     fkt <- biOp tok cst
-    pos<-getLastPos 
---   return $ \a b -> mkLabeledNode (posFromTo a b) $ Fun2 fkt a b
-    return $ \a b -> mkLabeledNode (mkSrcPos pos) $ Fun2 fkt a b
+    opPos <- getLastPos
+    return $ \a b -> mkLabeledNode
+     (SrcLoc.mkTrispan (SrcLoc.getStartToken a) opPos (SrcLoc.getEndToken b))
+     (Fun2 fkt a b)
 
   binOp :: (LExp -> LExp -> Exp) -> PT (LExp -> LExp -> PT LExp)
   binOp op = return $ \a b -> mkLabeledNode (posFromTo a b) $ op a b
@@ -536,7 +535,7 @@ procTable :: OpTable
   unOp :: (LExp -> Exp) -> PT (LExp -> PT LExp )
   unOp op = do
     pos<-getLastPos
-    return $ (\a -> mkLabeledNode (mkSrcPos pos) $ op a)
+    return $ \a -> mkLabeledNode (mkSrcPos pos) $ op a
 
   biOp :: TokenClasses.PrimToken -> Const -> PT LBuiltIn
   biOp tok cst = inSpan BuiltIn (token tok >> return cst)
