@@ -28,7 +28,6 @@ data SrcLoc
   | TokIdSpan TokenId TokenId
   | TokSpan Token Token -- the spans are closed intervals
                         -- single token with token x :: TokSpan x x
-  | TriSpan Token Token Token
   | TokPos Token
   | NoLocation
   | FixedLoc {
@@ -45,9 +44,6 @@ data SrcLoc
 mkTokSpan :: Token -> Token -> SrcLoc
 mkTokSpan = TokSpan
 
-mkTriSpan :: Token -> Token -> Token -> SrcLoc
-mkTriSpan = TriSpan
-
 mkTokPos :: Token -> SrcLoc
 mkTokPos = TokPos
 
@@ -58,7 +54,6 @@ type SrcOffset  = Int
 getStartLine :: SrcLoc -> SrcLine
 getStartLine x = case x of
   TokSpan s _e  -> alexLine $ tokenStart s
-  TriSpan s _ _ -> alexLine $ tokenStart s
   TokPos t      -> alexLine $ tokenStart t
   FixedLoc {}   -> fixedStartLine x
   _ -> error "no SrcLine Availabel"
@@ -66,7 +61,6 @@ getStartLine x = case x of
 getStartCol :: SrcLoc -> SrcCol
 getStartCol x = case x of
   TokSpan s _e  -> alexCol $ tokenStart s
-  TriSpan s _ _  -> alexCol $ tokenStart s
   TokPos t      -> alexCol $ tokenStart t
   FixedLoc {}   -> fixedStartCol x
   _ -> error "no SrcCol Availabel"
@@ -74,7 +68,6 @@ getStartCol x = case x of
 getStartOffset :: SrcLoc -> SrcOffset
 getStartOffset x = case x of
   TokSpan s _e  -> alexPos $ tokenStart s
-  TriSpan s _ _ -> alexPos $ tokenStart s
   TokPos t      -> alexPos $ tokenStart t
   FixedLoc {}   -> fixedStartOffset x
   _ ->  error "no SrcOffset available"
@@ -83,14 +76,12 @@ getTokenLen :: SrcLoc -> SrcOffset
 getTokenLen x = case x of
   TokPos t -> tokenLen t
   TokSpan s e   -> (alexPos $ tokenStart e) - (alexPos $ tokenStart s) + tokenLen e
-  TriSpan s _ e -> (alexPos $ tokenStart e) - (alexPos $ tokenStart s) + tokenLen e
   FixedLoc {}  -> fixedLen x
   _ -> error "getTokenLen : info not available"
 
 getEndLine :: SrcLoc -> SrcLine
 getEndLine x = case x of
   TokSpan _s e  -> alexLine $ computeEndPos e
-  TriSpan _ _ e -> alexLine $ computeEndPos e
   TokPos t -> alexLine $ computeEndPos t
   FixedLoc {}  -> fixedEndLine x
   _ ->   error "no SrcLine available"
@@ -98,7 +89,6 @@ getEndLine x = case x of
 getEndCol :: SrcLoc -> SrcCol
 getEndCol x = case x of
   TokSpan _s e  -> alexCol $ computeEndPos e
-  TriSpan _ _ e -> alexCol $ computeEndPos e
   TokPos t -> alexCol $ computeEndPos t
   FixedLoc {}  -> fixedEndCol x
   _ ->  error "no SrcCol available"
@@ -106,7 +96,6 @@ getEndCol x = case x of
 getEndOffset :: SrcLoc -> SrcOffset
 getEndOffset x = case x of
   TokSpan _s e  -> (alexPos $ tokenStart e) + tokenLen e
-  TriSpan _ _ e -> (alexPos $ tokenStart e) + tokenLen e
   TokPos t -> (alexPos $ tokenStart t) + tokenLen t
   FixedLoc {}  -> fixedEndOffset x
   _ ->  error "no SrcOffset available"
@@ -116,7 +105,6 @@ getStartTokenId s = case s of
   TokIdPos x -> x
   TokIdSpan x _ -> x
   TokSpan x _   -> Token.tokenId x
-  TriSpan x _ _ -> Token.tokenId x
   TokPos x -> Token.tokenId x
   _ -> error "no startTokenId available"
 
@@ -125,21 +113,18 @@ getEndTokenId s = case s of
   TokIdPos x -> x
   TokIdSpan _ x -> x
   TokSpan _ x   -> Token.tokenId x
-  TriSpan _ _ x -> Token.tokenId x
   TokPos x -> Token.tokenId x
   _ -> error "no endTokenId available"
 
-getStartToken :: SrcLoc -> TokenId
+getStartToken :: SrcLoc -> Token
 getStartToken s = case s of
   TokSpan x _   -> x
-  TriSpan x _ _ -> x
   TokPos x -> x
   _ -> error "SrcLoc: no startToken available"
 
-getEndToken :: SrcLoc -> TokenId
+getEndToken :: SrcLoc -> Token
 getEndToken s = case s of
   TokSpan _ x   -> x
-  TriSpan _ _ x -> x
   TokPos x -> x
   _ -> error "SrcLoc: no endToken available"
 

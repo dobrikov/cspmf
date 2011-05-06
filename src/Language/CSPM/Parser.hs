@@ -490,8 +490,8 @@ procTable :: OpTable
         gtSym
         e <- getLastPos
         op <- mkLabeledNode (mkSrcSpan s e) (BuiltIn F_GT)
-        return $ (\a b-> mkLabeledNode
-            (SrcLoc.mkTrispan (SrcLoc.getStartToken a) opPos (SrcLoc.getEndToken b))
+        return $ \a b -> mkLabeledNode
+            (mkSrcSpan (SrcLoc.getStartToken $ srcLoc a) (SrcLoc.getEndToken $ srcLoc b))
             (Fun2 op a b)
       ) AssocLeft
     ]
@@ -518,15 +518,14 @@ procTable :: OpTable
   nfun1 :: TokenClasses.PrimToken -> Const -> PT (LExp -> PT LExp)
   nfun1 tok cst = do
     fkt <- biOp tok cst
-    pos<-getPos
+    pos <- getPos
     return $ \a -> mkLabeledNode pos $ Fun1 fkt a
 
   nfun2 :: TokenClasses.PrimToken -> Const -> PT (LExp -> LExp -> PT LExp)
   nfun2 tok cst = do
     fkt <- biOp tok cst
-    opPos <- getLastPos
     return $ \a b -> mkLabeledNode
-     (SrcLoc.mkTrispan (SrcLoc.getStartToken a) opPos (SrcLoc.getEndToken b))
+     (mkSrcSpan (SrcLoc.getStartToken $ srcLoc a) (SrcLoc.getEndToken $ srcLoc b))
      (Fun2 fkt a b)
 
   binOp :: (LExp -> LExp -> Exp) -> PT (LExp -> LExp -> PT LExp)
