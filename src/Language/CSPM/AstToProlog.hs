@@ -123,7 +123,7 @@ te expr = case unLabel expr of
   NegExp a -> nTerm "negate" [te a]
   Fun1 op a -> nTerm (builtInToString op) [te a]
   Fun2 op a b -> if ((unBuiltIn op) `Set.member` plLocatedConstructs ) 
-    then nTerm (builtInToString op) [te a, te b, plLoc expr]
+    then nTerm (builtInToString op) [te a, te b, plLoc op, plLoc expr]
     else nTerm (builtInToString op) [te a, te b]
   DotTuple a -> nTerm "dotTuple" [eList a]
   Closure l -> nTerm "closure" [ eList l]
@@ -309,9 +309,6 @@ mkSrcLoc loc =  case loc of
       ,itt $ SrcLoc.getStartCol loc
       ,itt $ SrcLoc.getStartOffset loc
       ,itt $ SrcLoc.getTokenLen loc ]
-  SrcLoc.TriSpan s m e -> nTerm "src_span_pos"
-      [mkSrcLoc $ SrcLoc.mkTokSpan s e
-      ,mkSrcLoc $ SrcLoc.mkTokPos m ]
   SrcLoc.TokSpan {} -> nTerm "src_span"
       [itt $ SrcLoc.getStartLine loc
       ,itt $ SrcLoc.getStartCol loc
