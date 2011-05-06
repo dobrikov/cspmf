@@ -115,7 +115,6 @@ te expr = case unLabel expr of
   Events -> aTerm "Events"
   BoolSet -> aTerm "boolType"
   IntSet  -> aTerm "intType"
-  ProcSet -> aTerm "procType"
   TupleExp i -> nTerm "tupleExp" [eList i]
   Parens e -> term $ te e
   AndExp a b -> nTerm "bool_and" [te a, te b]
