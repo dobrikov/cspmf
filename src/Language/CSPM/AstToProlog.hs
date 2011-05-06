@@ -353,6 +353,7 @@ mkSymbolTable ids
     ConstrID   -> "Constructor of Datatype"
     DataTypeID     -> "Datatype"
     TransparentID  -> "Transparent function"
+    BuiltInID  -> "BuiltIn primitive"
     VarID -> case prologMode i of
       PrologGround -> "Ident (Groundrep.)"
       PrologVariable -> "Ident (Prolog Variable)"
