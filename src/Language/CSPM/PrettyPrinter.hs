@@ -142,7 +142,6 @@ instance PP Exp where
     Events  -> text "Events"
     BoolSet -> text "Bool"
     IntSet  -> text "Int"
-    ProcSet -> text "Proc"
     TupleExp e      -> parens $ hsepPunctuate comma e
     Parens e        -> parens $ pp e
     AndExp a b      -> pp a <+> text "and" <+> pp b
