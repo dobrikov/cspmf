@@ -123,7 +123,7 @@ te expr = case unLabel expr of
   NegExp a -> nTerm "negate" [te a]
   Fun1 op a -> nTerm (builtInToString op) [te a]
   Fun2 op a b -> if ((unBuiltIn op) `Set.member` plLocatedConstructs ) 
-    then nTerm (builtInToString op) [te a, te b, plLoc op, plLoc expr]
+    then nTerm (builtInToString op) [te a, te b, nTerm "src_span_operator" [plLoc expr, plLoc op]]
     else nTerm (builtInToString op) [te a, te b]
   DotTuple a -> nTerm "dotTuple" [eList a]
   Closure l -> nTerm "closure" [ eList l]
