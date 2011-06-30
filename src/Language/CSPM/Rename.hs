@@ -325,7 +325,8 @@ rnPattern p = case unLabel p of
   EmptySetPat -> nop
   ListEnumPat l -> rnPatList l
   TuplePat l -> rnPatList l
-  ConstrPat {} -> error "Rename.hs : no match for ConstrPat" -- Where have they gone ?
+-- ConstrPatm, Selectors and Selector are generated during renaming
+  ConstrPat {} -> error "Rename.hs : no match for ConstrPat"
   Selectors {} -> error "Rename.hs : no match for Selectors"
   Selector {} -> error "Rename.hs : no match for Selector"
 
@@ -375,7 +376,7 @@ declLHS d = case unLabel d of
   Assert {} -> nop
   Transparent tl -> mapM_ (bindNewTopIdent TransparentID) tl
   SubType i clist -> do
-    bindNewTopIdent DataTypeID i   -- fix this
+    bindNewTopIdent DataTypeID i
     mapM_ rnSubtypeLHS clist
   DataType i clist -> do
     bindNewTopIdent DataTypeID i
