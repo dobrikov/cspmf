@@ -1,5 +1,5 @@
 Name:                CSPM-ToProlog
-Version:             0.4.0.0
+Version:             0.4.1.0
 Synopsis:            some modules specific for the ProB tool
 Description:
   This package constains a translation from a CSPM AST to the representation
@@ -18,7 +18,7 @@ Build-Type:     Simple
 Library
   Default-Language: Haskell2010
   Build-Depends:
-    CSPM-Frontend >= 0.7 && < 0.8
+    CSPM-Frontend >= 0.8 && < 0.9
     ,pretty >= 1.0 && < 1.1
     ,base >= 4.0 && <5.0
     ,containers >= 0.4 && <0.5
