@@ -1,5 +1,5 @@
 Name:                CSPM-Frontend
-Version:             0.7.4.4
+Version:             0.8.0.0
 
 Synopsis:            A CSP-M parser compatible with FDR-2.91
 
@@ -17,7 +17,7 @@ Author:              Marc Fontaine 2007 - 2011
 Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>, me@dobrikov.biz
 Homepage:            http://www.stups.uni-duesseldorf.de/~fontaine/csp
 Stability:           maintained
-Tested-With:         GHC == 7.0.2
+Tested-With:         GHC == 7.0.3
 
 cabal-Version:       >= 1.10
 build-type: Simple
@@ -28,7 +28,7 @@ library
     ,containers >= 0.4 && < 0.5
     ,array >= 0.3 && < 0.4
     ,parsec2 >= 1.0.0 && < 1.1.0
-    ,pretty >= 1.0 && < 1.1
+    ,prettyclass >= 1.0 && < 1.1
     ,mtl (>= 2.0 && < 2.1 ) || (>= 1.1 && < 1.2)
     ,syb >= 0.3 && < 0.4
 
