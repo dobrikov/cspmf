@@ -14,6 +14,7 @@ module Language.CSPM.AstUtils
   (
    removeSourceLocations
   ,removeParens
+  ,removeModuleAsserts
   ,unUniqueIdent
   ,computeFreeNames
   ,getModuleAsserts
@@ -104,10 +105,18 @@ computeFreeNames syntax
     unDecl (FunBind x _) = x
     unDecl _ = error "computeFreeNames : expecting FunBind"
 
--- | Get the assert declarations of a module
+-- | Get the assert declarations of a module.
 getModuleAsserts :: Module a -> [LAssertDecl]
 getModuleAsserts = mapMaybe justAssert . moduleDecls
   where
     justAssert decl = case unLabel decl of
       Assert  a -> Just a
       _ -> Nothing
+
+-- | Remove assert declarations from a module.
+removeModuleAsserts :: Module a -> Module a
+removeModuleAsserts m = m { moduleDecls = mapMaybe notAssert $ moduleDecls m}
+  where
+    notAssert decl = case unLabel decl of
+      Assert _ -> Nothing
+      _ -> Just decl
