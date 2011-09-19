@@ -503,6 +503,7 @@ procTable :: OpTable
    ,[ infixM proc_op_lparallel AssocLeft ]
 
    ,[infixM procOpSharing AssocLeft ]
+   ,[infixM (nfun2 T_backslash  F_Hiding     ) AssocLeft]
    ,[infixM (nfun2 T_amp        F_Guard      ) AssocLeft]
    ,[infixM (nfun2 T_semicolon  F_Sequential ) AssocLeft]
    ,[infixM (nfun2 T_triangle   F_Interrupt  ) AssocLeft]
@@ -511,7 +512,6 @@ procTable :: OpTable
    ,[infixM (nfun2 T_sqcap      F_IntChoice  ) AssocLeft]
    ,[infixM procOpException AssocLeft]
    ,[infixM (nfun2 T_interleave F_Interleave ) AssocLeft]
-   ,[infixM (nfun2 T_backslash  F_Hiding     ) AssocLeft]
   ]
   )
   where
