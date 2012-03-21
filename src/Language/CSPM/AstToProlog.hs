@@ -41,7 +41,7 @@ cspToProlog ast = header $+$ core
   where
     core = mkModule ast
     header = vcat [
-        ,text ":- dynamic channel/2, bindval/3, agent/3."
+         text ":- dynamic channel/2, bindval/3, agent/3."
         ,text ":- dynamic agent_curry/3, symbol/4."
         ,text ":- dynamic dataTypeDef/2, subTypeDef/2, nameType/2."
         ,text ":- dynamic cspTransparent/1."
