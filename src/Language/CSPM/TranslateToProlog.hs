@@ -26,7 +26,7 @@ import qualified Language.CSPM.Token as Token (lexEMsg,lexEPos,alexLine,alexCol,
 import Language.CSPM.AstToProlog (cspToProlog,mkSymbolTable)
 import Language.Prolog.PrettyPrint.Direct
 import Paths_CSPM_ToProlog (version)
-import Data.Version (Version)
+import Data.Version (Version,showVersion)
 
 import Control.Exception
 import System.Exit
@@ -110,7 +110,7 @@ defaultHeader :: Doc
 defaultHeader 
   = text ":- dynamic parserVersionNum/1, parserVersionStr/1, parseResult/5."
 --    $$ simpleFact "parserVersionNum" [aTerm versionNum ]
---    $$ simpleFact "parserVersionStr" [aTerm versionStr ]
+    $$ simpleFact "parserVersionStr" [aTerm $ showVersion toPrologVersion]
 
 simpleFact :: String -> [Term] -> Doc
 simpleFact a l= plPrg [declGroup [clause $ nTerm a l]]
