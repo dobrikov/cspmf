@@ -31,6 +31,10 @@ import System.IO
 import System.CPUTime
 import Text.PrettyPrint
 
+-- | The version of the CSPM-ToProlog library
+toPrologVersion :: Version
+toPrologVersion = version
+
 -- | 'translateToProlog' reads a CSPM specification from inFile
 -- and writes the Prolog representation to outFile.
 -- It handles all lexer and parser errors and catches all exceptions.
