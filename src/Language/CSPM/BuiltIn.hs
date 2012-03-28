@@ -49,4 +49,5 @@ everything else in FDR is "built-in" but not syntax.
 builtIns :: [String]
 builtIns = [
    "Proc"
+  ,"seq"
   ]
