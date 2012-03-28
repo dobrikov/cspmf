@@ -98,6 +98,11 @@ te expr = case unLabel expr of
     condPos = mkSrcLoc $ SrcLoc.srcLocFromTo (srcLoc expr) (srcLoc cond)
     thenPos = mkSrcLoc $ SrcLoc.srcLocBetween (srcLoc cond) (srcLoc t)
     elsePos = mkSrcLoc $ SrcLoc.srcLocBetween (srcLoc t) (srcLoc e)
+  {- evil special case: ProB handles seq as builtin, but it is not -}
+  CallFunction fkt args | (isSeq $ unLabel fkt) -> nTerm "builtin_call" (aTerm "seq" : flatArgs args)
+    where
+      isSeq (Var x) = (realName $ unUIdent $ unLabel x) == "seq"
+      isSeq _ = True
   CallFunction fkt args -> case args of
      [l] -> nTerm "agent_call" [plLoc fkt, te fkt, eList l]
      (_:_:_) -> nTerm "agent_call_curry" [te fkt, pList $ map eList args ]
