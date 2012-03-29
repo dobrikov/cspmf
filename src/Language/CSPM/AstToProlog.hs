@@ -102,7 +102,7 @@ te expr = case unLabel expr of
   CallFunction fkt args | (isSeq $ unLabel fkt) -> nTerm "builtin_call" [nTerm "seq" ( flatArgs args)]
     where
       isSeq (Var x) = (realName $ unUIdent $ unLabel x) == "seq"
-      isSeq _ = True
+      isSeq _ = False
   CallFunction fkt args -> case args of
      [l] -> nTerm "agent_call" [plLoc fkt, te fkt, eList l]
      (_:_:_) -> nTerm "agent_call_curry" [te fkt, pList $ map eList args ]
