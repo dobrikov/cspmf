@@ -10,13 +10,14 @@
 --
 -- This module contains the data type PrimToken.
 
-{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DeriveDataTypeable, GeneralizedNewtypeDeriving, DeriveGeneric #-}
 
 module Language.CSPM.TokenClasses
 where
 
 import Data.Typeable (Typeable)
 import Data.Generics.Basics (Data)
+import GHC.Generics (Generic)
 import Data.Generics.Instances ()
 import Data.Array (Ix)
 
@@ -149,4 +150,4 @@ data PrimToken
   | T_F
   | T_T
   | T_FD
-  deriving (Show,Eq,Ord,Enum,Ix,Bounded,Typeable,Data)
+  deriving (Show, Eq, Ord, Enum, Ix, Bounded, Typeable, Data, Generic)

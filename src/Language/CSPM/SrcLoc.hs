@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-warnings-deprecations #-}
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 -----------------------------------------------------------------------------
 -- |
 -- Module      :  Language.CSPM.SrcLoc
@@ -20,6 +20,7 @@ import Language.CSPM.Token as Token
 import Data.List
 import Data.Typeable (Typeable)
 import Data.Generics.Basics (Data)
+import GHC.Generics (Generic)
 import Data.Generics.Instances ()
 
 {-  todo : simplify this -}
@@ -39,7 +40,7 @@ data SrcLoc
      ,fixedEndCol      :: !Int
      ,fixedEndOffset   :: !Int
    }
-  deriving (Show,Eq,Ord,Typeable, Data)
+  deriving (Show,Eq,Ord,Typeable, Data, Generic)
 
 mkTokSpan :: Token -> Token -> SrcLoc
 mkTokSpan = TokSpan
