@@ -23,7 +23,7 @@ where
 import Language.CSPM.Frontend as Frontend
 import qualified Language.CSPM.SrcLoc as SrcLoc
 import qualified Language.CSPM.Token as Token (lexEMsg,lexEPos,alexLine,alexCol,alexPos)
-import Language.CSPM.AstToProlog (cspToProlog,mkSymbolTable)
+import Language.CSPM.CompileAstToProlog (cspToProlog,mkSymbolTable)
 import Language.Prolog.PrettyPrint.Direct
 import Paths_CSPM_ToProlog (version)
 import Data.Version (Version,showVersion)

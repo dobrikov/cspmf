@@ -1,6 +1,6 @@
 -----------------------------------------------------------------------------
 -- |
--- Module      :  Language.CSPM.AstToProlog
+-- Module      :  Language.CSPM.CompileAstToProlog
 -- Copyright   :  (c) Fontaine, Dobrikov 2011
 -- License     :  BSD3
 -- 
@@ -13,7 +13,7 @@
 -----------------------------------------------------------------------------
 {-# OPTIONS_GHC -Wall -Werror -fno-warn-warnings-deprecations #-}
 
-module Language.CSPM.AstToProlog
+module Language.CSPM.CompileAstToProlog
 (
  cspToProlog
 ,mkSymbolTable
@@ -286,20 +286,22 @@ td decl = case unLabel decl of
 
 plNameTerm :: LIdent -> Term
 plNameTerm l
-  = let uIdent = unUIdent $ unLabel l in case (idType uIdent,prologMode uIdent) of
-    (VarID,PrologVariable) -> plVar ("_" ++ uniquePlName uIdent)
-    (VarID,PrologGround)   -> term $ atom $ uniquePlName uIdent
-    _             -> term $ plName l
+    = case (idType uIdent,prologMode uIdent) of
+        (VarID,PrologVariable) -> plVar ("_" ++ uniquePlName uIdent)
+        (VarID,PrologGround)   -> term $ atom $ uniquePlName uIdent
+        _             -> term $ plName l
+    where uIdent = unUIdent $ unLabel l
 
 plName :: LIdent -> Atom
 plName l
-      = let uIdent = unUIdent $ unLabel l in case idType uIdent of
-       TransparentID -> atom $ realName uIdent
-       VarID         -> error ("plName : " ++ show l)
-       _             -> atom $ uniquePlName uIdent
+    = case idType uIdent of
+         TransparentID -> atom $ realName uIdent
+         VarID         -> error ("plName : " ++ show l)
+         _             -> atom $ uniquePlName uIdent
+    where uIdent = unUIdent $ unLabel l
 
 uniquePlName :: UniqueIdent -> String
-uniquePlName i = newName i
+uniquePlName = newName
 
 
 plLoc :: Labeled x -> Term
