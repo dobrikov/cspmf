@@ -24,6 +24,7 @@ import Language.CSPM.Frontend as Frontend
 import qualified Language.CSPM.SrcLoc as SrcLoc
 import qualified Language.CSPM.Token as Token (lexEMsg,lexEPos,alexLine,alexCol,alexPos)
 import Language.CSPM.CompileAstToProlog (cspToProlog,mkSymbolTable)
+import Language.CSPM.AstToProlog (toProlog)
 import Language.Prolog.PrettyPrint.Direct
 import Paths_CSPM_ToProlog (version)
 import Data.Version (Version,showVersion)
@@ -90,10 +91,12 @@ mainWork fileName = do
   time_start_renaming <- getCPUTime
   (astNew, renaming) <- eitherToExc $ renameModule ast
   let
-    plCode = cspToProlog astNew
-    symbolTable = mkSymbolTable $ identDefinition renaming
+      plCode = cspToProlog astNew
+      symbolTable = mkSymbolTable $ identDefinition renaming
+      moduleFact  = toProlog astNew
   output <- evaluate $ show $ vcat [ 
       mkResult "ok" "" 0 0 0
+     ,moduleFact
      ,plCode
      ,symbolTable
      ]
@@ -108,8 +111,8 @@ showTime a = show (div a 1000000000) ++ "ms"
 
 defaultHeader :: Doc
 defaultHeader 
-  = text ":- dynamic parserVersionNum/1, parserVersionStr/1, parseResult/5."
---    $$ simpleFact "parserVersionNum" [aTerm versionNum ]
+  =    text ":- dynamic parserVersionNum/1, parserVersionStr/1, parseResult/5."
+    $$ text ":- dynamic module/4."
     $$ simpleFact "parserVersionStr" [aTerm $ showVersion toPrologVersion]
 
 simpleFact :: String -> [Term] -> Doc
