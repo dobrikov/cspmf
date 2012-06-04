@@ -28,7 +28,7 @@ library
     ,array >= 0.4 && < 0.5
     ,parsec2 >= 1.0.0 && < 1.1.0
     ,prettyclass >= 1.0 && < 1.1
-    ,mtl
+    ,mtl >= 2.1 && < 2.2
     ,syb >= 0.3 && < 0.4
     ,ghc-prim >=0.2 && < 0.3
   Default-Language: Haskell2010
