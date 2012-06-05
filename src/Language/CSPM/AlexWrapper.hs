@@ -16,6 +16,7 @@ import Language.CSPM.TokenClasses
 import Language.CSPM.UnicodeSymbols as UnicodeSymbols (lookupToken)
 
 import Data.Char
+import Data.Word
 import Data.List
 import Control.Monad
 
@@ -79,6 +80,18 @@ alexSetStartCode sc = Alex $ \s -> Right (s{alex_scd=sc}, ())
 alexCountToken :: Alex Int
 alexCountToken
   = Alex $ \s -> Right (s {alex_cnt = succ $ alex_cnt s}, alex_cnt s)
+
+-- XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+-- TODO : really fix this/ do proper refactoring!
+-- quickfix for alex-3
+alexGetByte :: AlexInput -> Maybe (Word8, AlexInput)
+alexGetByte input = do
+    (char,i) <- alexGetChar input
+
+    if ord char > 255
+        then error "AlexWrapper.hs : pease refactor me for alex-3!"
+        else return (fromIntegral $ ord char,i)
+-- XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 alexGetChar :: AlexInput -> Maybe (Char, AlexInput)
 alexGetChar (_p, _c, []) = Nothing
