@@ -137,6 +137,8 @@ computeEndPos t = foldl' alexMove (tokenStart t) (tokenString t)
 {-# DEPRECATED srcLocFromTo "sourceLoc arithmetics is not reliable" #-}
 -- this is the closed Interval between s and e
 srcLocFromTo :: SrcLoc -> SrcLoc -> SrcLoc
+srcLocFromTo NoLocation _ = NoLocation
+srcLocFromTo _ NoLocation = NoLocation
 srcLocFromTo (TokSpan s _) (TokSpan _ e) = TokSpan s e
 srcLocFromTo s e = FixedLoc {
    fixedStartLine   = getStartLine s
@@ -151,6 +153,8 @@ srcLocFromTo s e = FixedLoc {
 {-# DEPRECATED srcLocBetween "sourceLoc arithmetics is not reliable" #-}
 -- this is the open Interval between s and e
 srcLocBetween :: SrcLoc -> SrcLoc -> SrcLoc
+srcLocBetween NoLocation _ = NoLocation
+srcLocBetween _ NoLocation = NoLocation
 srcLocBetween s e = FixedLoc {
    fixedStartLine   = getEndLine s
   ,fixedStartCol    = getEndCol s + 1     -- maybe wrong when token at end of Line

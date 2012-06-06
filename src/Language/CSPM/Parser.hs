@@ -492,6 +492,7 @@ procTable :: OpTable
         op <- mkLabeledNode (mkSrcSpan s e) (BuiltIn F_GT)
         return $ \a b -> mkLabeledNode
             (mkSrcSpan (SrcLoc.getStartToken $ srcLoc a) (SrcLoc.getEndToken $ srcLoc b))
+--            SrcLoc.NoLocation
             (Fun2 op a b)
       ) AssocLeft
     ]
@@ -525,7 +526,8 @@ procTable :: OpTable
   nfun2 tok cst = do
     fkt <- biOp tok cst
     return $ \a b -> mkLabeledNode
-     (mkSrcSpan (SrcLoc.getStartToken $ srcLoc a) (SrcLoc.getEndToken $ srcLoc b))
+--     (mkSrcSpan (SrcLoc.getStartToken $ srcLoc a) (SrcLoc.getEndToken $ srcLoc b))
+     SrcLoc.NoLocation
      (Fun2 fkt a b)
 
   binOp :: (LExp -> LExp -> Exp) -> PT (LExp -> LExp -> PT LExp)
