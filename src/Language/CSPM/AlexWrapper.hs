@@ -187,4 +187,4 @@ alexEOF :: Alex Token
 alexEOF = return (Token (mkTokenId 0) (AlexPn 0 0 0) 0 L_EOF "")
 
 alexInputPrevChar :: AlexInput -> Char
-alexInputPrevChar (_p, c, _s) = c
+alexInputPrevChar (_p, c, _s) = error "alex-input-prev-char not supported ??!"
