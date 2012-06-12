@@ -16,14 +16,17 @@ import Language.CSPM.TokenClasses
 import Language.CSPM.UnicodeSymbols as UnicodeSymbols (lookupToken)
 
 import Data.Char
-import Data.Word
+import Data.Word (Word8)
+import qualified Data.Bits
 import Data.List
 import Control.Monad
 
-type AlexInput
-  = (AlexPosn     -- current position
-    ,Char         -- previous char
-    ,String)      -- current input string
+type AlexInput = (AlexPosn,     -- current position,
+                  Char,         -- previous char
+                  [Byte],       -- pending bytes on current char
+                  String)       -- current input string
+
+type Byte = Word8
 
 data AlexState = AlexState {
    alex_input :: AlexInput
@@ -43,7 +46,7 @@ runAlex input (Alex f)
       ,alex_scd = 0
       ,alex_cnt = 0
       }
-    initAlexInput = (alexStartPos,'\n',input)
+    initAlexInput = (alexStartPos,'\n',[],input)
 
 newtype Alex a = Alex { unAlex :: AlexState -> Either LexError (AlexState, a) }
 
@@ -64,7 +67,7 @@ alexSetInput input
 
 alexError :: String -> Alex a
 alexError message
-    = Alex $ \st -> let (pos,_,_) = alex_input st in
+    = Alex $ \st -> let (pos,_,_,_) = alex_input st in
                  Left $ LexError {lexEPos = pos, lexEMsg = message }
 
 alexGetStartCode :: Alex Int
@@ -78,30 +81,36 @@ alexCountToken :: Alex Int
 alexCountToken
   = Alex $ \s -> Right (s {alex_cnt = succ $ alex_cnt s}, alex_cnt s)
 
--- XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
--- TODO : really fix this/ do proper refactoring!
--- quickfix for alex-3
-alexGetByte :: AlexInput -> Maybe (Word8, AlexInput)
-alexGetByte input = do
-    (char,i) <- alexGetChar input
+-- taken from original Alex-Wrapper
+alexGetByte :: AlexInput -> Maybe (Byte,AlexInput)
+alexGetByte (p,c,(b:bs),s) = Just (b,(p,c,bs,s))
+alexGetByte (p,c,[],[]) = Nothing
+alexGetByte (p,_,[],(c:s))  = let p' = alexMove p c 
+                                  (b:bs) = utf8Encode c
+                              in p' `seq`  Just (b, (p', c, bs, s))
 
-    if ord char > 255
-        then error "AlexWrapper.hs : pease refactor me for alex-3!"
-        else return (fromIntegral $ ord char,i)
--- XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+utf8Encode :: Char -> [Word8]
+utf8Encode = map fromIntegral . go . ord
+ where
+  go oc
+   | oc <= 0x7f       = [oc]
 
-alexGetChar :: AlexInput -> Maybe (Char, AlexInput)
-alexGetChar (_p, _c, []) = Nothing
-alexGetChar (p, _c, (c:s))
-  = let p' = alexMove p c
-    in p' `seq` Just (adj_c, (p', adj_c, s))
-   where
-     adj_c | c == '\xac' = '\x04' -- special case for the not operator
-           | c <= '\xff' = c
-           | otherwise = '\x04'
--- -----------------------------------------------------------------------------
+   | oc <= 0x7ff      = [ 0xc0 + (oc `Data.Bits.shiftR` 6)
+                        , 0x80 + oc Data.Bits..&. 0x3f
+                        ]
+
+   | oc <= 0xffff     = [ 0xe0 + (oc `Data.Bits.shiftR` 12)
+                        , 0x80 + ((oc `Data.Bits.shiftR` 6) Data.Bits..&. 0x3f)
+                        , 0x80 + oc Data.Bits..&. 0x3f
+                        ]
+   | otherwise        = [ 0xf0 + (oc `Data.Bits.shiftR` 18)
+                        , 0x80 + ((oc `Data.Bits.shiftR` 12) Data.Bits..&. 0x3f)
+                        , 0x80 + ((oc `Data.Bits.shiftR` 6) Data.Bits..&. 0x3f)
+                        , 0x80 + oc Data.Bits..&. 0x3f
+                        ]
+
+
 -- Useful token actions
-
 type AlexAction result = AlexInput -> Int -> result
 
 -- perform an action for this token, and set the start code to a new value
@@ -109,7 +118,7 @@ andBegin :: (t -> t1 -> Alex b) -> Int -> t -> t1 -> Alex b
 andBegin action code input len = do alexSetStartCode code; action input len
 
 mkL :: PrimToken -> AlexInput -> Int -> Alex Token
-mkL c (pos,_ , str) len = do
+mkL c (pos, _, _, str) len = do
   cnt <- alexCountToken
   return $ Token {
     tokenId     = mkTokenId cnt
@@ -120,7 +129,7 @@ mkL c (pos,_ , str) len = do
   }
 
 mk_Unicode_Token :: AlexInput -> Int -> Alex Token
-mk_Unicode_Token (pos,_ , str) len = do
+mk_Unicode_Token (pos, _, _, str) len = do
   when (len /= 1) $ error "internal error unicode symbol length not 1"
   let symbol = head str
   case UnicodeSymbols.lookupToken symbol of
@@ -136,7 +145,7 @@ mk_Unicode_Token (pos,_ , str) len = do
        }
 
 block_comment :: AlexInput -> Int -> Alex Token
-block_comment (startPos, _ , '\123':'-':input) 2 = do
+block_comment (startPos, _ ,[], '\123':'-':input) 2 = do
     case go 1 "-{" input of
       Nothing -> Alex $ \_-> Left $ LexError {
          lexEPos = startPos
@@ -153,7 +162,7 @@ block_comment (startPos, _ , '\123':'-':input) 2 = do
                ('\123':'-':'#':_, '\125':'-':'#':_) ->  L_Pragma
                ('\123':'-':_    , '\125':'-':_    ) ->  L_BComment
                _ -> error "internal Error: cannot determine variant of block_comment"
-        alexSetInput (foldl' alexMove startPos tokenString, '\125', rest)
+        alexSetInput (foldl' alexMove startPos tokenString, '\125', [],rest)
         return $ Token {..}
   where
     go :: Int -> String -> String -> Maybe (String,String)
@@ -168,7 +177,7 @@ block_comment _ _ = error "internal Error : block_comment called with bad args"
 
 lexError :: String -> Alex a
 lexError s = do
-  (_p, _c, input) <- alexGetInput
+  (_p, _c,_, input) <- alexGetInput
   let
     pos = if not $ null input
             then " at " ++ (reportChar $ head input)
@@ -184,4 +193,4 @@ alexEOF :: Alex Token
 alexEOF = return (Token (mkTokenId 0) (AlexPn 0 0 0) 0 L_EOF "")
 
 alexInputPrevChar :: AlexInput -> Char
-alexInputPrevChar (_p, _c, _s) = error "alex-input-prev-char not supported ??!"
+alexInputPrevChar (_p, _c, _,_s) = error "alex-input-prev-char not supported ??!"
