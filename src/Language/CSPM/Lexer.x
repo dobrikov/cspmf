@@ -155,6 +155,34 @@ csp :-
 <0> "="  { mkL T_is }
 <0> "[[" { mkL T_openBrackBrack }
 <0> "]]" { mkL T_closeBrackBrack }
+
+-- unicode symbols
+-- this must be in sync with Language.CSPM.UnicodeSymbols
+
+<0> \172    { mkL T_not            }   -- "not"   ¬
+<0> \8741   { mkL T_parallel       }   -- "||"    ∥
+<0> \8743   { mkL T_and            }   -- "and"   ∧
+<0> \8744   { mkL T_or             }   -- "or"    ∨
+<0> \8800   { mkL T_neq            }   -- "!="    ≠
+<0> \8801   { mkL T_eq             }   -- "=="    ≡
+<0> \8804   { mkL T_le             }   -- "<="    ≤
+<0> \8805   { mkL T_ge             }   -- ">="    ≥
+<0> \8849   { mkL T_Refine         }   -- "[="    ⊑
+<0> \8851   { mkL T_sqcap          }   -- "|~|"   ⊓
+<0> \8898   { mkL T_Inter          }   -- "Inter  ⋂
+<0> \8899   { mkL T_Union          }   -- "Union  ⋃
+<0> \9651   { mkL T_triangle       }   -- "/\\"   △
+<0> \9655   { mkL T_rhd            }   -- "[>"    ▷
+<0> \9656   { mkL T_exp            }   -- "|>"    ▸
+<0> \9723   { mkL T_box            }   -- "[]"
+<0> \10132  { mkL T_rightarrow     }   -- "->"
+<0> \10214  { mkL T_openBrackBrack }   -- "[["
+<0> \10215  { mkL T_closeBrackBrack}   -- "]]"
+<0> \10216  { mkL T_lt             }   -- "<"
+<0> \10217  { mkL T_gt             }   -- ">"
+<0> \10231  { mkL T_leftrightarrow }   -- "<->"
+
+
 <0> $nl  { mkL L_Newline}
 <0> $whitechar'+ { mkL T_WhiteSpace }
 <0> "--".* { mkL L_LComment }
