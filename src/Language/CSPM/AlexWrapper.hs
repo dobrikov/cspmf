@@ -26,9 +26,7 @@ type AlexInput
     ,String)      -- current input string
 
 data AlexState = AlexState {
-   alex_pos :: !AlexPosn -- position at current input location
-  ,alex_inp :: String	-- the current input
-  ,alex_chr :: !Char	-- the character before the input
+   alex_input :: AlexInput
   ,alex_scd :: !Int 	-- the current startcode
   ,alex_cnt :: !Int 	-- number of tokens
   }
@@ -41,12 +39,11 @@ runAlex input (Alex f)
   where
     initState
       = AlexState {
-       alex_pos = alexStartPos
-      ,alex_inp = input
-      ,alex_chr = '\n'
+       alex_input = initAlexInput
       ,alex_scd = 0
       ,alex_cnt = 0
       }
+    initAlexInput = (alexStartPos,'\n',input)
 
 newtype Alex a = Alex { unAlex :: AlexState -> Either LexError (AlexState, a) }
 
@@ -58,17 +55,17 @@ instance Monad Alex where
 
 alexGetInput :: Alex AlexInput
 alexGetInput
- = Alex $ \s@AlexState{alex_pos=pos, alex_chr=c, alex_inp=inp} ->
-         Right (s, (pos,c,inp))
+  = Alex $ \s-> Right (s,alex_input s)
 
 alexSetInput :: AlexInput -> Alex ()
-alexSetInput (pos, c, inp)
- = Alex $ \state -> case state {alex_pos=pos,alex_chr=c,alex_inp=inp} of
+alexSetInput input
+   = Alex $ \state -> case state {alex_input=input} of
             s@(AlexState{}) -> Right (s, ())
 
 alexError :: String -> Alex a
-alexError message = Alex $ update where
-    update st = Left $ LexError {lexEPos = alex_pos st, lexEMsg = message }
+alexError message
+    = Alex $ \st -> let (pos,_,_) = alex_input st in
+                 Left $ LexError {lexEPos = pos, lexEMsg = message }
 
 alexGetStartCode :: Alex Int
 alexGetStartCode = Alex $ \s@AlexState{alex_scd=sc} -> Right (s, sc)
@@ -187,4 +184,4 @@ alexEOF :: Alex Token
 alexEOF = return (Token (mkTokenId 0) (AlexPn 0 0 0) 0 L_EOF "")
 
 alexInputPrevChar :: AlexInput -> Char
-alexInputPrevChar (_p, c, _s) = error "alex-input-prev-char not supported ??!"
+alexInputPrevChar (_p, _c, _s) = error "alex-input-prev-char not supported ??!"
