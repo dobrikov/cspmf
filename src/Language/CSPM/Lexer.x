@@ -33,7 +33,6 @@ $graphic1  = [$small $large $symbol1 $digit]
 $octit     = 0-7
 $hexit     = [0-9 A-F a-f]
 $idchar    = [$alpha $digit \' \_]
-$unicodeSymbol = \x04
 @ident = $alpha $idchar*
 
 @decimal     = $digit+
@@ -46,9 +45,6 @@ $unicodeSymbol = \x04
 $nl = [\n]
 
 csp :-
-
--- unicode symbols
-<0> $unicodeSymbol {mk_Unicode_Token }
 
 -- CSP-M Keywords
 <0> "channel"     { mkL T_channel  }

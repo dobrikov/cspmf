@@ -128,22 +128,6 @@ mkL c (pos, _, _, str) len = do
   , tokenString = take len str
   }
 
-mk_Unicode_Token :: AlexInput -> Int -> Alex Token
-mk_Unicode_Token (pos, _, _, str) len = do
-  when (len /= 1) $ error "internal error unicode symbol length not 1"
-  let symbol = head str
-  case UnicodeSymbols.lookupToken symbol of
-    Nothing -> lexError $ "unknown Unicode symbol : " ++ [symbol]
-    Just tokenClass -> do
-      cnt <- alexCountToken
-      return $ Token {
-         tokenId     = mkTokenId cnt
-       , tokenStart  = pos
-       , tokenLen    = 1
-       , tokenClass  = tokenClass
-       , tokenString = [symbol]
-       }
-
 block_comment :: AlexInput -> Int -> Alex Token
 block_comment (startPos, _ ,[], '\123':'-':input) 2 = do
     case go 1 "-{" input of
