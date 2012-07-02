@@ -2,7 +2,7 @@ Name:                CSPM-ToProlog
 Version:             0.5.0.0
 Synopsis:            some modules specific for the ProB tool
 Description:
-  This package constains a translation from a CSPM AST to the representation
+  This package contains a translation from a CSPM AST to the representation
   used by the ProB tool.
   This code is only interesting for ProB developers.
 
