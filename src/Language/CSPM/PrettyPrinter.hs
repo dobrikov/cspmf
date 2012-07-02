@@ -11,10 +11,11 @@
 -- This module defines functions for pretty-printing the 
 -- Abstract Syntax Tree to CSPM syntax.
 -----------------------------------------------------------------------------
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Language.CSPM.PrettyPrinter
 (
-pPrint
+  pPrint
 )
 where
 

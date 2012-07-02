@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Language.CSPM.AST
--- Copyright   :  (c) Fontaine 2008 - 2011
+-- Copyright   :  (c) Fontaine 2008 - 2012
 -- License     :  BSD3
 -- 
 -- Maintainer  :  Fontaine@cs.uni-duesseldorf.de

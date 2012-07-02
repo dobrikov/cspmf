@@ -13,13 +13,11 @@ where
 
 import Language.CSPM.Token
 import Language.CSPM.TokenClasses
-import Language.CSPM.UnicodeSymbols as UnicodeSymbols (lookupToken)
 
 import Data.Char
 import Data.Word (Word8)
 import qualified Data.Bits
 import Data.List
-import Control.Monad
 
 type AlexInput = (AlexPosn,     -- current position,
                   Char,         -- previous char
@@ -84,7 +82,7 @@ alexCountToken
 -- taken from original Alex-Wrapper
 alexGetByte :: AlexInput -> Maybe (Byte,AlexInput)
 alexGetByte (p,c,(b:bs),s) = Just (b,(p,c,bs,s))
-alexGetByte (p,c,[],[]) = Nothing
+alexGetByte (_,_,[],[]) = Nothing
 alexGetByte (p,_,[],(c:s))  = let p' = alexMove p c 
                                   (b:bs) = utf8Encode c
                               in p' `seq`  Just (b, (p', c, bs, s))

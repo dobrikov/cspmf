@@ -18,9 +18,6 @@
 module Language.CSPM.BuiltIn
 where
 
-import Language.CSPM.AST
-
-
 {-
 FDR keywords are:
 STOP, SKIP, true, false 
