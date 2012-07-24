@@ -24,7 +24,6 @@ import Language.CSPM.SrcLoc (SrcLoc(..))
 import Data.Typeable (Typeable)
 import Data.Generics.Basics (Data)
 import GHC.Generics (Generic)
-import Data.Generics.Instances ()
 import Data.IntMap (IntMap)
 import Data.Map (Map)
 import Data.Array.IArray

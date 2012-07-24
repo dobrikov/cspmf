@@ -1,5 +1,6 @@
 {-# LANGUAGE TupleSections, RecordWildCards #-}
 module Language.CSPM.LexHelper
+{-
 (
    lexInclude
   ,lexPlain
@@ -8,13 +9,18 @@ module Language.CSPM.LexHelper
   ,unicodeTokenString
   ,asciiTokenString
 )
+-}
 where
 
 import qualified Language.CSPM.Lexer as Lexer (scanner)
 import Language.CSPM.Token (Token(..), LexError(..))
 import Language.CSPM.TokenClasses (PrimToken(..))
 import Language.CSPM.UnicodeSymbols (lookupDefaultSymbol)
+import Control.Monad.IO.Class
 import qualified Data.Set as Set
+
+import qualified Data.DList as DList
+import Control.Monad.Trans.Either
 
 -- | lex a String .
 lexPlain :: String -> Either LexError [Token]
@@ -36,40 +42,51 @@ asciiTokenString token
       Just (_, symbol) -> symbol
       Nothing -> tokenString token
 
--- | lex a String and process CSP-M include statements.
-lexInclude :: String -> IO (Either LexError [Token])
-lexInclude src = do
-  case Lexer.scanner src of
-    Left err -> return $ Left err
-    Right toks -> do
-      tokenIncl <- processIncludeAndReverse toks
-      case tokenIncl of
-        Left err -> return $ Left err
-        Right t -> return $ Right t
+type Chunk = [Token]
+type Chunks = DList.DList Chunk
+data FilePart
+    = Toks    Chunk
+    | Include FilePath
+    deriving Show
 
--- | Monsterfunction : todo refactor
-processIncludeAndReverse :: [Token] -> IO (Either LexError [Token] )
-processIncludeAndReverse tokens = picl_acc tokens []
-  where 
-  picl_acc ::[Token] ->[Token] -> IO (Either LexError [Token] )
-  picl_acc [] acc = return $ Right acc
-  picl_acc ((Token _ _ _ L_String fname) : (Token _ _ _ L_Include _) :trest) acc = do
-    let fileName = reverse $ tail $ reverse $ tail fname -- remove quotes
-    -- putStrLn $ "Including file : " ++ fileName
-    input <-readFile fileName
-    case Lexer.scanner input of
-      Right toks -> do
-        new_acc <- picl_acc toks acc
-        case new_acc of
-          Right t -> picl_acc trest t
-          e -> return e
-      Left e -> return $ Left e
-  picl_acc ((incl@(Token _ _ _ L_Include _)) : _) _ = 
-    return $ Left $ LexError {
+-- | lex input-string and inport all includes files
+lexInclude :: String -> IO (Either LexError [Token])
+lexInclude input
+   = eitherT (return . Left) (return . Right . concat . DList.toList) $ lexInclude2 input
+
+lexInclude2 :: String -> EitherT LexError IO Chunks
+lexInclude2 input = do
+        hoistEither $ lexPlain input
+    >>= hoistEither . splitIncludes []
+    >>= mapM processPart
+    >>= return . DList.concat
+
+processPart :: FilePart -> EitherT LexError IO Chunks
+processPart part = case part of
+    Toks ch -> return $ DList.singleton $ ch
+    Include fname -> (liftIO $ readFile fname) >>= lexInclude2
+
+-- | micro-parser for include-statements
+splitIncludes :: [Token] -> [Token] -> Either LexError [FilePart]
+splitIncludes acc  []  = return [Toks $ reverse acc]
+splitIncludes acc (h:rest) = case h of
+    tok@(Token _ _ _ L_Include _) -> do
+        r <- scanInclude tok rest
+        return $ (Toks $ reverse acc) : r
+    _ -> splitIncludes (h:acc) rest
+
+scanInclude :: Token -> [Token] -> Either LexError [FilePart]
+scanInclude incl (h:rest) = case h of
+    Token _ _ _ T_WhiteSpace _ -> scanInclude incl rest
+    Token _ _ _ L_String fname -> do
+       r <- splitIncludes [] rest
+       let fileName = reverse $ tail $ reverse $ tail fname -- remove quotes
+       return $ (Include fileName) : r
+
+scanInclude incl _ = Left $ LexError {
        lexEPos = tokenStart incl
       ,lexEMsg = "Include without filename" 
       }
-  picl_acc (h:rest) acc = picl_acc rest $ h:acc
 
 -- | Remove comments, whitespaces and unneeded newlines.
 removeIgnoredToken :: [Token] -> [Token]
