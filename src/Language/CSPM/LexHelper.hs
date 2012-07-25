@@ -82,11 +82,17 @@ scanInclude incl (h:rest) = case h of
        r <- splitIncludes [] rest
        let fileName = reverse $ tail $ reverse $ tail fname -- remove quotes
        return $ (Include fileName) : r
+    _ -> Left $ LexError {
+       lexEPos = tokenStart incl
+      ,lexEMsg = "Include without filename"
+      }
+
 
 scanInclude incl _ = Left $ LexError {
        lexEPos = tokenStart incl
-      ,lexEMsg = "Include without filename" 
+      ,lexEMsg = "Include without filename at end of file"
       }
+
 
 -- | Remove comments, whitespaces and unneeded newlines.
 removeIgnoredToken :: [Token] -> [Token]
