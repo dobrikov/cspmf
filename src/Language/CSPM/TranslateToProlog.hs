@@ -78,7 +78,7 @@ mainWork fileName = do
 
   printDebug $ "Reading File " ++ fileName
   startTime <- (return $ length src) >> getCPUTime
-  tokenList <- lexInclude src >>= eitherToExc
+  tokenList <- lexInclude fileName src >>= eitherToExc
   time_have_tokens <- getCPUTime
 
   ast <- eitherToExc $ parse fileName tokenList
