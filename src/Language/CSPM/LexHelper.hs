@@ -21,6 +21,7 @@ import qualified Data.Set as Set
 
 import qualified Data.DList as DList
 import Control.Monad.Trans.Either
+import System.FilePath(isAbsolute,splitDirectories,normalise)
 
 -- | lex a String .
 lexPlain :: String -> Either LexError [Token]
@@ -49,22 +50,24 @@ data FilePart
     | Include FilePath
     deriving Show
 
--- | lex input-string and inport all includes files
-lexInclude :: String -> IO (Either LexError [Token])
-lexInclude input
-   = eitherT (return . Left) (return . Right . concat . DList.toList) $ lexInclude2 input
+-- | lex input-string and import all includes files
+lexInclude :: FilePath -> String -> IO (Either LexError [Token])
+lexInclude srcName input
+   = eitherT (return . Left) (return . Right . concat . DList.toList) $ lexInclude2 srcName input
 
-lexInclude2 :: String -> EitherT LexError IO Chunks
-lexInclude2 input = do
+lexInclude2 :: FilePath -> String -> EitherT LexError IO Chunks
+lexInclude2 srcName input = do
         hoistEither $ lexPlain input
     >>= hoistEither . splitIncludes []
-    >>= mapM processPart
+    >>= mapM (processPart srcName)
     >>= return . DList.concat
 
-processPart :: FilePart -> EitherT LexError IO Chunks
-processPart part = case part of
+processPart :: FilePath -> FilePart -> EitherT LexError IO Chunks
+processPart srcName part = case part of
     Toks ch -> return $ DList.singleton $ ch
-    Include fname -> (liftIO $ readFile fname) >>= lexInclude2
+    Include fname -> (liftIO $ readFile absolutePath) >>= lexInclude2 absolutePath
+     where
+       absolutePath = getAbsoluteIncludeFileName srcName fname
 
 -- | micro-parser for include-statements
 splitIncludes :: [Token] -> [Token] -> Either LexError [FilePart]
@@ -149,3 +152,21 @@ soakNewlines = worker
          ++ binaryOperators)
     consumeNLAfterToken
       = Set.fromList ( [T_openParen, T_openBrace, T_lt] ++ binaryOperators)
+
+-- Helper function for determining the absolute path of an include file name.
+-- getAbsoluteIncludeFileName makes it possible to include other CSP modules by 
+-- giving the file path locally w.r.t. the current file path of the CSP module,
+-- which includes the particular CSP modules.
+getAbsoluteIncludeFileName :: FilePath -> FilePath -> FilePath
+getAbsoluteIncludeFileName srcFileName inclFileName = 
+   case isAbsolute inclFileName of 
+	True  -> inclFileName 
+	False -> joinPath $ (
+		take ((length srcDirSequence)-(countBackDirs fileDirSequence)) srcDirSequence 
+			++ (removeBackDirs fileDirSequence))
+	where
+		fileDirSequence = splitDirectories $ normalise inclFileName
+		srcDirSequence  = init $ splitDirectories $ normalise srcFileName
+		countBackDirs   = length . filter (".." ==) 
+		removeBackDirs  = dropWhile (".." == )
+

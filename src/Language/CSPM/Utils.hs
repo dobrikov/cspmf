@@ -56,7 +56,7 @@ parseString = parseNamedString "no-file-name"
 
 parseNamedString :: FilePath -> String -> IO ModuleFromParser
 parseNamedString name str = do
-  tokenList <- Lexer.lexInclude str >>= eitherToExc
+  tokenList <- Lexer.lexInclude name str >>= eitherToExc
   eitherToExc $ parse name tokenList
 
 -- | Lex and parse File.
@@ -67,7 +67,7 @@ benchmarkFrontend fileName = do
 
   putStrLn $ "Reading File " ++ fileName
   startTime <- (return $ length src) >> getCPUTime
-  tokenList <- Lexer.lexInclude src >>= eitherToExc
+  tokenList <- Lexer.lexInclude fileName src >>= eitherToExc
   time_have_tokens <- getCPUTime
 
   ast <- eitherToExc $ parse fileName tokenList
