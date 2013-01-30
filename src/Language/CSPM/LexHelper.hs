@@ -67,7 +67,7 @@ processPart srcName part = case part of
     Toks ch -> return $ DList.singleton $ ch
     Include fname -> (liftIO $ readFile absolutePath) >>= lexInclude2 absolutePath
      where
-       absolutePath = getAbsoluteIncludeFileName srcName fname
+       absolutePath = getAbsoluteIncludeFileName srcName fname 
 
 -- | micro-parser for include-statements
 splitIncludes :: [Token] -> [Token] -> Either LexError [FilePart]
