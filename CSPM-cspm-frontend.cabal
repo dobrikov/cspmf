@@ -11,7 +11,6 @@ Description:
   .
   * 'cspmf translate spec --prologOut=destination'  -> parse spec and translate the AST to a prolog file (case used by the ProB-Tool).
   .
-  .
 
 License:             BSD3
 category:            Language,Formal Methods,Concurrency
