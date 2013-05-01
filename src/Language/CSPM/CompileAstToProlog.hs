@@ -18,6 +18,8 @@ module Language.CSPM.CompileAstToProlog
  cspToProlog
 ,mkSymbolTable
 ,mkSrcLoc
+,te
+,td
 )
 where
 
@@ -98,11 +100,6 @@ te expr = case unLabel expr of
     condPos = mkSrcLoc $ SrcLoc.srcLocFromTo (srcLoc expr) (srcLoc cond)
     thenPos = mkSrcLoc $ SrcLoc.srcLocBetween (srcLoc cond) (srcLoc t)
     elsePos = mkSrcLoc $ SrcLoc.srcLocBetween (srcLoc t) (srcLoc e)
-  {- evil special case: ProB handles seq as builtin, but it is not -}
-  CallFunction fkt args | (isSeq $ unLabel fkt) -> nTerm "builtin_call" [nTerm "seq" ( flatArgs args)]
-    where
-      isSeq (Var x) = (realName $ unUIdent $ unLabel x) == "seq"
-      isSeq _ = False
   CallFunction fkt args -> case args of
      [l] -> nTerm "agent_call" [plLoc fkt, te fkt, eList l]
      (_:_:_) -> nTerm "agent_call_curry" [te fkt, pList $ map eList args ]
@@ -261,9 +258,23 @@ td decl = case unLabel decl of
 
     mkTypeDef :: LTypeDef -> Term
     mkTypeDef t = case unLabel t of
+       TypeDot na_tuples -> nTerm "dotTupleType" [mkTypeDotArgs na_tuples]
+
+    mkTypeDotArgs :: [LNATuples] -> Term
+    mkTypeDotArgs na_tuples = pList $ map mkTypeTupleArg na_tuples
+       where
+         mkTypeTupleArg na_tuple =
+             case unLabel na_tuple of
+                 SingleValue e -> te e
+                 TypeTuple le -> nTerm "typeTuple" [eList le]
+
+{-
+    mkTypeDef :: LTypeDef -> Term
+    mkTypeDef t = case unLabel t of
       TypeTuple l -> nTerm "typeTuple" [eList l]
       TypeDot   l -> nTerm "dotTupleType" [eList l]
-   
+-}
+
     mkChannel :: Maybe LTypeDef -> LIdent -> Term
     mkChannel Nothing  i = nTerm "channel" [ plNameTerm i, nTerm "type" [term $ atom "dotUnitType" ]]
     mkChannel (Just t) i = nTerm "channel" [ plNameTerm i, nTerm "type" [mkTypeDef t]]
@@ -388,6 +399,7 @@ builtInToString x =
   F_card -> "card"     
   F_empty -> "empty"    
   F_set -> "set"      
+  F_seq -> "seq"
   F_Set -> "Set"      
   F_Seq -> "Seq"      
   F_null -> "null"     

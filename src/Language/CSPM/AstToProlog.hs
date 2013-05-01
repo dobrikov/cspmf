@@ -68,6 +68,7 @@ instance TPL UniqueIdent where
 instance TPL AssertDecl
 instance TPL AST.Constructor
 instance TPL TypeDef
+instance TPL NATuples
 instance TPL Range
 instance TPL CompGen
 instance TPL LinkList

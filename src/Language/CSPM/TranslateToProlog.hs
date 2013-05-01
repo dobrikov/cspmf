@@ -15,15 +15,17 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module Language.CSPM.TranslateToProlog
 (
-   toPrologVersion
+  toPrologVersion
   ,translateToProlog
+  ,translateExpToPrologTerm
+  ,translateDeclToPrologTerm
 )
 where
 
 import Language.CSPM.Frontend as Frontend
 import qualified Language.CSPM.SrcLoc as SrcLoc
 import qualified Language.CSPM.Token as Token (lexEMsg,lexEPos,alexLine,alexCol,alexPos)
-import Language.CSPM.CompileAstToProlog (cspToProlog,mkSymbolTable)
+import Language.CSPM.CompileAstToProlog (cspToProlog,mkSymbolTable,te,td)
 import Language.CSPM.AstToProlog (toProlog)
 import Language.Prolog.PrettyPrint.Direct
 import Paths_CSPM_ToProlog (version)
@@ -38,6 +40,49 @@ import Text.PrettyPrint
 -- | The version of the CSPM-ToProlog library
 toPrologVersion :: Version
 toPrologVersion = version
+
+-- | 'translateExpToPrologTerm' translates a string expression
+-- to a prolog term in regard to the given CSP-M specification.
+translateExpToPrologTerm ::
+     FilePath
+  -> String
+  -> IO String
+translateExpToPrologTerm file exp = do
+  (r :: Either SomeException String) <- try $ mainWorkSinglePlTerm getExpPlCode file ("x__entrypoint_expression = " ++ exp)
+  handleTranslationResult r
+   where
+    getExpPlCode :: Module a -> Doc
+    getExpPlCode = unTerm .te . Frontend.getLastBindExpression
+-- | 'translateDeclToPrologTerm' translates a string declaration
+-- to a prolog term in regard to the given CSP-M specification.
+translateDeclToPrologTerm ::
+     FilePath
+  -> String
+  -> IO String
+translateDeclToPrologTerm file decl = do
+  (r :: Either SomeException String) <- try $ mainWorkSinglePlTerm getDeclPlCode file decl
+  handleTranslationResult r
+   where
+    getDeclPlCode :: Module a -> Doc
+    getDeclPlCode = unTerm . head . td . Frontend.getLastDeclaration
+
+handleTranslationResult :: Either SomeException String -> IO String
+handleTranslationResult r =
+  case r of
+    Right res -> return $ res
+    Left err -> do
+      hPutStrLn stderr $ show err
+      exitFailure   
+
+mainWorkSinglePlTerm :: (ModuleFromRenaming -> Doc) -> FilePath -> String -> IO String
+mainWorkSinglePlTerm termFun file decl = do
+  specSrc <- readFile file
+  let src = specSrc ++ "\n--patch entrypoint\n"++decl ++"\n"
+  ast <- Frontend.parseString src
+  (astNew, _) <- eitherToExc $ renameModule ast
+  let plTerm = termFun astNew
+  output <- evaluate $ show plTerm
+  return output
 
 -- | 'translateToProlog' reads a CSPM specification from inFile
 -- and writes the Prolog representation to outFile.

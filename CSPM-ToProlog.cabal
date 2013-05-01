@@ -1,5 +1,5 @@
 Name:                CSPM-ToProlog
-Version:             0.5.0.0
+Version:             0.5.0.2
 Synopsis:            some modules specific for the ProB tool
 Description:
   This package contains a translation from a CSPM AST to the representation
@@ -12,7 +12,7 @@ License-File:        LICENSE
 Author:              2006-2012 Marc Fontaine
 Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>
 Cabal-Version:  >= 1.10
-Tested-With:    GHC==7.4.1
+Tested-With:    GHC==7.4.2
 Build-Type:     Simple
 
 Library
