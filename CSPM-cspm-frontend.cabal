@@ -1,5 +1,5 @@
 Name:                CSPM-cspm-frontend
-Version:             0.0.0.1
+Version:             0.0.0.3
 
 Synopsis:            cspmf command line tool for parsing CSPM specifications.
 Description:
@@ -9,7 +9,7 @@ Description:
   .
   * 'cspmf --help'      -> print a help message.
   .
-  * 'cspmf translate spec --prologOut=destination'  -> parse spec and translate the AST to a prolog file (case used by the ProB-Tool).
+  * 'cspmf translate spec.csp --prologOut=destination'  -> parse spec and translate the AST to a prolog file (case used by the ProB-Tool).
   .
 
 License:             BSD3

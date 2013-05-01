@@ -22,9 +22,11 @@ import Language.CSPM.Frontend
   (parseFile, frontendVersion
   ,eitherToExc, renameModule, castModule, lexInclude)
 import Language.CSPM.LexHelper (unicodeTokenString,asciiTokenString)
-import Language.CSPM.PrettyPrinter ()
+import Language.CSPM.PrettyPrinter (pPrint)
 
-import Language.CSPM.TranslateToProlog (translateToProlog,toPrologVersion)
+import Language.CSPM.TranslateToProlog
+  (translateToProlog,toPrologVersion
+  ,translateExpToPrologTerm,translateDeclToPrologTerm)
 import Language.CSPM.AstToXML (moduleToXML, showTopElement)
 
 import System.Console.CmdArgs (isLoud) -- todo: fix this
@@ -52,22 +54,22 @@ execCommand Info {..} = do
   putStr $ concat
     [
      "Versions :",nl
-    ,"  cspm command line utility : ", showVersion version, nl
+    ,"  cspmf command line utility : ", showVersion version, nl
     ,"  CSPM-Frontend             : ", showVersion frontendVersion, nl
     ,"  CSPM-ToProlog             : ", showVersion toPrologVersion, nl
     ,nl
     ,"Usage examples:",nl
-    ,"  cspm --help",nl
-    ,"  cspm info",nl
+    ,"  cspmf --help",nl
+    ,"  cspmf info",nl
     ,nl
-    ,"Copyright (c) Marc Fontaine 2007-2013",nl
-    ,"Email : Marc.Fontaine@gmx.de",nl
+    ,"Copyright (c) Marc Fontaine, Ivaylo Dobrikov 2007-2013",nl
+    ,"Email : Marc.Fontaine@gmx.de, dobrikov84@yahoo.com",nl
     ]
   where nl = "\n"
 
 execCommand Translate {..} = do
   when (null $ catMaybes
-     [prologOut, xmlOut, prettyOut, addUnicode, removeUnicode]) $ do
+     [prologOut, xmlOut, prettyOut, addUnicode, removeUnicode, expressionPrologOut, declarationPrologOut]) $ do
     putStrLn "No output option is set"
     putStrLn "Set '--xmlOut', '--prettyOut' or an other output option"
   when (isJust xmlOut || isJust prettyOut) $ do
@@ -94,6 +96,12 @@ execCommand Translate {..} = do
   whenJust prologOut $ \outFile -> do
       translateToProlog src outFile -- translateToProlog does not return !
       error "unreachable"
+  whenJust expressionPrologOut $ \str -> do
+      prologTerm <- translateExpToPrologTerm src str
+      putStrLn prologTerm
+  whenJust declarationPrologOut $ \str -> do
+      prologTerm <- translateDeclToPrologTerm src str
+      putStrLn prologTerm
   where
     whenJust a action = case a of
       Just v -> action v
