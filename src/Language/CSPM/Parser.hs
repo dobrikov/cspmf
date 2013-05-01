@@ -20,6 +20,7 @@ module Language.CSPM.Parser
  ,testParser
  ,parseExp
  ,parsePattern
+ ,topDeclList
 )
 where
 import Language.CSPM.AST
@@ -216,6 +217,7 @@ anyBuiltIn = do
     T_card   -> return F_card
     T_empty  -> return F_empty
     T_set    -> return F_set
+    T_seq    -> return F_seq
     T_Set    -> return F_Set
     T_Seq    -> return F_Seq
     T_null   -> return F_null
@@ -923,7 +925,7 @@ topDeclList = sepByNewLine topDecl
     token T_datatype
     i <- ident
     token_is
-    conList<-sepBy1 constrDef $ token T_mid
+    conList<-sepBy1 constrDef $ token T_mid -- A | B.S.S | C.(S,S)
     return $ DataType i conList
 
   constrDef :: PT LConstructor
@@ -932,7 +934,7 @@ topDeclList = sepByNewLine topDecl
     ty <- optionMaybe constrType
     return $ Constructor i ty
 
-  constrType = try ( token T_dot >> typeExp)
+  constrType = try ( token T_dot >> typeExp) -- rec.A.B...
 
   parseNametype :: PT LDecl
   parseNametype = withLoc $ do
@@ -949,13 +951,24 @@ topDeclList = sepByNewLine topDecl
     t<-optionMaybe typeDef
     return $ Channel identl t
 
-  
-  typeDef = token T_colon >> typeExp
-  typeExp = typeTuple <|> typeDot
+  {- Functions for parsing typeDef expressions -}
 
-  typeTuple = inSpan TypeTuple $ inParens $ sepBy1Comma parseExp
+  typeDef = token T_colon >> typeExp
+
+  typeExp = withLoc $ do
+    dotArgs <- sepBy1 dotArgs $ token T_dot
+    return $ TypeDot dotArgs 
+
+  dotArgs = typeTuple <|> typeSingleExp
+
+  typeSingleExp = inSpan SingleValue $ parseExpBase
+
+  typeTuple = inSpan TypeTuple $ inParens $ sepBy1Comma parseExpBase
+ 
+{-  typeExp = typeTuple <|> typeDot
 
   typeDot = inSpan TypeDot $ sepBy1 parseExpBase $ token T_dot
+-}
 
   parsePrint :: PT LDecl
   parsePrint = withLoc $ do

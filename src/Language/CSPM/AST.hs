@@ -256,15 +256,15 @@ data Selector
 
 type LDecl = Labeled Decl
 data Decl
-  = PatBind LPattern LExp
-  | FunBind LIdent [FunCase]
-  | Assert LAssertDecl
-  | Transparent [LIdent]
+  = PatBind LPattern LExp -- x = x+1
+  | FunBind LIdent [FunCase] -- f(<>)  = <>
+  | Assert LAssertDecl -- assert P [T= Q
+  | Transparent [LIdent] -- transparent P
   | SubType LIdent [LConstructor]
-  | DataType LIdent [LConstructor]
-  | NameType LIdent LTypeDef
-  | Channel [LIdent] (Maybe LTypeDef)
-  | Print LExp
+  | DataType LIdent [LConstructor] -- datatype D = A | B.S.S | C.(S,S)
+  | NameType LIdent LTypeDef -- nametype S = {1..2}
+  | Channel [LIdent] (Maybe LTypeDef) -- channel x:D
+  | Print LExp -- print (x+1)
   deriving (Show, Eq, Ord, Typeable, Data, Generic)
 
 {-
@@ -280,10 +280,21 @@ data FunCase
   | FunCaseI [LPattern] LExp
   deriving (Eq, Ord, Show, Typeable, Data, Generic)
 
-type LTypeDef = Labeled TypeDef
-data TypeDef
+--type LTypeDef = Labeled TypeDef
+{-data TypeDef
   = TypeTuple [LExp]
   | TypeDot [LExp]
+  deriving ( Eq, Ord, Show,Typeable, Data, Generic)
+-}
+type LTypeDef = Labeled TypeDef
+data TypeDef
+  = TypeDot [LNATuples] -- a.(b,c).d.(e,f,g)
+  deriving ( Eq, Ord, Show,Typeable, Data, Generic)
+
+type LNATuples = Labeled NATuples
+data NATuples
+  = TypeTuple [LExp]
+  | SingleValue LExp
   deriving ( Eq, Ord, Show,Typeable, Data, Generic)
 
 type LConstructor = Labeled Constructor
@@ -349,6 +360,7 @@ data Const
   | F_card
   | F_empty
   | F_set
+  | F_seq
   | F_Set
   | F_Seq
   | F_null

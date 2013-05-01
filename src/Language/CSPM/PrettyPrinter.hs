@@ -1,10 +1,10 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Language.CSPM.PrettyPrinter
--- Copyright   :  (c) Ivaylo Dobrikov 2010
+-- Copyright   :  (c) Ivaylo Dobrikov 2010,2013
 -- License     :  BSD
 -- 
--- Maintainer  :  Ivaylo Dobrikov (me@dobrikov.biz)
+-- Maintainer  :  Ivaylo Dobrikov (dobrikov84@yahoo.com)
 -- Stability   :  experimental
 -- Portability :  GHC-only
 -- 
@@ -66,10 +66,10 @@ instance Pretty Decl where
       -> text "transparent" <+> (hsep $ punctuate comma (map (printIdent . unLabel) ids))
     SubType ident constrs
       ->     text "subtype" <+> printIdent (unLabel ident) <+> equals
-         <+> (vcat $ punctuate (text "|") (map printConstr (map unLabel constrs)))
+         <+> (vcat $ punctuate (text " |") (map printConstr (map unLabel constrs)))
     DataType ident constrs
       ->     text "datatype" <+> printIdent (unLabel ident) <+> equals 
-         <+> (hsep $ punctuate (text "|") (map printConstr (map unLabel constrs)))
+         <+> (hsep $ punctuate (text " |") (map printConstr (map unLabel constrs)))
     NameType ident typ
       -> text "nametype" <+> printIdent (unLabel ident) <+> equals <+> typeDef typ
     Channel ids t
@@ -88,13 +88,27 @@ printConstr :: Constructor -> Doc
 printConstr (Constructor ident typ) = printIdent (unLabel ident) <>
   case typ of 
    Nothing -> empty
-   Just t  -> dot <> typeDef  t
+   Just t  -> dot <> typeDef t
 
 -- Type Definitions
+{-
 typeDef :: LTypeDef -> Doc
 typeDef typ = case unLabel typ of
   TypeTuple e -> parens $ hcatPunctuate comma e
   TypeDot e -> hcatPunctuate dot e
+-}
+
+typeDef :: LTypeDef -> Doc
+typeDef typ = case unLabel typ of
+  TypeDot na_tuples -> typeDotArgs na_tuples
+
+typeDotArgs :: [LNATuples] -> Doc
+typeDotArgs na_tuples = hcat $ punctuate dot (map typeNATuples na_tuples)
+  where
+    typeNATuples :: LNATuples -> Doc
+    typeNATuples na_tuple = case unLabel na_tuple of
+       SingleValue e -> pPrint e
+       TypeTuple le  -> parens $ hcatPunctuate comma le
 
 instance Pretty Exp where
   pPrint expression = case expression of
@@ -338,6 +352,7 @@ instance Pretty Const where
     F_card   -> text "card"
     F_empty  -> text "empty"
     F_set    -> text "set"
+    F_seq    -> text "seq"
     F_Set    -> text "Set"
     F_Seq    -> text "Seq"
 -- Types

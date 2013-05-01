@@ -420,8 +420,22 @@ declRHS d = case unLabel d of
 
 rnTypeDef :: LTypeDef -> RM ()
 rnTypeDef t = case unLabel t of
+  TypeDot na_tuples -> rnDotArgs na_tuples
+
+rnDotArgs :: [LNATuples] -> RM ()
+rnDotArgs na_tuples = mapM_ rnNATuples na_tuples
+  where
+    rnNATuples :: LNATuples -> RM ()
+    rnNATuples na_tuple = case unLabel na_tuple of
+       SingleValue e -> rnExp e
+       TypeTuple le  -> rnExpList le
+
+{-
+rnTypeDef :: LTypeDef -> RM ()
+rnTypeDef t = case unLabel t of
   TypeTuple l -> rnExpList l
   TypeDot l -> rnExpList l
+-}
 
 applyRenaming ::
      ModuleFromParser

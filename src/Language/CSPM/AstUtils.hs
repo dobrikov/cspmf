@@ -19,6 +19,8 @@ module Language.CSPM.AstUtils
   ,computeFreeNames
   ,getModuleAsserts
   ,setNodeIdsZero
+  ,getLastBindExpression -- used for parsing a single expression
+  ,getLastDeclaration -- used for parsing a single declaration
   )
 where
 
@@ -112,6 +114,16 @@ getModuleAsserts = mapMaybe justAssert . moduleDecls
     justAssert decl = case unLabel decl of
       Assert  a -> Just a
       _ -> Nothing
+
+getLastBindExpression :: Module a -> LExp
+getLastBindExpression = justDeclExp . last . moduleDecls
+  where
+    justDeclExp decl = case unLabel decl of
+      (PatBind _ exp) -> exp
+      _ -> error "getLastBindExpression: expection PatBind"
+
+getLastDeclaration :: Module a -> LDecl
+getLastDeclaration = last . moduleDecls
 
 -- | Remove assert declarations from a module.
 removeModuleAsserts :: Module a -> Module a

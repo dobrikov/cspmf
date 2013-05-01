@@ -153,13 +153,13 @@ soakNewlines = worker
     consumeNLAfterToken
       = Set.fromList ( [T_openParen, T_openBrace, T_lt] ++ binaryOperators)
 
--- Helper function for determining the absolute path of an include file name.
--- getAbsoluteIncludeFileName makes it possible to include other CSP modules by 
--- giving the file path locally w.r.t. the current file path of the CSP module,
+-- | 'getAbsoluteIncludeFileName' determines the absolute path of an include file name.
+-- 'getAbsoluteIncludeFileName' makes it possible to include other CSP modules by 
+-- giving the file path locally w.r.t. the current file path of the CSP module 
 -- which includes the particular CSP modules.
 getAbsoluteIncludeFileName :: FilePath -> FilePath -> FilePath
-getAbsoluteIncludeFileName srcFileName inclFileName = 
-   case isAbsolute inclFileName of 
+getAbsoluteIncludeFileName srcFileName inclFileName
+   = case isAbsolute inclFileName of 
 	True  -> inclFileName 
 	False -> joinPath $ (
 		take ((length srcDirSequence)-(countBackDirs fileDirSequence)) srcDirSequence 

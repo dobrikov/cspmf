@@ -18,6 +18,7 @@ module Language.CSPM.Frontend
 
   -- Language.CSPM.Utils
   ,parseFile
+  ,parseString
   ,benchmarkFrontend
   ,eitherToExc
   ,handleLexError
@@ -54,6 +55,8 @@ module Language.CSPM.Frontend
   ,unUniqueIdent
   ,computeFreeNames
   ,setNodeIdsZero
+  ,getLastBindExpression
+  ,getLastDeclaration
 -- Versions
   ,frontendVersion
 )
@@ -68,13 +71,13 @@ import Language.CSPM.AST
 import Language.CSPM.SrcLoc (SrcLoc(..))
 import Language.CSPM.AstUtils 
   (removeSourceLocations,removeParens ,unUniqueIdent
- , computeFreeNames, setNodeIdsZero)
+ , computeFreeNames, setNodeIdsZero, getLastBindExpression, getLastDeclaration)
 import qualified Language.CSPM.LexHelper as Lexer
   (lexInclude, lexPlain, removeIgnoredToken)
 import Language.CSPM.PrettyPrinter ()
 import Language.CSPM.Utils
   (eitherToExc, handleLexError, handleParseError, handleRenameError
-  ,parseFile, benchmarkFrontend)
+  ,parseFile, parseString, benchmarkFrontend)
 import Paths_CSPM_Frontend (version)
 import Data.Version (Version)
 

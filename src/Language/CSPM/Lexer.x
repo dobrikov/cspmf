@@ -84,6 +84,7 @@ csp :-
 <0> "card"    { mkL T_card }
 <0> "empty"    { mkL T_empty }
 <0> "set"    { mkL T_set }
+<0> "seq"    { mkL T_seq }
 <0> "Set"    { mkL T_Set }
 <0> "Seq"    { mkL T_Seq }
 <0> "null"    { mkL T_null }

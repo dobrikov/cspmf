@@ -63,6 +63,7 @@ data PrimToken
   | T_card
   | T_empty
   | T_set
+  | T_seq
   | T_Set
   | T_Seq
   | T_null

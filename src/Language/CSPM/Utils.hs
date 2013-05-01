@@ -22,6 +22,7 @@ import Language.CSPM.Parser (ParseError(..), parse)
 import Language.CSPM.Rename (RenameError(..), renameModule, ModuleFromRenaming)
 import Language.CSPM.Token (LexError(..))
 import Language.CSPM.AST (ModuleFromParser)
+import Language.CSPM.PrettyPrinter(pPrint)
 import qualified Language.CSPM.LexHelper as Lexer (lexInclude)
 
 import Control.Exception as Exception
@@ -58,6 +59,12 @@ parseNamedString :: FilePath -> String -> IO ModuleFromParser
 parseNamedString name str = do
   tokenList <- Lexer.lexInclude name str >>= eitherToExc
   eitherToExc $ parse name tokenList
+
+-- | Test function that parses a string and then pretty prints the produced AST
+parseAndPrettyPrint :: String -> IO String
+parseAndPrettyPrint str = do
+  ast <- parseString str
+  return $ show $ pPrint ast
 
 -- | Lex and parse File.
 -- | Return the module and print some timing infos
