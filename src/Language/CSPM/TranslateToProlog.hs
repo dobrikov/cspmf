@@ -30,6 +30,7 @@ import Language.CSPM.AstToProlog (toProlog)
 import Language.Prolog.PrettyPrint.Direct
 import Paths_CSPM_ToProlog (version)
 import Data.Version (Version,showVersion)
+import Data.Maybe
 
 import Control.Exception
 import System.Exit
@@ -44,7 +45,7 @@ toPrologVersion = version
 -- | 'translateExpToPrologTerm' translates a string expression
 -- to a prolog term in regard to the given CSP-M specification.
 translateExpToPrologTerm ::
-     FilePath
+     Maybe FilePath
   -> String
   -> IO String
 translateExpToPrologTerm file exp = do
@@ -56,7 +57,7 @@ translateExpToPrologTerm file exp = do
 -- | 'translateDeclToPrologTerm' translates a string declaration
 -- to a prolog term in regard to the given CSP-M specification.
 translateDeclToPrologTerm ::
-     FilePath
+     Maybe FilePath
   -> String
   -> IO String
 translateDeclToPrologTerm file decl = do
@@ -74,9 +75,9 @@ handleTranslationResult r =
       hPutStrLn stderr $ show err
       exitFailure   
 
-mainWorkSinglePlTerm :: (ModuleFromRenaming -> Doc) -> FilePath -> String -> IO String
+mainWorkSinglePlTerm :: (ModuleFromRenaming -> Doc) -> Maybe FilePath -> String -> IO String
 mainWorkSinglePlTerm termFun file decl = do
-  specSrc <- readFile file
+  specSrc <- if isJust file then readFile (fromJust file) else return ""
   let src = specSrc ++ "\n--patch entrypoint\n"++decl ++"\n"
   ast <- Frontend.parseString src
   (astNew, _) <- eitherToExc $ renameModule ast
