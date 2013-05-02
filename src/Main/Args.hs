@@ -46,8 +46,8 @@ data Args =
     ,addUnicode    :: Maybe FilePath
     ,removeUnicode :: Maybe FilePath
     ,prologOut     :: Maybe FilePath
-    ,expressionPrologOut  :: Maybe String
-    ,declarationPrologOut :: Maybe String
+    ,expressionToPrologTerm  :: Maybe String
+    ,declarationToPrologTerm :: Maybe String
     }
    deriving (Data,Typeable,Show,Eq)
 
@@ -86,12 +86,12 @@ translateMode = Translate {
      &= help "translate a CSP-M file to Prolog"
      &= typFile
      &= explicit &= name "prologOut"
-  ,expressionPrologOut = def
+  ,expressionToPrologTerm = def
      &= help "translate a single CSP-M expression to Prolog"
      &= typ "STRING"
-     &= explicit &= name "expressionPrologOut"
-  ,declarationPrologOut = def
-     &= help "translate a single CSP-M expression to Prolog"
+     &= explicit &= name "expressionToPrologTerm"
+  ,declarationToPrologTerm = def
+     &= help "translate a single CSP-M declaration to Prolog"
      &= typ "STRING"
-     &= explicit &= name "declarationPrologOut"
+     &= explicit &= name "declarationToPrologTerm"
   } &= details ["Parse a specification and write the parse result to a file."]

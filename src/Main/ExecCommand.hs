@@ -69,7 +69,7 @@ execCommand Info {..} = do
 
 execCommand Translate {..} = do
   when (null $ catMaybes
-     [prologOut, xmlOut, prettyOut, addUnicode, removeUnicode, expressionPrologOut, declarationPrologOut]) $ do
+     [prologOut, xmlOut, prettyOut, addUnicode, removeUnicode, expressionToPrologTerm, declarationToPrologTerm]) $ do
     putStrLn "No output option is set"
     putStrLn "Set '--xmlOut', '--prettyOut' or an other output option"
   when (isJust xmlOut || isJust prettyOut) $ do
@@ -96,11 +96,14 @@ execCommand Translate {..} = do
   whenJust prologOut $ \outFile -> do
       translateToProlog src outFile -- translateToProlog does not return !
       error "unreachable"
-  whenJust expressionPrologOut $ \str -> do
-      prologTerm <- translateExpToPrologTerm src str
+    -- Incremental parser features
+  whenJust expressionToPrologTerm $ \str -> do
+      let srcFile = if src == "no-file" then Nothing else Just src
+      prologTerm <- translateExpToPrologTerm srcFile str
       putStrLn prologTerm
-  whenJust declarationPrologOut $ \str -> do
-      prologTerm <- translateDeclToPrologTerm src str
+  whenJust declarationToPrologTerm $ \str -> do
+      let srcFile = if src == "no-file" then Nothing else Just src
+      prologTerm <- translateDeclToPrologTerm srcFile str
       putStrLn prologTerm
   where
     whenJust a action = case a of
