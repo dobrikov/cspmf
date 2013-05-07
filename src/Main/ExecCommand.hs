@@ -22,19 +22,14 @@ import Language.CSPM.Frontend
   (parseFile, frontendVersion
   ,eitherToExc, renameModule, castModule, lexInclude)
 import Language.CSPM.LexHelper (unicodeTokenString,asciiTokenString)
-import Language.CSPM.PrettyPrinter (pPrint)
+--import Language.CSPM.PrettyPrinter (pPrint)
 
 import Language.CSPM.TranslateToProlog
   (translateToProlog,toPrologVersion
   ,translateExpToPrologTerm,translateDeclToPrologTerm)
 import Language.CSPM.AstToXML (moduleToXML, showTopElement)
 
-import System.Console.CmdArgs (isLoud) -- todo: fix this
-
 import Text.PrettyPrint.HughesPJClass
-import qualified System.Timeout as Timeout
-import Control.Exception (evaluate)
-import System.Exit (exitSuccess)
 import System.IO
 import Data.Version (showVersion)
 import Control.Monad
@@ -99,12 +94,10 @@ execCommand Translate {..} = do
     -- Incremental parser features
   whenJust expressionToPrologTerm $ \str -> do
       let srcFile = if src == "no-file" then Nothing else Just src
-      prologTerm <- translateExpToPrologTerm srcFile str
-      putStrLn prologTerm
+      translateExpToPrologTerm srcFile str
   whenJust declarationToPrologTerm $ \str -> do
       let srcFile = if src == "no-file" then Nothing else Just src
-      prologTerm <- translateDeclToPrologTerm srcFile str
-      putStrLn prologTerm
+      translateDeclToPrologTerm srcFile str
   where
     whenJust a action = case a of
       Just v -> action v
