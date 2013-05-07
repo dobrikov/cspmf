@@ -47,19 +47,19 @@ toPrologVersion = version
 translateExpToPrologTerm ::
      Maybe FilePath
   -> String
-  -> IO String
-translateExpToPrologTerm file exp = do
-  (r :: Either SomeException String) <- try $ mainWorkSinglePlTerm getExpPlCode file ("x__entrypoint_expression = " ++ exp)
+  -> IO ()
+translateExpToPrologTerm file expr = do
+  (r :: Either SomeException String) <- try $ mainWorkSinglePlTerm getExpPlCode file ("x__entrypoint_expression = " ++ expr)
   handleTranslationResult r
    where
     getExpPlCode :: Module a -> Doc
-    getExpPlCode = unTerm .te . Frontend.getLastBindExpression
+    getExpPlCode = unTerm . te . Frontend.getLastBindExpression
 -- | 'translateDeclToPrologTerm' translates a string declaration
 -- to a prolog term in regard to the given CSP-M specification.
 translateDeclToPrologTerm ::
      Maybe FilePath
   -> String
-  -> IO String
+  -> IO ()
 translateDeclToPrologTerm file decl = do
   (r :: Either SomeException String) <- try $ mainWorkSinglePlTerm getDeclPlCode file decl
   handleTranslationResult r
@@ -67,10 +67,10 @@ translateDeclToPrologTerm file decl = do
     getDeclPlCode :: Module a -> Doc
     getDeclPlCode = unTerm . head . td . Frontend.getLastDeclaration
 
-handleTranslationResult :: Either SomeException String -> IO String
+handleTranslationResult :: Either SomeException String -> IO ()
 handleTranslationResult r =
   case r of
-    Right res -> return $ res
+    Right res -> putStr res >> exitSuccess
     Left err -> do
       hPutStrLn stderr $ show err
       exitFailure   
