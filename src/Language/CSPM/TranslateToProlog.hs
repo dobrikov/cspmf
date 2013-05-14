@@ -53,7 +53,7 @@ translateExpToPrologTerm file expr = do
   handleTranslationResult r
    where
     getExpPlCode :: Module a -> Doc
-    getExpPlCode = unTerm . te . Frontend.getLastBindExpression
+    getExpPlCode = addFullStopToPrologTerm . unTerm . te . Frontend.getLastBindExpression
 -- | 'translateDeclToPrologTerm' translates a string declaration
 -- to a prolog term in regard to the given CSP-M specification.
 translateDeclToPrologTerm ::
@@ -65,7 +65,10 @@ translateDeclToPrologTerm file decl = do
   handleTranslationResult r
    where
     getDeclPlCode :: Module a -> Doc
-    getDeclPlCode = unTerm . head . td . Frontend.getLastDeclaration
+    getDeclPlCode = addFullStopToPrologTerm . unTerm . head . td . Frontend.getLastDeclaration
+	
+addFullStopToPrologTerm :: Doc -> Doc
+addFullStopToPrologTerm plTerm = plTerm <> (text ".")
 
 handleTranslationResult :: Either SomeException String -> IO ()
 handleTranslationResult r =
