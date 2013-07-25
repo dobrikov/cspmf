@@ -145,9 +145,9 @@ te expr = case unLabel expr of
     -> nTerm "repInterleave" [comprehension $ unLabel gen, te proc, plLoc gen]
   ProcRepExternalChoice gen proc -> nTerm "repChoice" [comprehension $ unLabel gen, te proc, plLoc gen]
   ProcRepAParallel gen alph proc
-    -> nTerm "procRepAPrallel" [comprehension $ unLabel gen, nTerm "pair" [te alph, te proc] ,plLoc gen]
+    -> nTerm "procRepAParallel" [comprehension $ unLabel gen, nTerm "pair" [te alph, te proc] ,plLoc gen]
   ProcRepLinkParallel gen links proc
-    -> nTerm "procRepLinkPrallel" [linkList links, comprehension $ unLabel gen, te proc, plLoc gen]
+    -> nTerm "procRepLinkParallel" [linkList links, comprehension $ unLabel gen, te proc, plLoc gen]
   ProcRepSharing gen share proc
     -> nTerm "procRepSharing" [te share, comprehension $ unLabel gen, te proc, plLoc gen]
   PrefixExp ch fields proc -> nTerm "prefix" [plLoc ch, mkCommFields fields, te ch, te proc,prefixLoc ]
