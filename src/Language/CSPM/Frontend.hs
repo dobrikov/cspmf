@@ -19,6 +19,7 @@ module Language.CSPM.Frontend
   -- Language.CSPM.Utils
   ,parseFile
   ,parseString
+  ,parseNamedString
   ,benchmarkFrontend
   ,eitherToExc
   ,handleLexError
@@ -77,7 +78,7 @@ import qualified Language.CSPM.LexHelper as Lexer
 import Language.CSPM.PrettyPrinter ()
 import Language.CSPM.Utils
   (eitherToExc, handleLexError, handleParseError, handleRenameError
-  ,parseFile, parseString, benchmarkFrontend)
+  ,parseFile, parseString, parseNamedString, benchmarkFrontend)
 import Paths_CSPM_Frontend (version)
 import Data.Version (Version)
 

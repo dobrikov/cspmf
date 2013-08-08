@@ -1050,7 +1050,7 @@ parsePrefixExp = do
 
 {-
 this is not what fdr really does
-fdr parese ch?x.y:a as ch?((x.y):a)
+fdr parse ch?x.y:a as ch?((x.y):a)
 -}
 parseCommField :: PT LCommField
 parseCommField = inComm <|> outComm <?> "communication field"

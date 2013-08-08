@@ -15,7 +15,7 @@ module Language.CSPM.Utils
  ,handleLexError
  ,handleParseError
  ,handleRenameError
- ,parseFile, benchmarkFrontend, parseString)
+ ,parseFile, benchmarkFrontend, parseString, parseNamedString)
 where
 
 import Language.CSPM.Parser (ParseError(..), parse)
