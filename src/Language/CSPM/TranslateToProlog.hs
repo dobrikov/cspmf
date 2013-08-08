@@ -79,10 +79,10 @@ handleTranslationResult r =
       exitFailure   
 
 mainWorkSinglePlTerm :: (ModuleFromRenaming -> Doc) -> Maybe FilePath -> String -> IO String
-mainWorkSinglePlTerm termFun file decl = do
-  specSrc <- if isJust file then readFile (fromJust file) else return ""
+mainWorkSinglePlTerm termFun filePath decl = do
+  (specSrc,fileName) <- if isJust filePath then readFile (fromJust filePath) >>= \s -> return (s,fromJust filePath) else return ("","no-file-name")
   let src = specSrc ++ "\n--patch entrypoint\n"++decl ++"\n"
-  ast <- Frontend.parseString src
+  ast <- Frontend.parseNamedString fileName src
   (astNew, _) <- eitherToExc $ renameModule ast
   let plTerm = termFun astNew
   output <- evaluate $ show plTerm
