@@ -100,7 +100,9 @@ translateToProlog inFile outFile = do
           $ handleLexError lexErrorHandler
              $ handleParseError parseErrorHandler
                $ handleRenameError renameErrorHandler $ mainWork inFile
+  -- putStrLn "Parsing Done!"
   (r :: Either SomeException ()) <- try $ writeFile outFile res
+  -- putStrLn "Writing File Done!"
   case r of
     Right () -> exitSuccess
     Left err -> do
@@ -145,7 +147,7 @@ mainWork fileName = do
       moduleFact  = toProlog astNew
   output <- evaluate $ show $ vcat [ 
       mkResult "ok" "" 0 0 0
-     ,moduleFact
+     -- ,moduleFact -- writing original ast to .pl file
      ,plCode
      ,symbolTable
      ]
