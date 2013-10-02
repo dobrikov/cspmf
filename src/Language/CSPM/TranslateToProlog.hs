@@ -144,7 +144,7 @@ mainWork fileName = do
   let
       plCode = cspToProlog astNew
       symbolTable = mkSymbolTable $ identDefinition renaming
-      moduleFact  = toProlog astNew
+      -- moduleFact  = toProlog astNew
   output <- evaluate $ show $ vcat [ 
       mkResult "ok" "" 0 0 0
      -- ,moduleFact -- writing original ast to .pl file
