@@ -28,7 +28,7 @@ Executable cspmf
     ,CSPM-ToProlog >= 0.5 && < 0.6
     ,cmdargs >= 0.9 && < 0.10
     ,xml >= 1.3 && < 1.4
-    ,containers >= 0.4 && < 0.5
+    ,containers >= 0.5 && < 0.6
     ,parallel >= 3.2 && < 3.3
     ,base >= 4.0 && < 5.0
     ,pretty >= 1.1 && < 1.2
@@ -58,7 +58,7 @@ Library
     ,CSPM-ToProlog >= 0.5 && < 0.6
     ,cmdargs >= 0.9 && < 0.10
     ,xml >= 1.3 && < 1.4
-    ,containers >= 0.4 && < 0.5
+    ,containers >= 0.5 && < 0.6
     ,base >= 4.0 && < 5.0
     ,pretty >= 1.1 && < 1.2
     ,parallel >= 3.2 && < 3.3
