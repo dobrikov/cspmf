@@ -249,8 +249,10 @@ td decl = case unLabel decl of
              ,te e
              ,plLoc e]
     mkFunBind _ (FunCaseI {}) = error "unexpected case in mkFunBind: FunCaseI"
+    
     mkConstructorList :: [LConstructor] -> Term
     mkConstructorList l = pList $ map mkConstructor l
+    
     mkConstructor :: LConstructor -> Term
     mkConstructor c = case unLabel c of
       Constructor i Nothing  -> nTerm "constructor" [plNameTerm i]
