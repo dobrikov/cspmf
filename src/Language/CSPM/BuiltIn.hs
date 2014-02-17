@@ -45,6 +45,11 @@ everything else in FDR is "built-in" but not syntax.
 -- | Todo: add more BuiltIns here are migrate the AST.
 builtIns :: [String]
 builtIns = [
-   "Proc"
-  ,"seq"
+  -- "Proc"
+  --,"seq"
   ]
+
+-- identifiers that should be ignored while checking for renamings  
+builtInsRename :: [String]
+builtInsRename = [ "union", "inter", "diff", "Union", "Inter", "member", "card", "empty", "set", 
+                   "head", "tail", "concat", "null", "elem", "length", "Set", "Seq", "seq" ]

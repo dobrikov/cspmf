@@ -75,24 +75,24 @@ csp :-
 <0> "Bool"    { mkL T_Bool }
 <0> "Events"    { mkL T_Events }
 <0> "CHAOS"    { mkL T_CHAOS }
-<0> "union"    { mkL T_union }
-<0> "inter"    { mkL T_inter }
-<0> "diff"    { mkL T_diff }
-<0> "Union"    { mkL T_Union }
-<0> "Inter"    { mkL T_Inter }
-<0> "member"    { mkL T_member }
-<0> "card"    { mkL T_card }
-<0> "empty"    { mkL T_empty }
-<0> "set"    { mkL T_set }
-<0> "seq"    { mkL T_seq }
-<0> "Set"    { mkL T_Set }
-<0> "Seq"    { mkL T_Seq }
-<0> "null"    { mkL T_null }
-<0> "head"    { mkL T_head }
-<0> "tail"    { mkL T_tail }
-<0> "concat"    { mkL T_concat }
-<0> "elem"    { mkL T_elem }
-<0> "length"    { mkL T_length }
+-- <0> "union"    { mkL T_union }
+-- <0> "inter"    { mkL T_inter }
+-- <0> "diff"    { mkL T_diff }
+-- <0> "Union"    { mkL T_Union }
+-- <0> "Inter"    { mkL T_Inter }
+-- <0> "member"    { mkL T_member }
+-- <0> "card"    { mkL T_card }
+-- <0> "empty"    { mkL T_empty }
+-- <0> "set"    { mkL T_set }
+-- <0> "seq"    { mkL T_seq }
+-- <0> "Set"    { mkL T_Set }
+-- <0> "Seq"    { mkL T_Seq }
+-- <0> "null"    { mkL T_null }
+-- <0> "head"    { mkL T_head }
+-- <0> "tail"    { mkL T_tail }
+-- <0> "concat"    { mkL T_concat }
+-- <0> "elem"    { mkL T_elem }
+-- <0> "length"    { mkL T_length }
 
 -- assetion Lists refinement operators
 <0> "[=" { mkL T_Refine }
@@ -170,8 +170,8 @@ csp :-
 <0> \8805   { mkL T_ge             }   -- ">="    ≥
 <0> \8849   { mkL T_Refine         }   -- "[="    ⊑
 <0> \8851   { mkL T_sqcap          }   -- "|~|"   ⊓
-<0> \8898   { mkL T_Inter          }   -- "Inter  ⋂
-<0> \8899   { mkL T_Union          }   -- "Union  ⋃
+-- <0> \8898   { mkL T_Inter          }   -- "Inter  ⋂
+-- <0> \8899   { mkL T_Union          }   -- "Union  ⋃
 <0> \9651   { mkL T_triangle       }   -- "/\\"   △
 <0> \9655   { mkL T_rhd            }   -- "[>"    ▷
 <0> \9656   { mkL T_exp            }   -- "|>"    ▸

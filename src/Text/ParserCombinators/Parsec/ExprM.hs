@@ -21,7 +21,7 @@ module Text.ParserCombinators.Parsec.ExprM
 
 import Text.ParserCombinators.Parsec.Prim
 import Text.ParserCombinators.Parsec.Combinator
-
+import Data.List (foldl')
 
 -----------------------------------------------------------
 -- Assoc and OperatorTable

@@ -351,24 +351,24 @@ data Const
   | F_not
   | F_and
   | F_or
-  | F_union
-  | F_inter
-  | F_diff
-  | F_Union
-  | F_Inter
-  | F_member
-  | F_card
-  | F_empty
-  | F_set
-  | F_seq
-  | F_Set
-  | F_Seq
-  | F_null
-  | F_head
-  | F_tail
-  | F_concat -- fix this: Confusing F_Concat.
-  | F_elem
-  | F_length
+  -- | F_union
+  -- | F_inter
+  -- | F_diff
+  -- | F_Union
+  -- | F_Inter
+  -- | F_member
+  -- | F_card
+  -- | F_empty
+  -- | F_set
+  -- | F_seq
+  -- | F_Set
+  -- | F_Seq
+  -- | F_null
+  -- | F_head
+  -- | F_tail
+  -- | F_concat -- fix this: Confusing F_Concat.
+  -- | F_elem
+  -- | F_length
   | F_STOP
   | F_SKIP
   | F_Events

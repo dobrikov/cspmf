@@ -222,12 +222,36 @@ useIdent :: LIdent -> RM ()
 useIdent lIdent = do
   vis <- lookupVisible lIdent
   case vis of
-    Nothing -> throwError $ RenameError {
-       renameErrorMsg = "Unbound Identifier :" ++ getOrigName lIdent
-       ,renameErrorLoc = srcLoc lIdent }
+    Nothing -> case elem (getOrigName lIdent) builtInsRename of
+                 True ->  addBuiltInBinding lIdent
+                 False -> throwError $ RenameError {
+                      renameErrorMsg = "Unbound Identifier :" ++ getOrigName lIdent
+                     ,renameErrorLoc = srcLoc lIdent }
     Just defIdent -> modify $ \s -> s
          { identUse =  IntMap.insert 
              (unNodeId $ nodeId lIdent) defIdent $ identUse s }
+
+addBuiltInBinding :: LIdent -> RM ()
+addBuiltInBinding lIdent = do
+    let origName = unIdent $ unLabel lIdent
+        nodeID = nodeId lIdent
+    plMode <- gets prologMode
+    bType  <- gets bindType
+    let uIdent = UniqueIdent {
+                     uniqueIdentId = -1
+                     ,bindingSide = nodeID
+                     ,bindingLoc  = srcLoc lIdent
+                     ,idType = BuiltInID
+                     ,realName = origName
+                     ,newName = origName
+                     ,AST.prologMode = plMode
+                     ,AST.bindType   = bType  }
+    modify $ \s -> s 
+        { localBindings = Map.insert origName uIdent $ localBindings s
+                         , visible       = Map.insert origName uIdent $ visible s
+                         , identDefinition = IntMap.insert
+                              (unNodeId nodeID) uIdent $ identDefinition s }
+
 {-
 rn just walks through the AST, without modifing it.
 The actual renamings are stored in a sepearte AstAnnotation inside the RM-Monad

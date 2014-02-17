@@ -208,24 +208,24 @@ anyBuiltIn :: PT Const
 anyBuiltIn = do
   tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
   case tok of
-    T_union  -> return F_union
-    T_inter  -> return F_inter
-    T_diff   -> return F_diff
-    T_Union  -> return F_Union
-    T_Inter  -> return F_Inter
-    T_member -> return F_member
-    T_card   -> return F_card
-    T_empty  -> return F_empty
-    T_set    -> return F_set
-    T_seq    -> return F_seq
-    T_Set    -> return F_Set
-    T_Seq    -> return F_Seq
-    T_null   -> return F_null
-    T_head   -> return F_head
-    T_tail   -> return F_tail
-    T_concat -> return F_concat
-    T_elem   -> return F_elem
-    T_length -> return F_length
+    -- T_union  -> return F_union
+    -- T_inter  -> return F_inter
+    -- T_diff   -> return F_diff
+    -- T_Union  -> return F_Union
+    -- T_Inter  -> return F_Inter
+    -- T_member -> return F_member
+    -- T_card   -> return F_card
+    -- T_empty  -> return F_empty
+    -- T_set    -> return F_set
+    -- T_seq    -> return F_seq
+    -- T_Set    -> return F_Set
+    -- T_Seq    -> return F_Seq
+    -- T_null   -> return F_null
+    -- T_head   -> return F_head
+    -- T_tail   -> return F_tail
+    -- T_concat -> return F_concat
+    -- T_elem   -> return F_elem
+    -- T_length -> return F_length
     T_CHAOS  -> return F_CHAOS
     _        -> fail "not a built-in function"
 
@@ -244,7 +244,7 @@ lIdent =
       _ -> Nothing
 
 ident :: PT LIdent
-ident   = withLoc (lIdent >>= return . Ident)
+ident = withLoc (lIdent >>= return . Ident)
 
 varExp :: PT LExp
 varExp= withLoc (ident >>= return . Var)
@@ -365,7 +365,7 @@ letExp = withLoc $ do
   declList <- sepByNewLine (funBind <|> patBind)
   token T_within
   exp <- parseExp
-  return $ Let declList exp            
+  return $ Let declList exp
 
 ifteExp :: PT LExp
 ifteExp = withLoc $ do
@@ -689,7 +689,7 @@ proc_op_lparallel = try $ do
 procRenaming :: PT (LExp -> PT LExp)
 procRenaming = do
   rens <- many1 procOneRenaming
-  return $ (\x -> foldl (>>=) (return x) rens)
+  return $ (\x -> foldl' (>>=) (return x) rens)
 
 procOneRenaming :: PT (LExp -> PT LExp )
 procOneRenaming = try $ do
@@ -782,7 +782,7 @@ patBind :: PT LDecl
 patBind = withLoc $ do
   pat <- parsePattern
   token_is
-  exp <-parseExp
+  exp <- parseExp
   return $ PatBind pat exp
 
 -- parse a single function-case

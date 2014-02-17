@@ -54,24 +54,24 @@ data PrimToken
   | T_not
   | T_and
   | T_or
-  | T_union
-  | T_inter
-  | T_diff
-  | T_Union
-  | T_Inter
-  | T_member
-  | T_card
-  | T_empty
-  | T_set
-  | T_seq
-  | T_Set
-  | T_Seq
-  | T_null
-  | T_head
-  | T_tail
-  | T_concat
-  | T_elem
-  | T_length
+  -- | T_union
+  -- | T_inter
+  -- | T_diff
+  -- | T_Union
+  -- | T_Inter
+  -- | T_member
+  -- | T_card
+  -- | T_empty
+  -- | T_set
+  -- | T_seq
+  -- | T_Set
+  -- | T_Seq
+  -- | T_null
+  -- | T_head
+  -- | T_tail
+  -- | T_concat
+  -- | T_elem
+  -- | T_length
   | T_STOP
   | T_SKIP
   | T_Events
