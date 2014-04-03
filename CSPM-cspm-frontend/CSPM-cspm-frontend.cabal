@@ -1,0 +1,82 @@
+Name:                CSPM-cspm-frontend
+Version:             0.0.0.4
+
+Synopsis:            cspmf command line tool for parsing CSPM specifications.
+Description:
+  cspmf is a small command line tool for parsing CSPM specifications.
+  It supports serveral modes of parsing.
+  For example as:
+  .
+  * 'cspmf --help'      -> print a help message.
+  .
+  * 'cspmf translate spec.csp --prologOut=destination'  -> parse spec and translate the AST to a prolog file (case used by the ProB-Tool).
+  .
+
+License:             BSD3
+category:            Language,Formal Methods,Concurrency
+License-File:        LICENSE
+Authors:             Marc Fontaine, Ivaylo Dobrikov
+Maintainer:          Ivaylo Dobrikov <dobrikov@cs.uni-duesseldorf.de>
+cabal-Version:       >= 1.10
+build-type:          Simple
+Tested-With:         GHC == 7.4.2
+Stability:           experimental
+
+Executable cspmf
+  Build-Depends:
+    CSPM-Frontend >= 0.10 && < 0.11
+    ,CSPM-ToProlog >= 0.6
+    ,cmdargs >= 0.9 && < 0.10
+    ,xml >= 1.3 && < 1.4
+    ,containers >= 0.4 && < 0.6
+    ,parallel >= 3.2 && < 3.3
+    ,base >= 4.0 && < 5.0
+    ,pretty >= 1.1 && < 1.2
+    ,transformers >= 0.3 && < 0.4
+    ,syb >= 0.3 && <0.4
+    ,prettyclass >= 1.0 && < 1.1
+
+  GHC-Options:
+    -threaded -funbox-strict-fields -O2 -Wall -fno-warn-orphans
+    -rtsopts
+  Default-Language: Haskell2010
+  Other-Extensions:
+    DeriveDataTypeable, StandaloneDeriving, TypeSynonymInstances, RecordWildCards
+  Hs-Source-Dirs:      src
+  Main-is:             Main.hs
+
+  Other-modules:
+    Main.Args
+    Main.ExceptionHandler
+    Main.ExecCommand
+    Language.CSPM.AstToXML
+    Paths_CSPM_cspm_frontend
+
+Library
+  Build-Depends:
+    CSPM-Frontend >= 0.10 && < 0.11
+    ,CSPM-ToProlog >= 0.6
+    ,cmdargs >= 0.9 && < 0.10
+    ,xml >= 1.3 && < 1.4
+    ,containers >= 0.4 && < 0.6
+    ,base >= 4.0 && < 5.0
+    ,pretty >= 1.1 && < 1.2
+    ,parallel >= 3.2 && < 3.3
+    ,transformers >= 0.3 && < 0.4
+    ,syb >= 0.3 && <0.4
+    ,prettyclass >= 1.0 && < 1.1
+  GHC-Options:
+    -funbox-strict-fields -O2 -Wall -fno-warn-orphans
+  Default-Language: Haskell2010
+  Other-Extensions:
+    DeriveDataTypeable, StandaloneDeriving, TypeSynonymInstances, RecordWildCards
+  Hs-Source-Dirs:      src
+
+  Exposed-Modules:
+    Main.Args
+    Main.ExceptionHandler
+    Main.ExecCommand
+    Language.CSPM.AstToXML
+
+  Other-modules:
+    Paths_CSPM_cspm_frontend
