@@ -1,3 +1,0 @@
--- test for Lambda-expressions
-
-f2 = \ x,y,z @ x+y+z
