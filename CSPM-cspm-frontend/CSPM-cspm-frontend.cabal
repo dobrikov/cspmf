@@ -15,7 +15,7 @@ Description:
 License:             BSD3
 category:            Language,Formal Methods,Concurrency
 License-File:        LICENSE
-Authors:             Marc Fontaine, Ivaylo Dobrikov
+Author:              Marc Fontaine, Ivaylo Dobrikov
 Maintainer:          Ivaylo Dobrikov <dobrikov@cs.uni-duesseldorf.de>
 cabal-Version:       >= 1.10
 build-type:          Simple
