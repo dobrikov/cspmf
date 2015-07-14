@@ -18,7 +18,7 @@ Build-Type:     Simple
 Library
   Default-Language: Haskell2010
   Build-Depends:
-    CSPM-Frontend >= 0.10 && < 0.11
+    CSPM-Frontend >= 0.10.1 && < 0.11
     ,pretty >= 1.1 && < 1.2
     ,base >= 4.0 && <5.0
     ,containers >= 0.4 && <0.6
