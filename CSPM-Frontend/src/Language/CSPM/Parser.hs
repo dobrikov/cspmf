@@ -21,6 +21,7 @@ module Language.CSPM.Parser
  ,parseExp
  ,parsePattern
  ,topDeclList
+ ,parseExp_noProc
 )
 where
 import Language.CSPM.AST

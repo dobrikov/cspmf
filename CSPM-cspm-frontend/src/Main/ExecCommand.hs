@@ -57,8 +57,8 @@ execCommand Info {..} = do
     ,"  cspmf --help",nl
     ,"  cspmf info",nl
     ,nl
-    ,"Copyright (c) Marc Fontaine, Ivaylo Dobrikov 2007-2013",nl
-    ,"Email : Marc.Fontaine@gmx.de, dobrikov84@yahoo.com",nl
+    ,"Copyright (c) Marc Fontaine, Ivaylo Dobrikov 2007-2015",nl
+    ,"Email : Marc.Fontaine@gmx.de, ivaylo.dobrikov@googlemail.com",nl
     ]
   where nl = "\n"
 
