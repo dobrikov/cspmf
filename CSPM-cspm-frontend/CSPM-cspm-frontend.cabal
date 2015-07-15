@@ -17,14 +17,14 @@ category:            Language,Formal Methods,Concurrency
 License-File:        LICENSE
 Author:              Marc Fontaine, Ivaylo Dobrikov
 Maintainer:          Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com>
-cabal-Version:       >= 1.22
+cabal-Version:       >= 1.14
 build-type:          Simple
 Tested-With:         GHC == 7.8.3
 Stability:           experimental
 
 Executable cspmf
   Build-Depends:
-    CSPM-Frontend >= 0.10 && < 0.11
+     CSPM-Frontend >= 0.10 && < 0.11
     ,CSPM-ToProlog >= 0.6 && < 0.7
     ,cmdargs >= 0.9 && < 0.11
     ,xml >= 1.3 && < 1.4
