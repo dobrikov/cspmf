@@ -11,7 +11,7 @@ category:            Formal Methods
 License-File:        LICENSE
 Author:              2006-2015 Marc Fontaine
 Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>, Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com>
-Cabal-Version:  >= 1.22
+Cabal-Version:  >= 1.14
 Tested-With:    GHC==7.8.3
 Build-Type:     Simple
 
