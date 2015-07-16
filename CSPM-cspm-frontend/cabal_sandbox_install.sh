@@ -2,7 +2,7 @@
 # cabal sandbox delete                       # Built-in command
 rm -rf .cabal-sandbox cabal.sandbox.config # uninstalling sandbox
 
-# initialise sandboc
+# initialise sandbox
 cabal sandbox init
 
 #add sources to local repository
