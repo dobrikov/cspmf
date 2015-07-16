@@ -11,8 +11,8 @@ ForceInstallHashable() {
 		if [ -n "$version" ]
 		then
 			#statements
-			echo "force reinstalling hashable"
-			cabal install --reinstall --force-reinstall hashable profunctors
+			echo "force re-installing hashable"
+			cabal install --reinstall --force-reinstall hashable profunctors CSPM-Frontend CSPM-ToProlog
 		fi
 	fi
 }
