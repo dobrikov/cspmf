@@ -895,10 +895,35 @@ topDeclList = sepByNewLine topDecl
                   T_T   -> Just T
                   _     -> Nothing
 
+  assertLTLCTL = withLoc $ do
+    token T_assert
+    p <- parseExp
+    token T_model_check
+    t <- parseFormulaType
+    -- get LTL/CTL formula as a string
+    s <- lstring
+    return $ AssertLTLCTL p t s
+      where
+        parseFormulaType :: PT LFormulaType
+        parseFormulaType = withLoc $ do
+          tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
+          case tok of
+            T_LTL -> return LTL
+            T_CTL -> return CTL
+            _     -> fail "Unexpected Token"
+
+        lstring :: PT String
+        lstring = tokenPrimExDefault testToken
+
+        testToken t = if tokenClass t == L_String
+                      then Just $ read $ tokenString t
+                      else Nothing 
+
   parseAssert :: PT LAssertDecl
   parseAssert =  try assertTauPrio
              <|> try assertIntFDRChecks
              <|> try assertListRef
+             <|> try assertLTLCTL
              <|> assertBool
              <?> "assert Declaration"
 

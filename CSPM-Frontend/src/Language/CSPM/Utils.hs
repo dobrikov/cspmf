@@ -18,12 +18,13 @@ module Language.CSPM.Utils
  ,parseFile, benchmarkFrontend, parseString, parseNamedString)
 where
 
+import Language.CSPM.Token (Token(..), LexError(..))
 import Language.CSPM.Parser (ParseError(..), parse)
 import Language.CSPM.Rename (RenameError(..), renameModule, ModuleFromRenaming)
 import Language.CSPM.Token (LexError(..))
 import Language.CSPM.AST (ModuleFromParser)
 import Language.CSPM.PrettyPrinter(pPrint)
-import qualified Language.CSPM.LexHelper as Lexer (lexInclude)
+import qualified Language.CSPM.LexHelper as Lexer (lexInclude,lexPlain)
 
 import Control.Exception as Exception
 import System.CPUTime

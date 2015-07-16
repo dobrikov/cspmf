@@ -287,6 +287,8 @@ instance Pretty AssertDecl where
      AssertBool expr -> pPrint expr
      AssertRefine n expr1 op expr2
        -> negated n $ pPrint expr1 <+> pPrint op <+> pPrint expr2
+     AssertLTLCTL expr t str
+       -> pPrint expr <+> text "|=" <+> pPrint t <+> text "\"" <> text str <> text "\""
      AssertTauPrio n expr1 op expr2 expr3
        -> negated n $ pPrint expr1 <+> pPrint op <+> pPrint expr2 <+> text ":[tau priority over]:" <+> pPrint expr3
      AssertModelCheck n expr m mb
@@ -320,6 +322,10 @@ instance Pretty RefineOp where
 instance Pretty TauRefineOp where
   pPrint TauTrace = text "[T="
   pPrint TauRefine = text "[="
+
+instance Pretty FormulaType where
+  pPrint LTL = text "LTL:"
+  pPrint CTL = text "CTL:"
 
 instance Pretty Const where
   pPrint x = case x of

@@ -145,7 +145,8 @@ soakNewlines = worker
       T_openBrackBrack, T_if, T_then,T_else, T_let, T_and,
       T_or, T_Refine, T_trace,T_failure, T_failureDivergence,
       T_refusalTesting, T_refusalTestingDiv, T_revivalTesting,
-      T_revivalTestingDiv,T_tauPriorityOp, T_within]
+      T_revivalTestingDiv,T_tauPriorityOp, T_model_check, T_within,
+      T_LTL, T_CTL]
     consumeNLBeforeToken
       = Set.fromList (
             [T_closeParen, T_gt, T_closeBrace, T_closeBrackBrack, T_closeSpecialBrack, T_closePBrace]

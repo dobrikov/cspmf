@@ -95,15 +95,16 @@ csp :-
 -- <0> "length"    { mkL T_length }
 
 -- assetion Lists refinement operators
-<0> "[=" { mkL T_Refine }
-<0> "[T=" { mkL T_trace }
-<0> "[F=" { mkL T_failure }
+<0> "[="   { mkL T_Refine }
+<0> "[T="  { mkL T_trace }
+<0> "[F="  { mkL T_failure }
 <0> "[FD=" { mkL T_failureDivergence }
-<0> "[R=" { mkL T_refusalTesting }
+<0> "[R="  { mkL T_refusalTesting }
 <0> "[RD=" { mkL T_refusalTestingDiv }
-<0> "[V=" { mkL T_revivalTesting }
+<0> "[V="  { mkL T_revivalTesting }
 <0> "[VD=" { mkL T_revivalTestingDiv }
 <0> "[TP=" { mkL T_tauPriorityOp }
+<0> "|="   { andBegin (mkL T_model_check) formula }
 <0> ":[" { andBegin (mkL T_openAssertBrack) ref} -- jump to the other lexer specification ref
 
 -- symbols
@@ -199,6 +200,14 @@ csp :-
 
 
 <0> \" @string* \"              { mkL L_String }
+
+-- type of the temporal formula
+<formula> $whitechar { skip }
+<formula> "LTL:" { andBegin (mkL T_LTL) string }
+<formula> "CTL:" { andBegin (mkL T_CTL) string }
+
+<string> $whitechar { skip }
+<string> \" { andBegin (stringchars) 0 }
 
 <ref> "deadlock"      { mkL T_deadlock  }
 <ref> "deterministic" { mkL T_deterministic }

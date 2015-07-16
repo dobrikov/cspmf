@@ -52,6 +52,7 @@ cspToProlog ast = header $+$ core
         ,text ":- dynamic comment/2."
         ,text ":- dynamic assertBool/1, assertRef/5, assertTauPrio/6."
         ,text ":- dynamic assertModelCheckExt/4, assertModelCheck/3."
+        ,text ":- dynamic assertLtl/3, assertCtl/3."
         ]
 
 plLocatedConstructs :: Set Const
@@ -288,6 +289,10 @@ td decl = case unLabel decl of
       AssertBool e -> [ nTerm "assertBool" [te e] ]
       AssertRefine b p1 m p2
         -> [ nTerm "assertRef" [aTerm $ show b, te p1, termShow m, te p2, plLoc decl] ]
+      AssertLTLCTL p t s
+        -> case unLabel t of
+          LTL -> [ nTerm "assertLtl" [te p, aTerm $ show s, plLoc decl] ]
+          CTL -> [ nTerm "assertCtl" [te p, aTerm $ show s, plLoc decl] ]
       AssertTauPrio b p1 m p2 e
         -> [ nTerm "assertTauPrio" [aTerm $ show b, te p1, termShow m, te p2, te e, plLoc decl] ]
       AssertModelCheck b p m (Just ext)

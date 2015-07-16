@@ -141,6 +141,7 @@ data PrimToken
   | T_revivalTesting -- "[V="
   | T_revivalTestingDiv -- "[VD="
   | T_tauPriorityOp -- "[TP="
+  | T_model_check -- "|="
   | T_tau
   | T_priority
   | T_over
@@ -151,4 +152,6 @@ data PrimToken
   | T_F
   | T_T
   | T_FD
+  | T_LTL
+  | T_CTL
   deriving (Show, Eq, Ord, Enum, Ix, Bounded, Typeable, Data, Generic)

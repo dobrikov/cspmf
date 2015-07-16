@@ -157,6 +157,34 @@ block_comment (startPos, _ ,[], '\123':'-':input) 2 = do
 
 block_comment _ _ = error "internal Error : block_comment called with bad args"
 
+stringchars :: AlexInput -> Int -> Alex Token
+stringchars (startPos, _, [], '\"':input) 1 = do
+    case go 1 "\"" input of
+      Nothing -> Alex $ \_-> Left $ LexError {
+         lexEPos = startPos
+        ,lexEMsg = "Unclosed String"
+        }
+      Just (acc, rest) -> do
+        cnt <- alexCountToken
+        let
+          tokenId = mkTokenId cnt
+          tokenString = reverse acc
+          tokenLen = length tokenString
+          tokenStart = startPos
+          tokenClass = case (tokenString, acc) of
+               ('\"':_, '\"':_) ->  L_String
+               _ -> error "internal Error: cannot determine variant of string"
+        alexSetInput (foldl' alexMove startPos tokenString, '\"', [],rest)
+        return $ Token {..}
+  where
+    go :: Int -> String -> String -> Maybe (String,String)
+    go 0 acc rest = Just (acc, rest)
+    go nested acc rest = case rest of
+      '\"' : r2 -> go (pred nested) ('\"': acc) r2
+      '\"' : r2 -> go (succ nested) ('\"': acc) r2
+      h:r2 -> go nested (h : acc) r2
+      [] -> Nothing
+
 lexError :: String -> Alex a
 lexError s = do
   (_p, _c,_, input) <- alexGetInput

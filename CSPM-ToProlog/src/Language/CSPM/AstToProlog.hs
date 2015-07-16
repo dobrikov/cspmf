@@ -82,6 +82,7 @@ instance TPL RefineOp
 instance TPL TauRefineOp
 instance TPL FDRModels
 instance TPL FdrExt
+instance TPL FormulaType
 
 instance TP ModuleFromRenaming where
     tp m = text "module" <> parens ( hcat $ punctuate comma [
