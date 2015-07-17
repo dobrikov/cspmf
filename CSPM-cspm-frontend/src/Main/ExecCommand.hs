@@ -50,12 +50,13 @@ execCommand Info {..} = do
     [
      "Versions :",nl
     ,"  cspmf command line utility : ", showVersion version, nl
-    ,"  CSPM-Frontend             : ", showVersion frontendVersion, nl
-    ,"  CSPM-ToProlog             : ", showVersion toPrologVersion, nl
+    ,"  CSPM-Frontend              : ", showVersion frontendVersion, nl
+    ,"  CSPM-ToProlog              : ", showVersion toPrologVersion, nl
     ,nl
     ,"Usage examples:",nl
     ,"  cspmf --help",nl
     ,"  cspmf info",nl
+    ,"  cspmf translate",nl
     ,nl
     ,"Copyright (c) Marc Fontaine, Ivaylo Dobrikov 2007-2015",nl
     ,"Email : Marc.Fontaine@gmx.de, ivaylo.dobrikov@googlemail.com",nl

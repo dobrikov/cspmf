@@ -291,8 +291,8 @@ td decl = case unLabel decl of
         -> [ nTerm "assertRef" [aTerm $ show b, te p1, termShow m, te p2, plLoc decl] ]
       AssertLTLCTL p t s
         -> case unLabel t of
-          LTL -> [ nTerm "assertLtl" [te p, aTerm $ show s, plLoc decl] ]
-          CTL -> [ nTerm "assertCtl" [te p, aTerm $ show s, plLoc decl] ]
+          LTL -> [ nTerm "assertLtl" [te p, aTerm s, plLoc decl] ]
+          CTL -> [ nTerm "assertCtl" [te p, aTerm s, plLoc decl] ]
       AssertTauPrio b p1 m p2 e
         -> [ nTerm "assertTauPrio" [aTerm $ show b, te p1, termShow m, te p2, te e, plLoc decl] ]
       AssertModelCheck b p m (Just ext)
