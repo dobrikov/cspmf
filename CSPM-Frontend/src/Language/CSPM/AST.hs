@@ -308,9 +308,9 @@ withLabel f x = x {unLabel = f (nodeId x) (unLabel x) }
 type LAssertDecl = Labeled AssertDecl
 data AssertDecl
   = AssertBool LExp
-  | AssertRefine   Bool LExp LRefineOp    LExp
-  | AssertLTLCTL LExp LFormulaType String
-  | AssertTauPrio  Bool LExp LTauRefineOp LExp LExp
+  | AssertRefine     Bool LExp LRefineOp    LExp
+  | AssertLTLCTL     Bool LExp LFormulaType String
+  | AssertTauPrio    Bool LExp LTauRefineOp LExp LExp
   | AssertModelCheck Bool LExp LFDRModels (Maybe LFdrExt)
   deriving (Eq, Ord, Show, Typeable, Data, Generic)
 

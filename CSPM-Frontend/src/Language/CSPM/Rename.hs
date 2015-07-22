@@ -424,7 +424,7 @@ declRHS d = case unLabel d of
   Assert a -> case unLabel a of
       AssertBool e -> rnExp e
       AssertRefine _ p1 _ p2 -> rnExp p1 >> rnExp p2
-      AssertLTLCTL p _ _ -> rnExp p
+      AssertLTLCTL _ p _ _ -> rnExp p
       AssertTauPrio _ p1 _ p2 e -> rnExp p1 >> rnExp p2 >> rnExp e
       AssertModelCheck _ p _ _ -> rnExp p
   Transparent _ -> nop  

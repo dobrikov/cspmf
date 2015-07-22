@@ -897,6 +897,7 @@ topDeclList = sepByNewLine topDecl
 
   assertLTLCTL = withLoc $ do
     token T_assert
+    negated <- assertPolarity
     p <- parseExp
     token T_model_check
     t <- parseFormulaType

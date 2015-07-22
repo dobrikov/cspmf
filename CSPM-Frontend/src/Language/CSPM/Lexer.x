@@ -75,6 +75,9 @@ csp :-
 <0> "Bool"    { mkL T_Bool }
 <0> "Events"    { mkL T_Events }
 <0> "CHAOS"    { mkL T_CHAOS }
+
+-- predefined CSP-M functions can be overridden,
+-- there no more included in the language grammar
 -- <0> "union"    { mkL T_union }
 -- <0> "inter"    { mkL T_inter }
 -- <0> "diff"    { mkL T_diff }
