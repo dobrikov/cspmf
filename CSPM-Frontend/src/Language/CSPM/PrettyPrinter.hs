@@ -287,8 +287,8 @@ instance Pretty AssertDecl where
      AssertBool expr -> pPrint expr
      AssertRefine n expr1 op expr2
        -> negated n $ pPrint expr1 <+> pPrint op <+> pPrint expr2
-     AssertLTLCTL expr t str
-       -> pPrint expr <+> text "|=" <+> pPrint t <+> text "\"" <> text str <> text "\""
+     AssertLTLCTL n expr t str
+       -> negated n $ pPrint expr <+> text "|=" <+> pPrint t <+> text "\"" <> text str <> text "\""
      AssertTauPrio n expr1 op expr2 expr3
        -> negated n $ pPrint expr1 <+> pPrint op <+> pPrint expr2 <+> text ":[tau priority over]:" <+> pPrint expr3
      AssertModelCheck n expr m mb
