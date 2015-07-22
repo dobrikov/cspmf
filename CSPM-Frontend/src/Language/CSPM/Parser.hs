@@ -903,7 +903,7 @@ topDeclList = sepByNewLine topDecl
     t <- parseFormulaType
     -- get LTL/CTL formula as a string
     s <- lstring
-    return $ AssertLTLCTL p t s
+    return $ AssertLTLCTL negated p t s
       where
         parseFormulaType :: PT LFormulaType
         parseFormulaType = withLoc $ do
