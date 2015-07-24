@@ -52,7 +52,7 @@ cspToProlog ast = header $+$ core
         ,text ":- dynamic comment/2."
         ,text ":- dynamic assertBool/1, assertRef/5, assertTauPrio/6."
         ,text ":- dynamic assertModelCheckExt/4, assertModelCheck/3."
-        ,text ":- dynamic assertLtl/3, assertCtl/3."
+        ,text ":- dynamic assertLtl/4, assertCtl/4."
         ]
 
 plLocatedConstructs :: Set Const
