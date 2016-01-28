@@ -161,13 +161,13 @@ soakNewlines = worker
 getAbsoluteIncludeFileName :: FilePath -> FilePath -> FilePath
 getAbsoluteIncludeFileName srcFileName inclFileName
    = case isAbsolute inclFileName of 
-	True  -> inclFileName 
-	False -> joinPath $ (
-		take ((length srcDirSequence)-(countBackDirs fileDirSequence)) srcDirSequence 
-			++ (removeBackDirs fileDirSequence))
-	where
-		fileDirSequence = splitDirectories $ normalise inclFileName
-		srcDirSequence  = init $ splitDirectories $ normalise srcFileName
-		countBackDirs   = length . filter (".." ==) 
-		removeBackDirs  = dropWhile (".." == )
+  True  -> inclFileName 
+  False -> joinPath $ (
+    take ((length srcDirSequence)-(countBackDirs fileDirSequence)) srcDirSequence 
+      ++ (removeBackDirs fileDirSequence))
+  where
+    fileDirSequence = splitDirectories $ normalise inclFileName
+    srcDirSequence  = init $ splitDirectories $ normalise srcFileName
+    countBackDirs   = length . filter (".." ==) 
+    removeBackDirs  = dropWhile (".." == )
 

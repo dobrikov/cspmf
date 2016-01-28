@@ -19,6 +19,8 @@ import Data.Word (Word8)
 import qualified Data.Bits
 import Data.List
 
+import qualified Control.Monad (ap)
+
 type AlexInput = (AlexPosn,     -- current position,
                   Char,         -- previous char
                   [Byte],       -- pending bytes on current char
@@ -47,6 +49,13 @@ runAlex input (Alex f)
     initAlexInput = (alexStartPos,'\n',[],input)
 
 newtype Alex a = Alex { unAlex :: AlexState -> Either LexError (AlexState, a) }
+
+instance Functor Alex where
+  fmap f m = do x <- m; return (f x)
+
+instance Applicative Alex where
+  pure = return
+  (<*>) = Control.Monad.ap
 
 instance Monad Alex where
   m >>= k  = Alex $ \s -> case unAlex m s of

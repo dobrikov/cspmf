@@ -12,18 +12,18 @@ License-File:        LICENSE
 Author:              2006-2015 Marc Fontaine
 Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>, Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com>
 Cabal-Version:  >= 1.14
-Tested-With:    GHC==7.8.3
+Tested-With:    GHC==7.10.3
 Build-Type:     Simple
 
 Library
   Default-Language: Haskell2010
   Build-Depends:
-    CSPM-Frontend >= 0.10.1 && < 0.11
+    CSPM-Frontend >= 0.10.1 && < 0.12
     ,pretty >= 1.1 && < 1.2
     ,base >= 4.0 && <5.0
     ,containers >= 0.4 && <0.6
     ,array >=0.4 && <0.6
-    ,ghc-prim >= 0.2 && <0.4
+    ,ghc-prim >= 0.2 && <0.5
 
   Hs-Source-Dirs: src
   ghc-options: -Wall
