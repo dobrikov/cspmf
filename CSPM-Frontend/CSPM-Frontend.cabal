@@ -28,12 +28,12 @@ library
     ,array >= 0.4 && < 0.6
     ,parsec2 >= 1.0.0 && < 1.1.0
     ,prettyclass >= 1.0 && < 1.1
-    ,mtl >= 2.1 && < 2.2
+    ,mtl >= 2.1 && < 2.3
     ,either >= 4.4 && < 5.0
     ,transformers >= 0.3 && < 0.5
-    ,dlist >= 0.5 && < 0.6
-    ,syb >= 0.3 && < 0.4
-    ,ghc-prim >=0.2 && < 0.4
+    ,dlist >= 0.5 && < 0.7
+    ,syb >= 0.3 && < 0.5
+    ,ghc-prim >=0.2 && < 0.5
     ,filepath >=1.3
   Default-Language: Haskell2010
   Other-Extensions:
