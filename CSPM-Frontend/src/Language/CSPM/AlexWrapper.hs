@@ -7,7 +7,7 @@
 --
 -- Wrapper functions for Alex
 
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards, CPP #-}
 module Language.CSPM.AlexWrapper
 where
 
@@ -19,7 +19,9 @@ import Data.Word (Word8)
 import qualified Data.Bits
 import Data.List
 
+#if __GLASGOW_HASKELL__ >= 710
 import qualified Control.Monad (ap)
+#endif
 
 type AlexInput = (AlexPosn,     -- current position,
                   Char,         -- previous char
@@ -50,12 +52,14 @@ runAlex input (Alex f)
 
 newtype Alex a = Alex { unAlex :: AlexState -> Either LexError (AlexState, a) }
 
+#if __GLASGOW_HASKELL__ >= 710
 instance Functor Alex where
   fmap f m = do x <- m; return (f x)
 
 instance Applicative Alex where
   pure = return
   (<*>) = Control.Monad.ap
+#endif
 
 instance Monad Alex where
   m >>= k  = Alex $ \s -> case unAlex m s of
