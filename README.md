@@ -15,6 +15,8 @@ It is also possible to install the packages using Cabal:
    cabal install CSPM-*
 In case you use the cabal installation note that CSPM-cspm-frontend depends on building CSPM-Frontend and CSPM-ToProlog first. Additionally, CSPM-ToProlog requires installing CSPM-Frontend.
 
+Tested with GHC-7.10.3.
+
 # Usage of 'cspmf'
 To see the available options execute 'cspmf --help' from the command line.
 
