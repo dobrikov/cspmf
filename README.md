@@ -20,7 +20,7 @@ To see the available options just do 'cspmf --help' from the command line.
 
 To parse a specification and write the parse result and the AST to a file use the following options:
 
-cspm translate [OPTIONS] FILE
+  cspm translate [OPTIONS] FILE
 
      --rename                          run renaming  on the AST
      --xmlOut=FILE                     optional: write a file with containing XML
@@ -30,3 +30,5 @@ cspm translate [OPTIONS] FILE
      --prologOut=FILE                  translate a CSP-M file to Prolog
      --expressionToPrologTerm=STRING   translate a single CSP-M expression to Prolog
      --declarationToPrologTerm=STRING  translate a single CSP-M declaration to Prolog
+
+Remark: In the moment one can translate single expressions and declarations only into Prolog.
