@@ -9,7 +9,7 @@ The library includes three packages:
   - CSPM-cspm-frontend: The package that provides the command line tool 'cspmf'.
 
 # Install 'cspmf'
-To intsall the 'cspmf' just execute 'cabal_sandbox_install.sh' from CSPM-cspm-frontend. The shell script installs all necessary Haskell libraries and packages needed to build the 'cspmf' command; it uses the cabal sandboxes enabling to build the cspmf command in isolation. Ensure to have at least GHC 7.10.3 and the Cabal package installed. The 'cspmf' binary is generated in 'dist/build/cspmf/' folder, which is located in CSPM-cspm-frontend.
+To intsall 'cspmf' just execute 'cabal_sandbox_install.sh' from CSPM-cspm-frontend. The shell script installs all necessary Haskell libraries and packages needed to build the 'cspmf' command; it uses the cabal sandboxes enabling to build the cspmf command in isolation. Ensure to have at least GHC 7.10.3 and the Cabal package installed. The 'cspmf' binary is generated in 'dist/build/cspmf/' folder, which is located in CSPM-cspm-frontend.
 
 It is also possible to install the packages using Cabal:
    cabal install CSPM-*
@@ -32,4 +32,4 @@ To parse a specification and write the parse result and the AST to a file use th
        --expressionToPrologTerm=STRING   translate a single CSP-M expression to Prolog
        --declarationToPrologTerm=STRING  translate a single CSP-M declaration to Prolog
 
-Remark: In the moment one can translate single expressions and declarations only into Prolog.
+Remark: Currently one can translate single expressions and declarations only into Prolog.
