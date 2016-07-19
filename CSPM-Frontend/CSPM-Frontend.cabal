@@ -13,7 +13,7 @@ Description:
 License:             BSD3
 category:            Language,Formal Methods,Concurrency
 License-File:        LICENSE
-Author:              Marc Fontaine 2007 - 2015
+Author:              Marc Fontaine, Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com> 2007 - 2016
 Maintainer:          Marc Fontaine <Marc.Fontaine@gmx.de>, Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com>
 Stability:           maintained
 Tested-With:         GHC == 7.10.3
@@ -55,8 +55,8 @@ library
     Language.CSPM.LexHelper
     Language.CSPM.UnicodeSymbols
     Language.CSPM.BuiltIn
-  Other-modules:
     Text.ParserCombinators.Parsec.ExprM
+  Other-modules:
     Language.CSPM.Lexer
     Language.CSPM.AlexWrapper
     Paths_CSPM_Frontend

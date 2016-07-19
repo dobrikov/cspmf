@@ -16,10 +16,10 @@ License:             BSD3
 category:            Language,Formal Methods,Concurrency
 License-File:        LICENSE
 Author:              Marc Fontaine, Ivaylo Dobrikov
-Maintainer:          Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com>
+Maintainer:          Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com> 2009-2016
 cabal-Version:       >= 1.14
 build-type:          Simple
-Tested-With:         GHC == 7.8.3
+Tested-With:         GHC == 7.10.3
 Stability:           experimental
 
 Executable cspmf

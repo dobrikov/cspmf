@@ -9,7 +9,7 @@ Description:
 License:             BSD3
 category:            Formal Methods
 License-File:        LICENSE
-Author:              2006-2015 Marc Fontaine
+Author:              2006-2016 Marc Fontaine, Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com>
 Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>, Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com>
 Cabal-Version:  >= 1.14
 Tested-With:    GHC==7.10.3

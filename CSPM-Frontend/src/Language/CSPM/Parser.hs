@@ -3,19 +3,20 @@
 -- Module      :  Language.CSPM.Parser
 -- Copyright   :  (c) Fontaine 2008 - 2011
 -- License     :  BSD3
--- 
+--
 -- Maintainer  :  fontaine@cs.uni-duesseldorf.de, me@dobrikov.biz
 -- Stability   :  experimental
 -- Portability :  GHC-only
 --
 -- This modules defines a Parser for CSP-M
--- 
+--
 -----------------------------------------------------------------------------
 {-# LANGUAGE DeriveDataTypeable, RecordWildCards #-}
 
 module Language.CSPM.Parser
 (
   parse
+ ,parseWithoutSrcLoc
  ,ParseError(..)
  ,testParser
  ,parseExp
@@ -51,7 +52,7 @@ type PT a = GenParser Token PState a
 -- | The 'parse' function parses a List of 'Token'.
 -- It returns a 'ParseError' or a 'Labled' 'Module'.
 -- The 'SourceName' argument is currently not used.
-parse :: 
+parse ::
       SourceName
    -> [Token]
    -> Either ParseError ModuleFromParser
@@ -62,6 +63,20 @@ parse filename tokenList
         initialPState
         filename
         (removeIgnoredToken tokenList)
+
+
+parseWithoutSrcLoc ::
+      SourceName
+   -> [Token]
+   -> Either ParseError ModuleFromParser
+parseWithoutSrcLoc filename tokenList
+  = wrapParseError tokenList $
+      runParser
+        (parseModule tokenList)
+        initialPStateNoSrcLoc
+        filename
+        (removeIgnoredToken tokenList)
+
 
 -- | Wrapper for testing sub parsers
 testParser :: PT a -> [Token] -> Either ParsecError.ParseError a
@@ -84,24 +99,44 @@ data PState
  ,gtCounter      :: Int
  ,gtLimit        :: Maybe Int
  ,nodeIdSupply   :: NodeId
+ ,forgetSrcLoc   :: Bool
  } deriving Show
 
 initialPState :: PState
 initialPState = PState {
-   lastTok = Token.tokenSentinel 
+   lastTok = Token.tokenSentinel
   ,gtCounter = 0
   ,gtLimit = Nothing
   ,nodeIdSupply = mkNodeId 0
+  ,forgetSrcLoc = False
+  }
+
+initialPStateNoSrcLoc :: PState
+initialPStateNoSrcLoc = PState {
+   lastTok = Token.tokenSentinel
+  ,gtCounter = 0
+  ,gtLimit = Nothing
+  ,nodeIdSupply = mkNodeId 0
+  ,forgetSrcLoc = True
   }
 
 mkLabeledNode :: SrcLoc -> t -> PT (Labeled t)
 mkLabeledNode loc node = do
   i <- getStates nodeIdSupply
   updateState $ \s -> s { nodeIdSupply = succ $ nodeIdSupply s}
+  forget <- getStates forgetSrcLoc
+  let loc1 = getSrcLoc forget loc
   return $ Labeled {
     nodeId = i
-   ,srcLoc = loc
+   ,srcLoc = loc1
    ,unLabel = node }
+      where
+        getSrcLoc :: Bool -> SrcLoc -> SrcLoc
+        getSrcLoc forget loc =
+          case forget of
+            True -> SrcLoc.NoLocation
+            False -> loc
+
 
 getStates :: (PState -> x) -> PT x
 getStates sel = do
@@ -120,7 +155,7 @@ getLastPos = getStates lastTok
 
 getPos :: PT SrcLoc
 getPos = do
-  t<-getNextPos 
+  t<-getNextPos
   return $ mkSrcPos t
 
 mkSrcSpan :: Token -> Token -> SrcLoc
@@ -137,7 +172,7 @@ withLoc a = do
   e <- getLastPos
   mkLabeledNode (mkSrcSpan s e) av
 
-inSpan :: (a -> b) -> PT a -> PT (Labeled b) 
+inSpan :: (a -> b) -> PT a -> PT (Labeled b)
 inSpan constr exp = do
   s <- getNextPos
   l <- exp
@@ -152,7 +187,7 @@ parseModule tokenList = do
   eof <?> "end of module"
   e <- getLastPos
   let
-    moduleTokens = Just tokenList
+    -- moduleTokens = Just tokenList
     moduleSrcLoc = mkSrcSpan s e
     modulePragmas = mapMaybe getPragma tokenList
     moduleComments = mapMaybe getComment tokenList
@@ -192,7 +227,7 @@ newline :: PT ()
 newline = token L_Newline
 
 refineOp :: PT LRefineOp
-refineOp = withLoc $ do 
+refineOp = withLoc $ do
   tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
   case tok of
     T_trace  -> return Trace
@@ -204,7 +239,7 @@ refineOp = withLoc $ do
     T_revivalTestingDiv -> return RevivalTestingDiv
     T_tauPriorityOp -> return TauPriorityOp
     _              -> fail "Unexpected Token"
-  
+
 anyBuiltIn :: PT Const
 anyBuiltIn = do
   tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
@@ -341,12 +376,12 @@ intLit =
    -- " - {-comment-} 10 " is parsed as Integer(-10) "
       (token T_minus >> linteger >>= return . negate)
   <|> linteger
-  where 
+  where
     linteger :: PT Integer
     linteger = tokenPrimExDefault testToken
     testToken t = if tokenClass t == L_Integer
       then Just $ read $ tokenString t
-      else Nothing 
+      else Nothing
 
 negateExp :: PT LExp
 negateExp = withLoc $ do
@@ -384,7 +419,7 @@ funCall = try (funCallFkt <|> funCallBi)
   where
     funCallFkt :: PT LExp
     funCallFkt = withLoc $ do
-      fkt <- varExp 
+      fkt <- varExp
       args <- parseFunArgs
       return $ CallFunction fkt args
 
@@ -422,7 +457,7 @@ lambdaExp = withLoc $ do
 
 parseExpBase :: PT LExp
 parseExpBase =
-         parenExpOrTupleEnum 
+         parenExpOrTupleEnum
      <|> funCall
      <|> withLoc ( token T_STOP >> return Stop)
      <|> withLoc ( token T_SKIP >> return Skip)
@@ -433,7 +468,7 @@ parseExpBase =
      <|> withLoc ( token T_Int >> return IntSet)
      <|> ifteExp
      <|> letExp
-     <|> try litExp       -- -10 is Integer(-10) 
+     <|> try litExp       -- -10 is Integer(-10)
      <|> negateExp        -- -(10) is NegExp(Integer(10))
      <|> varExp
      <|> lambdaExp
@@ -441,7 +476,7 @@ parseExpBase =
      <|> listExp
      <|> setExp
      <|> blockBuiltIn
-     <?> "core-expression" 
+     <?> "core-expression"
 
 
 {-
@@ -596,7 +631,7 @@ parseExp_noPrefix = parseDotExpOf parseExp_noPrefix_NoDot
      parseExp_noPrefix_NoDot :: PT LExp
      parseExp_noPrefix_NoDot = buildExpressionParser opTable parseExpBase
 
--- todo :: parseExpBase does include STOP and SKIP 
+-- todo :: parseExpBase does include STOP and SKIP
 parseExp_noProc :: PT LExp
 parseExp_noProc
   = parseDotExpOf $ buildExpressionParser baseTable parseExpBase
@@ -606,7 +641,7 @@ parseDotExpOf baseExp = do
   sPos <-getNextPos
   dotExp <- sepBy1 baseExp $ token T_dot
   ePos <-getLastPos
-  case dotExp of 
+  case dotExp of
      [x] -> return x
      l -> mkLabeledNode (mkSrcSpan sPos ePos) $ DotTuple l
 
@@ -642,6 +677,7 @@ betweenLtGt parser = do
   st <- getParserState  -- maybe we need to backtrack
   body <- parser           -- even if this is successfull
   cnt <- getStates gtCounter
+  -- print ("count numbers " ++ (show cnt))
   endSym <-testFollows token_gt
   case endSym of
     Just () -> do
@@ -732,7 +768,7 @@ parsePattern = (<?> "pattern")  $ do
   sPos <- getNextPos
   concList <- sepBy1 parsePatternDot $ token T_atat
   ePos <- getLastPos
-  case concList of 
+  case concList of
     [x] -> return x
     l -> mkLabeledNode  (mkSrcSpan sPos ePos) $ Also l
 
@@ -741,7 +777,7 @@ parsePatternAppend = do
   sPos <- getNextPos
   concList <- sepBy1 parsePatternCore $ token T_hat
   ePos <- getLastPos
-  case concList of 
+  case concList of
     [x] -> return x
     l -> mkLabeledNode (mkSrcSpan sPos ePos) $ Append l
 
@@ -810,7 +846,7 @@ parseFktCspPat :: PT [LPattern]
 parseFktCspPat = inParens $ sepByComma parsePattern
 
 topDeclList :: PT [LDecl]
-topDeclList = sepByNewLine topDecl 
+topDeclList = sepByNewLine topDecl
  where
   topDecl :: PT LDecl
   topDecl = choice
@@ -856,7 +892,7 @@ topDeclList = sepByNewLine topDecl
     return $ AssertTauPrio negated p1 op p2 set
      where
       tauRefineOp :: PT LTauRefineOp
-      tauRefineOp = withLoc $ do 
+      tauRefineOp = withLoc $ do
         tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
         case tok of
          T_trace  -> return TauTrace
@@ -880,15 +916,15 @@ topDeclList = sepByNewLine topDecl
        fdrModel :: PT LFDRModels
        fdrModel = withLoc $ do
         tok <- tokenPrimExDefault (\t -> Just $ tokenClass t)
-        case tok of 
+        case tok of
          T_deadlock  -> token T_free >> return DeadlockFree
          T_deterministic -> return Deterministic
          T_livelock  -> token T_free >> return LivelockFree
          _ -> fail "Modus is not supported by this parser."
-  
+
        extsMode :: PT LFdrExt
        extsMode =  withLoc $ tokenPrimExDefault test
-         where 
+         where
           test tok = case tokenClass tok of
                   T_F   -> Just F
                   T_FD  -> Just FD
@@ -918,7 +954,7 @@ topDeclList = sepByNewLine topDecl
 
         testToken t = if tokenClass t == L_String
                       then Just $ read $ tokenString t
-                      else Nothing 
+                      else Nothing
 
   parseAssert :: PT LAssertDecl
   parseAssert =  try assertTauPrio
@@ -984,14 +1020,14 @@ topDeclList = sepByNewLine topDecl
 
   typeExp = withLoc $ do
     dotArgs <- sepBy1 dotArgs $ token T_dot
-    return $ TypeDot dotArgs 
+    return $ TypeDot dotArgs
 
   dotArgs = typeTuple <|> typeSingleExp
 
   typeSingleExp = inSpan SingleValue $ parseExpBase
 
   typeTuple = inSpan TypeTuple $ inParens $ sepBy1Comma parseExpBase
- 
+
 {-  typeExp = typeTuple <|> typeDot
 
   typeDot = inSpan TypeDot $ sepBy1 parseExpBase $ token T_dot
@@ -1008,7 +1044,7 @@ topDeclList = sepByNewLine topDecl
 parseProcReplicatedExp :: PT LProc
 parseProcReplicatedExp
   = choice
-    [ 
+    [
       procRep T_semicolon   ProcRepSequence
     , procRep T_sqcap ProcRepInternalChoice
     , procRep T_box   ProcRepExternalChoice
@@ -1066,7 +1102,7 @@ parsePrefixExp = do
     Nothing -> return start
     Just (comm,body) -> mkLabeledNode (mkSrcSpan spos epos) $
                            PrefixExp start comm body
-  where 
+  where
   parsePrefix :: PT (Maybe ([LCommField],LExp))
   parsePrefix = optionMaybe $ do
     commfields <- many parseCommField
@@ -1129,7 +1165,7 @@ anyToken :: PT Token
 anyToken = tokenPrimEx Token.showToken primExUpdatePos (Just primExUpdateState) Just
 
 notFollowedBy :: GenParser tok st Token -> GenParser tok st ()
-notFollowedBy p 
+notFollowedBy p
   = try (do{ c <- p; unexpected $ Token.showToken c }
          <|> return ()
         )
@@ -1143,7 +1179,7 @@ eof  = notFollowedBy anyToken <?> "end of input"
 
 pprintParsecError :: ParsecError.ParseError -> String
 pprintParsecError err
-  = ParsecError.showErrorMessages "or" "unknown parse error" 
+  = ParsecError.showErrorMessages "or" "unknown parse error"
       "expecting" "unexpected" "end of input"
         (ParsecError.errorMessages err)
 
@@ -1157,7 +1193,7 @@ wrapParseError tl (Left err) = Left $ ParseError {
   ,parseErrorToken = errorTok
   ,parseErrorPos = tokenStart errorTok
   }
-  where 
+  where
     tokId = Token.mkTokenId $ sourceColumn $ ParsecError.errorPos err
     errorTok = maybe Token.tokenSentinel id  $ find (\t -> tokenId t ==  tokId) tl
 

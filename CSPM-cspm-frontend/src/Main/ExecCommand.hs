@@ -26,7 +26,7 @@ import Language.CSPM.LexHelper (unicodeTokenString,asciiTokenString)
 
 import Language.CSPM.TranslateToProlog
   (translateToProlog,toPrologVersion
-  ,translateExpToPrologTerm,translateDeclToPrologTerm)
+  ,translateExpToPrologTerm,translateDeclToPrologTerm,translateToPrologNormalised)
 import Language.CSPM.AstToXML (moduleToXML, showTopElement)
 
 import Text.PrettyPrint.HughesPJClass
@@ -91,6 +91,9 @@ execCommand Translate {..} = do
           writeFile outFile $ List.concatMap asciiTokenString tokens
   whenJust prologOut $ \outFile -> do
       translateToProlog src outFile -- translateToProlog does not return !
+      error "unreachable"
+  whenJust prologOutNormalised $ \outFile -> do
+      translateToPrologNormalised src outFile -- translateToProlog does not return !
       error "unreachable"
     -- Incremental parser features
   whenJust expressionToPrologTerm $ \str -> do

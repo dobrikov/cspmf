@@ -14,6 +14,7 @@ module Language.CSPM.Frontend
 (
   -- Language.CSPM.Parser
    parse
+  ,parseWithoutSrcLoc
   ,ParseError(..)
 
   -- Language.CSPM.Utils
@@ -63,7 +64,7 @@ module Language.CSPM.Frontend
 )
 where
 
-import Language.CSPM.Parser (ParseError(..), parse)
+import Language.CSPM.Parser (ParseError(..), parse, parseWithoutSrcLoc)
 import Language.CSPM.Rename
   (RenameError (..), RenameInfo (..), renameModule, ModuleFromRenaming)
 import Language.CSPM.Token (Token, LexError(..))

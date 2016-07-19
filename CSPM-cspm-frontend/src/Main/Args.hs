@@ -46,6 +46,7 @@ data Args =
     ,addUnicode    :: Maybe FilePath
     ,removeUnicode :: Maybe FilePath
     ,prologOut     :: Maybe FilePath
+    ,prologOutNormalised :: Maybe FilePath
     ,expressionToPrologTerm  :: Maybe String
     ,declarationToPrologTerm :: Maybe String
     }
@@ -86,6 +87,10 @@ translateMode = Translate {
      &= help "translate a CSP-M file to Prolog"
      &= typFile
      &= explicit &= name "prologOut"
+  ,prologOutNormalised = def
+     &= help "translate a CSP-M file to Prolog (AST in normal form, i.e. no source location infos, no renamings, and no comments)"
+     &= typFile
+     &= explicit &= name "prologOutNormalised"
   ,expressionToPrologTerm = def
      &= help "translate a single CSP-M expression to Prolog"
      &= typ "STRING"

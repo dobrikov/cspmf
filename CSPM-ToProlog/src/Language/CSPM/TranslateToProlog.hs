@@ -19,6 +19,8 @@ module Language.CSPM.TranslateToProlog
   ,translateToProlog
   ,translateExpToPrologTerm
   ,translateDeclToPrologTerm
+  -- functions that are considered only for testing
+  ,translateToPrologNormalised
 )
 where
 
@@ -122,6 +124,39 @@ main = do
       putStrLn "Start with two arguments (input filename and output filename)"
       exitFailure
 -}
+
+translateToPrologNormalised ::
+     FilePath -- ^ filename input
+  -> FilePath -- ^ filename output
+  -> IO ()
+translateToPrologNormalised inFile outFile = do
+  res <- handle catchAllExceptions
+          $ handleLexError lexErrorHandler
+             $ handleParseError parseErrorHandler
+               $ handleRenameError renameErrorHandler $ mainWorkNormalisedAst inFile
+  -- putStrLn "Parsing Done!"
+  (r :: Either SomeException ()) <- try $ writeFile outFile res
+  -- putStrLn "Writing File Done!"
+  case r of
+    Right () -> exitSuccess
+    Left err -> do
+      hPutStrLn stderr "output-file not written"
+      hPutStrLn stderr $ show err
+      exitFailure
+
+-- creating a normalised prolog version of the AST aiming to automate testing with other CSP parsers
+-- do not use for parsing CSP specifications
+mainWorkNormalisedAst :: FilePath -> IO String
+mainWorkNormalisedAst fileName = do
+  src <- readFile fileName
+  tokenList <- lexInclude fileName src >>= eitherToExc
+  -- use 'parseWithoutSrcLoc' to filter out SrcLoc info from AST
+  ast <- eitherToExc $ parseWithoutSrcLoc fileName tokenList
+  let plCode = cspToProlog $ castModule ast
+  output <- evaluate $ show $ vcat [ 
+      mkResult "ok" "" 0 0 0
+     ,plCode]
+  return output
 
 mainWork :: FilePath -> IO String
 mainWork fileName = do
