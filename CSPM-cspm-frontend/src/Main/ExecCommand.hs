@@ -1,10 +1,10 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module      :  Main.ExecCommand
--- Copyright   :  (c) Fontaine 2010-2011
+-- Copyright   :  (c) Fontaine, Dobrikov 2010-2016
 -- License     :  BSD3
 --
--- Maintainer  :  Fontaine@cs.uni-duesseldorf.de
+-- Maintainer  :  fontaine@cs.uni-duesseldorf.de, ivaylo.dobrikov@gmail.com
 -- Stability   :  experimental
 -- Portability :  GHC-only
 --
@@ -58,14 +58,14 @@ execCommand Info {..} = do
     ,"  cspmf info",nl
     ,"  cspmf translate",nl
     ,nl
-    ,"Copyright (c) Marc Fontaine, Ivaylo Dobrikov 2007-2015",nl
+    ,"Copyright (c) Marc Fontaine, Ivaylo Dobrikov 2007-2016",nl
     ,"Email : Marc.Fontaine@gmx.de, ivaylo.dobrikov@googlemail.com",nl
     ]
   where nl = "\n"
 
 execCommand Translate {..} = do
   when (null $ catMaybes
-     [prologOut, xmlOut, prettyOut, addUnicode, removeUnicode, expressionToPrologTerm, declarationToPrologTerm]) $ do
+     [prologOut, prologOutNormalised, xmlOut, prettyOut, addUnicode, removeUnicode, expressionToPrologTerm, declarationToPrologTerm]) $ do
     putStrLn "No output option is set"
     putStrLn "Set '--xmlOut', '--prettyOut' or an other output option"
   when (isJust xmlOut || isJust prettyOut) $ do

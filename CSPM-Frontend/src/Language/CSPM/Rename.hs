@@ -17,6 +17,7 @@
 module Language.CSPM.Rename
   (
    renameModule
+  ,renameModuleReset
   ,RenameError (..)
   ,RenameInfo (..)
   ,ModuleFromRenaming
@@ -69,6 +70,17 @@ renameModule m = do
   return
     (
      applyRenaming m' (identDefinition st) (identUse st)
+    ,st)
+
+renameModuleReset ::
+     ModuleFromParser
+  -> Either RenameError (ModuleFromRenaming, RenameInfo)
+renameModuleReset m = do
+  let m' = mergeFunBinds m
+  st <- execStateT (initPrelude >> rnModule m') initialRState
+  return
+    (
+     applyRenamingReset m' (identDefinition st) (identUse st)
     ,st)
 
 type RM x = StateT RenameInfo (Either RenameError) x
@@ -486,6 +498,30 @@ applyRenaming ast defIdent usedIdent
         VarID -> p
         _ -> ConstrPat x
     patchVarPat x = x
+
+-- a little hack to use real names instead of unique names
+-- this function is only created for testing purposes (do not use for when parsing CSP specifications in general)
+applyRenamingReset ::
+     ModuleFromParser
+  -> AstAnnotation UniqueIdent
+  -> AstAnnotation UniqueIdent
+  -> ModuleFromRenaming
+applyRenamingReset ast defIdent usedIdent
+  = castModule $ everywhere (mkT patchIdent) ast
+  where
+    patchIdent :: LIdent -> LIdent
+    patchIdent l =
+      let nodeID = unNodeId $ nodeId l in
+      case (IntMap.lookup nodeID usedIdent, IntMap.lookup nodeID defIdent) of
+        (Just use, _)  -> let prevName = realName use in 
+                              setNode l $ UIdent use {newName = prevName}
+        (_, Just def)  -> let prevName = realName def in 
+                              setNode l $ UIdent def {newName = prevName}
+        (Nothing, Nothing) -> error $
+            "internal error: patchIdent nodeId not found:" ++ show nodeID
+        (Just _ , Just _ ) -> error $
+            "internal error: patchIdent nodeId is defining and using:" ++ show nodeID
+
 
 -- | If a function is defined via pattern matching for serveral cases,
 -- | the parser returns each case as an individual declaration.

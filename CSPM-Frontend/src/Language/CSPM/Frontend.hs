@@ -48,6 +48,7 @@ module Language.CSPM.Frontend
 
 -- Language.CSPM.Rename
   ,renameModule
+  ,renameModuleReset
   ,RenameInfo (..)
   ,RenameError (..)
 
@@ -66,7 +67,7 @@ where
 
 import Language.CSPM.Parser (ParseError(..), parse, parseWithoutSrcLoc)
 import Language.CSPM.Rename
-  (RenameError (..), RenameInfo (..), renameModule, ModuleFromRenaming)
+  (RenameError (..), RenameInfo (..), renameModule, renameModuleReset, ModuleFromRenaming)
 import Language.CSPM.Token (Token, LexError(..))
 import Language.CSPM.AST
   (Labeled (..), Module (..), Bindings, castModule, ModuleFromParser)

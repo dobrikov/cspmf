@@ -38,11 +38,13 @@ import Data.Version
 -- The LModule must be a renamed,i.e. contain only unique "Ident"ifier.
 cspToProlog ::
   ModuleFromRenaming -- ^ the renamed Module
-  -> Doc  -- ^ prolog facts
-cspToProlog ast = header $+$ core
+  -> Bool -> Doc  -- ^ prolog facts
+cspToProlog ast withComments = header $+$ core
   where
-    core = mkModule ast
-    header = vcat [
+    core = if withComments then mkModule ast else mkModuleWithoutComments ast
+    header = if withComments 
+      then 
+       vcat [
          text ":- dynamic channel/2, bindval/3, agent/3."
         ,text ":- dynamic agent_curry/3, symbol/4."
         ,text ":- dynamic dataTypeDef/2, subTypeDef/2, nameType/2."
@@ -54,6 +56,8 @@ cspToProlog ast = header $+$ core
         ,text ":- dynamic assertModelCheckExt/4, assertModelCheck/3."
         ,text ":- dynamic assertLtl/4, assertCtl/4."
         ]
+      else 
+       vcat []
 
 plLocatedConstructs :: Set Const
 plLocatedConstructs = Set.fromList 
@@ -71,6 +75,12 @@ mkModule m
      ,declGroup $ map clause $ declList $ moduleDecls m
      ,declGroup $ map mkPragma  $ modulePragmas m
      ,declGroup $ map mkComment $ moduleComments m
+     ]
+
+mkModuleWithoutComments :: ModuleFromRenaming -> Doc
+mkModuleWithoutComments m
+  = plPrg [
+      declGroup $ map clause $ declList $ moduleDecls m
      ]
 
 mkPragma :: String -> Clause

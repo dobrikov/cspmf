@@ -152,10 +152,9 @@ mainWorkNormalisedAst fileName = do
   tokenList <- lexInclude fileName src >>= eitherToExc
   -- use 'parseWithoutSrcLoc' to filter out SrcLoc info from AST
   ast <- eitherToExc $ parseWithoutSrcLoc fileName tokenList
-  let plCode = cspToProlog $ castModule ast
-  output <- evaluate $ show $ vcat [ 
-      mkResult "ok" "" 0 0 0
-     ,plCode]
+  (astNew, renaming) <- eitherToExc $ renameModuleReset ast
+  let plCode = cspToProlog astNew False
+  output <- evaluate $ show $ vcat [plCode]
   return output
 
 mainWork :: FilePath -> IO String
@@ -177,7 +176,7 @@ mainWork fileName = do
   time_start_renaming <- getCPUTime
   (astNew, renaming) <- eitherToExc $ renameModule ast
   let
-      plCode = cspToProlog astNew
+      plCode = cspToProlog astNew True
       symbolTable = mkSymbolTable $ identDefinition renaming
       -- moduleFact  = toProlog astNew
   output <- evaluate $ show $ vcat [ 
