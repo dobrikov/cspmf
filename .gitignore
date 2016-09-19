@@ -3,3 +3,9 @@ CSPM-ToProlog/dist
 CSPM-cspm-frontend/.cabal-sandbox/
 CSPM-cspm-frontend/cabal.sandbox.config
 CSPM-cspm-frontend/dist
+CSPM-Frontend/.DS_Store
+.DS_Store
+CSPM-Frontend/=2.7.1.0
+*.pl
+*.zip
+CSPM-Frontend/src/Language/CSPM/Lexer.hs
