@@ -26,9 +26,10 @@ else
   install_dir=$sys-$bits
 fi
 
-rm -rf artifacts/$install_dir
-mkdir -p artifacts/$install_dir
+rm -rf ../artifacts/$install_dir
+mkdir -p ../artifacts/$install_dir
 
 # install cspmf with cabal
 ./cabal_sandbox_install.sh
-cp dist/build/cspmf/cspmf artifacts/$install_dir
+
+cp dist/build/cspmf/cspmf ../artifacts/$install_dir
