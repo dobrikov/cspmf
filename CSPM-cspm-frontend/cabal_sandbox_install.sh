@@ -27,8 +27,11 @@ cabal sandbox init
 cabal sandbox add-source ../CSPM-Frontend
 cabal sandbox add-source ../CSPM-ToProlog
 
+# install 'text' using --enable-library-profiling, otherwise 'hashable' cannot be installed properly
+cabal install --reinstall --force-reinstall --enable-library-profiling text
+
 # install only dependencies
-cabal install --only-dependencies
+cabal install --only-dependencies --reinstall
 
 # re-intsall hashable and profunctors on MacOS X 10.6
 ForceInstallHashable

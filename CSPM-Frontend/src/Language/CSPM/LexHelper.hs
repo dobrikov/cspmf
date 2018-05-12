@@ -21,6 +21,7 @@ import qualified Data.Set as Set
 
 import qualified Data.DList as DList
 import Control.Monad.Trans.Either
+import Data.Either
 import System.FilePath(isAbsolute,splitDirectories,normalise,joinPath)
 
 -- | lex a String .

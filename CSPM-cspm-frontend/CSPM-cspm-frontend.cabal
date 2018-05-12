@@ -1,5 +1,5 @@
 Name:                CSPM-cspm-frontend
-Version:             0.1.0.0
+Version:             0.1.1.0
 
 Synopsis:            cspmf command line tool for parsing CSPM specifications.
 Description:
@@ -16,10 +16,10 @@ License:             BSD3
 category:            Language,Formal Methods,Concurrency
 License-File:        LICENSE
 Author:              Marc Fontaine, Ivaylo Dobrikov
-Maintainer:          Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com> 2009-2016
+Maintainer:          Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com> 2009-2018
 cabal-Version:       >= 1.14
 build-type:          Simple
-Tested-With:         GHC == 7.10.3
+Tested-With:         GHC == 8.2.2, GHC == 7.10.3
 Stability:           experimental
 
 Executable cspmf
@@ -32,8 +32,8 @@ Executable cspmf
     ,parallel >= 3.2 && < 3.3
     ,base >= 4.0 && < 5.0
     -- ,pretty >= 1.1 && < 1.2
-    ,transformers >= 0.3 && < 0.5
-    ,syb >= 0.3 && <0.5
+    ,transformers >= 0.3 && < 0.6
+    ,syb >= 0.3 && <0.8
     ,prettyclass >= 1.0 && < 1.1
 
   GHC-Options:
@@ -62,8 +62,8 @@ Library
     ,parallel >= 3.2 && < 3.3
     ,base >= 4.0 && < 5.0
     -- ,pretty >= 1.1 && < 1.2
-    ,transformers >= 0.3 && < 0.5
-    ,syb >= 0.3 && <0.5
+    ,transformers >= 0.3 && < 0.6
+    ,syb >= 0.3 && < 0.8
     ,prettyclass >= 1.0 && < 1.1
   GHC-Options:
     -funbox-strict-fields -O2 -Wall -fno-warn-orphans

@@ -158,11 +158,12 @@ instance TP t => GTP (K1 R t)  where
 instance TP t => GTPL (K1 R t)  where
     gtpl _l x = tp $ unK1 x
 
-instance TP t => GTP (K1 P t)  where
-    gtp x = hsep [ text "rec" , lparen, tp $ unK1 x, rparen]
+-- P is deprecated and not used anymore in recent versions of base
+--instance TP t => GTP (K1 P t)  where
+--    gtp x = hsep [ text "rec" , lparen, tp $ unK1 x, rparen]
 
-instance TP t => GTPL (K1 P t)  where
-    gtpl _ x = hsep [ text "rec" , lparen, tp $ unK1 x, rparen]
+--instance TP t => GTPL (K1 P t)  where
+--    gtpl _ x = hsep [ text "rec" , lparen, tp $ unK1 x, rparen]
 
 instance GTP V1 where gtp _ = text "V1"
 instance GTPL V1 where gtpl _ _ = text "V1"

@@ -1,5 +1,5 @@
 Name:                CSPM-Frontend
-Version:             0.11.0.1
+Version:             0.11.1.1
 
 Synopsis:            A CSP-M parser compatible with FDR-2.91
 
@@ -13,10 +13,10 @@ Description:
 License:             BSD3
 category:            Language,Formal Methods,Concurrency
 License-File:        LICENSE
-Author:              Marc Fontaine, Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com> 2007 - 2016
+Author:              Marc Fontaine, Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com> 2007 - 2018
 Maintainer:          Marc Fontaine <Marc.Fontaine@gmx.de>, Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com>
 Stability:           maintained
-Tested-With:         GHC == 7.10.3
+Tested-With:         GHC == 8.2.2, GHC == 7.10.3
 
 cabal-Version:       >= 1.14
 build-type: Simple
@@ -29,11 +29,12 @@ library
     ,parsec2 >= 1.0.0 && < 1.1.0
     ,prettyclass >= 1.0 && < 1.1
     ,mtl >= 2.1 && < 2.3
-    ,either >= 4.4 && < 5.0
-    ,transformers >= 0.3 && < 0.5
+    ,either >= 4.4
+    ,transformers-either >= 0.1
+    ,transformers >= 0.3 && < 0.6
     ,dlist >= 0.5 && < 0.7
-    ,syb >= 0.3 && < 0.7
-    ,ghc-prim >=0.2 && < 0.5
+    ,syb >= 0.3 && < 0.8
+    ,ghc-prim >=0.2 && < 0.6
     ,filepath >=1.3
   Default-Language: Haskell2010
   Other-Extensions:

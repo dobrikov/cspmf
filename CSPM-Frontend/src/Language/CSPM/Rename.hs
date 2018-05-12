@@ -49,7 +49,7 @@ import Data.Maybe
 
 instance Data FromRenaming
   where
-    gunfold = error "instance Data FromRenaming gunfold"
+    --gunfold = error "instance Data FromRenaming gunfold"
     toConstr = error "instance Data FromRenaming toConstr"
     dataTypeOf _ = mkDataType "Language.CSPM.Rename.FromRenaming" []
 
