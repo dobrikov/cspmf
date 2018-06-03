@@ -40,6 +40,10 @@ import System.IO
 import System.CPUTime
 import Text.PrettyPrint
 
+-- hiding Prelude.<> because of collision with <> in Text.PrettyPrint.HughesPJClass
+-- Prelude.<> exists since base-4.9.0.0
+import Prelude hiding ((<>))
+
 -- | The version of the CSPM-ToProlog library
 toPrologVersion :: Version
 toPrologVersion = version

@@ -22,6 +22,9 @@ where
 import Text.PrettyPrint.HughesPJClass
 
 import Language.CSPM.AST
+-- hiding Prelude.<> because of collision with <> in Text.PrettyPrint.HughesPJClass
+-- Prelude.<> exists since base-4.9.0.0
+import Prelude hiding ((<>))
 
 instance (Pretty x) => Pretty (Labeled x) where
   pPrint = pPrint . unLabel

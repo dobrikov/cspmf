@@ -29,6 +29,9 @@ import GHC.Generics as Generics
 import Text.PrettyPrint
 import Data.Array.IArray as Array
 import qualified Data.IntMap as IntMap
+-- hiding Prelude.<> because of collision with <> in Text.PrettyPrint.HughesPJClass
+-- Prelude.<> exists since base-4.9.0.0
+import Prelude hiding ((<>))
 
 toProlog :: TP d => d -> Doc
 toProlog = tp

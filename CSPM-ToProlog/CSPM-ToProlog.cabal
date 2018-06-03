@@ -12,7 +12,7 @@ License-File:        LICENSE
 Author:              2006-2018 Marc Fontaine, Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com>
 Maintainer:          Marc Fontaine <fontaine@cs.uni-duesseldorf.de>, Ivaylo Dobrikov <ivaylo.dobrikov@googlemail.com>
 Cabal-Version:  >= 1.14
-Tested-With:    GHC==8.2.2, GHC == 7.10.3
+Tested-With:    GHC == 8.4.2, GHC==8.2.2, GHC == 7.10.3
 Build-Type:     Simple
 
 Library

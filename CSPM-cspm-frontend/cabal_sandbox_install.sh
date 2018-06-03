@@ -29,7 +29,7 @@ cabal sandbox add-source ../CSPM-ToProlog
 
 
 # install 'base' and 'text' using --enable-library-profiling, otherwise 'hashable' may not be installed properly
-cabal install --reinstall --force-reinstall --enable-library-profiling base
+# cabal install --reinstall --force-reinstall --enable-library-profiling base
 cabal install --reinstall --force-reinstall --enable-library-profiling text
 
 # install only dependencies

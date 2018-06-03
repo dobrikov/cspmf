@@ -31,6 +31,9 @@ where
 import Text.PrettyPrint
 import Data.Char
 import Numeric (showHex)
+-- hiding Prelude.<> because of collision with <> in Text.PrettyPrint.HughesPJClass
+-- Prelude.<> exists since base-4.9.0.0
+import Prelude hiding ((<>))
 
 renderProlog :: Doc -> String
 renderProlog a = renderStyle (Style PageMode 60 1.5) a
